@@ -53,4 +53,22 @@ describe('flushQueue', () => {
     expect(result).toEqual({ synced: 2, failed: 1 });
     expect(readQueue(storage)).toEqual([{ id: 2 }]);
   });
+
+  it('preserves a session enqueued concurrently while another is being flushed', async () => {
+    const storage = createFakeStorage();
+    enqueueSession({ id: 'A' }, storage);
+
+    const writeSession = vi.fn().mockImplementation(async (session) => {
+      if (session.id === 'A') {
+        // Simulate the child app finishing a second mission and appending
+        // to the queue while this background sync of A is still in flight.
+        enqueueSession({ id: 'B' }, storage);
+      }
+    });
+
+    const result = await flushQueue(writeSession, storage);
+
+    expect(result).toEqual({ synced: 1, failed: 0 });
+    expect(readQueue(storage)).toEqual([{ id: 'B' }]);
+  });
 });

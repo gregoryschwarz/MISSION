@@ -21,15 +21,22 @@ export async function flushQueue(writeSession, storage = window.localStorage) {
   let synced = 0;
   let failed = 0;
   for (let i = 0; i < initialCount; i++) {
-    const current = readQueue(storage);
-    if (current.length === 0) break;
-    const [next, ...rest] = current;
+    const before = readQueue(storage);
+    if (before.length === 0) break;
+    const next = before[0];
+    let success = true;
     try {
       await writeSession(next);
-      storage.setItem(STORAGE_KEY, JSON.stringify(rest));
-      synced += 1;
     } catch (err) {
-      storage.setItem(STORAGE_KEY, JSON.stringify([...rest, next]));
+      success = false;
+    }
+    const latest = readQueue(storage);
+    const remaining = latest.slice(1);
+    if (success) {
+      storage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+      synced += 1;
+    } else {
+      storage.setItem(STORAGE_KEY, JSON.stringify([...remaining, next]));
       failed += 1;
     }
   }
