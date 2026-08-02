@@ -130,7 +130,7 @@ async function finishMission() {
   }
   if (soundEnabled) {
     playMissionCompleteSound();
-    if (progressionResult.leveledUp) {
+    if (progressionResult.leveledUp || progressionResult.newBadges.length > 0) {
       setTimeout(playLevelUpSound, 550);
     }
   }
