@@ -131,7 +131,7 @@ async function finishMission() {
   if (soundEnabled) {
     playMissionCompleteSound();
     if (progressionResult.leveledUp) {
-      playLevelUpSound();
+      setTimeout(playLevelUpSound, 550);
     }
   }
   renderResults(root, {
