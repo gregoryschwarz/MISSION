@@ -22,6 +22,9 @@ export function isSessionComplete(session) {
 }
 
 export function submitAnswer(session, answer) {
+  if (isSessionComplete(session)) {
+    throw new Error('Cannot submit answer: session is complete');
+  }
   const question = currentQuestion(session);
   const isCorrect = answer === question.answer;
   const breakdown = session.breakdown[question.type];

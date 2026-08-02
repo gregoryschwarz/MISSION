@@ -26,6 +26,18 @@ describe('session flow', () => {
     expect(isSessionComplete(session)).toBe(true);
   });
 
+  it('returns false initially, before any answers', () => {
+    const session = createSession(sampleQuestions);
+    expect(isSessionComplete(session)).toBe(false);
+  });
+
+  it('throws when submitting an answer after the session is already complete', () => {
+    const session = createSession(sampleQuestions);
+    submitAnswer(session, 5);
+    submitAnswer(session, 12);
+    expect(() => submitAnswer(session, 5)).toThrow();
+  });
+
   it('produces a summary with duration and breakdown', () => {
     vi.useFakeTimers();
     const session = createSession(sampleQuestions);
