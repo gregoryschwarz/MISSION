@@ -3,13 +3,16 @@ import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'fireba
 import { auth, db } from '../shared/firebaseConfig.js';
 import { getStoredFamilyId, storeFamilyId, pairWithFamily } from './pairing.js';
 import { generateMission } from './questions.js';
-import { createSession, currentQuestion, submitAnswer, isSessionComplete, finishSession } from './session.js';
+import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression } from '../shared/progression.js';
-import { adjustDifficultyLevels, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderHome, renderQuestion, renderResults, renderConnectionError } from './ui.js';
+import { renderPairing, renderHome, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderConnectionError } from './ui.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
+import { adjustDifficultyLevels, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
+import { pickMissionMode, getLastMissionMode, storeLastMissionMode } from './missionMode.js';
+import { generateChoices } from './choices.js';
+import { createPairsRound, attemptMatch, isPairsRoundComplete } from './pairsGame.js';
 
 const root = document.getElementById('app');
 const MISSION_LENGTH = 10;
@@ -17,6 +20,8 @@ const PAUSE_REMINDER_MS = 15 * 60 * 1000;
 
 let familyId = getStoredFamilyId();
 let session = null;
+let missionMode = 'quiz';
+let pairsRound = null;
 let lastFeedback = null;
 let soundEnabled = isSoundEnabled();
 let lastProfile = null;
@@ -81,21 +86,51 @@ async function showHome() {
 
 function startMission() {
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  missionMode = pickMissionMode(getLastMissionMode());
+  storeLastMissionMode(missionMode);
   session = createSession(generateMission(MISSION_LENGTH, difficultyLevels));
   lastFeedback = null;
-  showQuestion();
+  if (missionMode === 'pairs') {
+    pairsRound = createPairsRound(session.questions);
+    showPairsRound();
+  } else {
+    showQuestion();
+  }
 }
 
 function showQuestion() {
   const question = currentQuestion(session);
   const elapsedMs = Date.now() - session.startedAt;
-  renderQuestion(root, {
-    question,
-    index: session.index,
-    total: session.questions.length,
+  const showPauseReminder = elapsedMs >= PAUSE_REMINDER_MS;
+  if (missionMode === 'qcm') {
+    renderQuestionQcm(root, {
+      question,
+      choices: generateChoices(question),
+      index: session.index,
+      total: session.questions.length,
+      feedback: lastFeedback,
+      showPauseReminder,
+      onAnswer: handleAnswer,
+    });
+  } else {
+    renderQuestion(root, {
+      question,
+      index: session.index,
+      total: session.questions.length,
+      feedback: lastFeedback,
+      showPauseReminder,
+      onAnswer: handleAnswer,
+    });
+  }
+}
+
+function showPairsRound() {
+  const elapsedMs = Date.now() - session.startedAt;
+  renderPairsRound(root, {
+    round: pairsRound,
     feedback: lastFeedback,
     showPauseReminder: elapsedMs >= PAUSE_REMINDER_MS,
-    onAnswer: handleAnswer,
+    onMatch: handlePairsMatch,
   });
 }
 
@@ -109,6 +144,23 @@ async function handleAnswer(answer) {
     await finishMission();
   } else {
     showQuestion();
+  }
+}
+
+async function handlePairsMatch(calcTileId, resultTileId) {
+  const { isCorrect, firstAttempt } = attemptMatch(pairsRound, calcTileId, resultTileId);
+  if (firstAttempt) {
+    const calcTile = pairsRound.calcTiles.find((t) => t.id === calcTileId);
+    recordAnswer(session, calcTile, isCorrect);
+  }
+  lastFeedback = isCorrect ? 'correct' : 'incorrect';
+  if (soundEnabled) {
+    isCorrect ? playCorrectSound() : playIncorrectSound();
+  }
+  if (isPairsRoundComplete(pairsRound)) {
+    await finishMission();
+  } else {
+    showPairsRound();
   }
 }
 
@@ -139,6 +191,7 @@ async function finishMission() {
       setTimeout(playLevelUpSound, 550);
     }
   }
+  pairsRound = null;
   renderResults(root, {
     correctCount: summary.correctCount,
     questionsTotal: summary.questionsTotal,
