@@ -80,3 +80,14 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, le
   `;
   root.querySelector('#continue').addEventListener('click', onContinue);
 }
+
+export function renderConnectionError(root, { onRetry }) {
+  root.innerHTML = `
+    <div class="screen error-screen">
+      <h1>🌥️ Petit souci de connexion</h1>
+      <p>Vérifie le Wi-Fi et réessaie.</p>
+      <button id="retry" class="big-button">Réessayer</button>
+    </div>
+  `;
+  root.querySelector('#retry').addEventListener('click', onRetry);
+}

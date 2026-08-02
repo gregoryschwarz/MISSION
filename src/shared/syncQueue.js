@@ -17,15 +17,21 @@ export function enqueueSession(summary, storage = window.localStorage) {
 }
 
 export async function flushQueue(writeSession, storage = window.localStorage) {
-  const pending = readQueue(storage);
-  const remaining = [];
-  for (const summary of pending) {
+  const initialCount = readQueue(storage).length;
+  let synced = 0;
+  let failed = 0;
+  for (let i = 0; i < initialCount; i++) {
+    const current = readQueue(storage);
+    if (current.length === 0) break;
+    const [next, ...rest] = current;
     try {
-      await writeSession(summary);
+      await writeSession(next);
+      storage.setItem(STORAGE_KEY, JSON.stringify(rest));
+      synced += 1;
     } catch (err) {
-      remaining.push(summary);
+      storage.setItem(STORAGE_KEY, JSON.stringify([...rest, next]));
+      failed += 1;
     }
   }
-  storage.setItem(STORAGE_KEY, JSON.stringify(remaining));
-  return { synced: pending.length - remaining.length, failed: remaining.length };
+  return { synced, failed };
 }

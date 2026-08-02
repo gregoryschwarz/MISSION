@@ -6,7 +6,7 @@ import { generateMission } from './questions.js';
 import { createSession, currentQuestion, submitAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderHome, renderQuestion, renderResults } from './ui.js';
+import { renderPairing, renderHome, renderQuestion, renderResults, renderConnectionError } from './ui.js';
 
 const root = document.getElementById('app');
 const MISSION_LENGTH = 10;
@@ -43,15 +43,19 @@ async function saveProfile(targetFamilyId, profile) {
 }
 
 async function showHome() {
-  await ensureAuth();
-  const profile = await loadProfile(familyId);
-  renderHome(root, {
-    childName: profile.childName,
-    avatarLevel: profile.avatarLevel,
-    badgesCount: profile.badges.length,
-    onStartMission: startMission,
-  });
-  flushQueue((summary) => writeSession(familyId, summary)).catch(() => {});
+  try {
+    await ensureAuth();
+    const profile = await loadProfile(familyId);
+    renderHome(root, {
+      childName: profile.childName,
+      avatarLevel: profile.avatarLevel,
+      badgesCount: profile.badges.length,
+      onStartMission: startMission,
+    });
+    flushQueue((summary) => writeSession(familyId, summary)).catch(() => {});
+  } catch (err) {
+    renderConnectionError(root, { onRetry: showHome });
+  }
 }
 
 function startMission() {
@@ -112,8 +116,17 @@ async function finishMission() {
 }
 
 async function handlePairing({ familyId: candidateId, pin }) {
-  await ensureAuth();
-  const result = await pairWithFamily(db, candidateId, pin);
+  let result;
+  try {
+    await ensureAuth();
+    result = await pairWithFamily(db, candidateId, pin);
+  } catch (err) {
+    renderPairing(root, {
+      onSubmit: handlePairing,
+      error: 'Connexion impossible. Vérifie le Wi-Fi et réessaie.',
+    });
+    return;
+  }
   if (result.success) {
     storeFamilyId(candidateId);
     familyId = candidateId;
