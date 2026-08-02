@@ -20,7 +20,7 @@ export function renderDashboard(root, { family, profile, sessions, onSignOut }) 
   root.innerHTML = `
     <div class="dashboard">
       <header>
-        <h1>Tableau de bord — ${profile.childName}</h1>
+        <h1>Tableau de bord — <span id="child-name"></span></h1>
         <p>Code d'appairage à entrer sur la tablette : <strong>${family.id}</strong></p>
         <button id="sign-out">Se déconnecter</button>
       </header>
@@ -50,5 +50,6 @@ export function renderDashboard(root, { family, profile, sessions, onSignOut }) 
       </section>
     </div>
   `;
+  root.querySelector('#child-name').textContent = profile.childName;
   root.querySelector('#sign-out').addEventListener('click', onSignOut);
 }
