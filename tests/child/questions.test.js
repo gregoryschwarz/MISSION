@@ -8,34 +8,47 @@ import {
 } from '../../src/child/questions.js';
 
 describe('generateAddition', () => {
-  it('returns a correct sum within CE2 bounds', () => {
+  it('returns a correct sum under 100', () => {
     const q = generateAddition();
     expect(q.answer).toBe(q.a + q.b);
-    expect(q.a + q.b).toBeLessThanOrEqual(999);
+    expect(q.a + q.b).toBeLessThan(100);
   });
 });
 
 describe('generateSubtraction', () => {
-  it('returns a correct, non-negative difference', () => {
+  it('returns a correct, non-negative difference with no borrowing', () => {
     const q = generateSubtraction();
     expect(q.answer).toBe(q.a - q.b);
     expect(q.answer).toBeGreaterThanOrEqual(0);
+    expect(q.a).toBeLessThan(100);
+    const aUnits = q.a % 10;
+    const aTens = Math.floor(q.a / 10);
+    const bUnits = q.b % 10;
+    const bTens = Math.floor(q.b / 10);
+    expect(bUnits).toBeLessThanOrEqual(aUnits);
+    expect(bTens).toBeLessThanOrEqual(aTens);
+  });
+
+  it('never produces a trivial subtraction of zero', () => {
+    const q = generateSubtraction();
+    expect(q.b).toBeGreaterThan(0);
   });
 });
 
 describe('generateMultiplication', () => {
-  it('uses a table between 2 and 5', () => {
+  it('uses the table 2, 5, or 10', () => {
     const q = generateMultiplication();
-    expect(q.a).toBeGreaterThanOrEqual(2);
-    expect(q.a).toBeLessThanOrEqual(5);
+    expect([2, 5, 10]).toContain(q.a);
     expect(q.answer).toBe(q.a * q.b);
   });
 });
 
 describe('generateComparison', () => {
-  it('picks the correct comparison symbol', () => {
+  it('picks the correct comparison symbol within bounds', () => {
     const q = generateComparison();
     expect(q.a).not.toBe(q.b);
+    expect(q.a).toBeLessThan(100);
+    expect(q.b).toBeLessThan(100);
     if (q.a > q.b) expect(q.answer).toBe('>');
     else expect(q.answer).toBe('<');
   });

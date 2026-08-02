@@ -12,27 +12,40 @@ function shuffle(array) {
 }
 
 export function generateAddition() {
-  const a = randomInt(10, 500);
-  const b = randomInt(10, 499);
+  const a = randomInt(10, 79);
+  const b = randomInt(1, 99 - a);
   return { type: 'addition', a, b, answer: a + b, prompt: `${a} + ${b}` };
 }
 
 export function generateSubtraction() {
-  const a = randomInt(50, 999);
-  const b = randomInt(10, a - 1);
+  const aUnits = randomInt(0, 9);
+  const aTens = randomInt(1, 9);
+  const a = aTens * 10 + aUnits;
+  let bUnits = randomInt(0, aUnits);
+  let bTens = randomInt(0, aTens);
+  if (bUnits === 0 && bTens === 0) {
+    if (aUnits > 0) {
+      bUnits = randomInt(1, aUnits);
+    } else {
+      bTens = randomInt(1, aTens);
+    }
+  }
+  const b = bTens * 10 + bUnits;
   return { type: 'soustraction', a, b, answer: a - b, prompt: `${a} - ${b}` };
 }
 
+const MULTIPLICATION_TABLES = [2, 5, 10];
+
 export function generateMultiplication() {
-  const table = randomInt(2, 5);
+  const table = MULTIPLICATION_TABLES[randomInt(0, MULTIPLICATION_TABLES.length - 1)];
   const factor = randomInt(1, 10);
   return { type: 'multiplication', a: table, b: factor, answer: table * factor, prompt: `${table} x ${factor}` };
 }
 
 export function generateComparison() {
-  const a = randomInt(1, 999);
-  let b = randomInt(1, 999);
-  while (b === a) b = randomInt(1, 999);
+  const a = randomInt(1, 99);
+  let b = randomInt(1, 99);
+  while (b === a) b = randomInt(1, 99);
   const answer = a > b ? '>' : '<';
   return { type: 'comparaison', a, b, answer, prompt: `${a} ___ ${b}`, options: ['>', '<'] };
 }
