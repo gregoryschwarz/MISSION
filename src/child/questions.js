@@ -21,8 +21,15 @@ export function generateSubtraction() {
   const aUnits = randomInt(0, 9);
   const aTens = randomInt(1, 9);
   const a = aTens * 10 + aUnits;
-  const bUnits = randomInt(0, aUnits);
-  const bTens = randomInt(0, aTens);
+  let bUnits = randomInt(0, aUnits);
+  let bTens = randomInt(0, aTens);
+  if (bUnits === 0 && bTens === 0) {
+    if (aUnits > 0) {
+      bUnits = randomInt(1, aUnits);
+    } else {
+      bTens = randomInt(1, aTens);
+    }
+  }
   const b = bTens * 10 + bUnits;
   return { type: 'soustraction', a, b, answer: a - b, prompt: `${a} - ${b}` };
 }

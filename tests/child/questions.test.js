@@ -28,6 +28,11 @@ describe('generateSubtraction', () => {
     expect(bUnits).toBeLessThanOrEqual(aUnits);
     expect(bTens).toBeLessThanOrEqual(aTens);
   });
+
+  it('never produces a trivial subtraction of zero', () => {
+    const q = generateSubtraction();
+    expect(q.b).toBeGreaterThan(0);
+  });
 });
 
 describe('generateMultiplication', () => {
