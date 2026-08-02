@@ -71,6 +71,79 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
   }
 }
 
+export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, feedback, showPauseReminder }) {
+  root.innerHTML = `
+    <div class="screen mission-screen">
+      <div class="progress">Question ${index + 1} / ${total}</div>
+      ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
+      <h2>${question.prompt}</h2>
+      ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
+      <div class="options">
+        ${choices
+          .map((choice) => {
+            const label = choice === '>' ? 'supérieur &gt;' : choice === '<' ? 'inférieur &lt;' : choice;
+            return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
+          })
+          .join('')}
+      </div>
+    </div>
+  `;
+  root.querySelectorAll('.answer-btn').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      const raw = btn.dataset.value;
+      const value = raw === '>' || raw === '<' ? raw : Number(raw);
+      onAnswer(value);
+    })
+  );
+}
+
+export function renderPairsRound(root, { round, feedback, showPauseReminder, onMatch }) {
+  let selectedCalcId = null;
+
+  function draw() {
+    const remainingCalc = round.calcTiles.filter((t) => !round.matchedCalcIds.has(t.id));
+    const remainingResult = round.resultTiles.filter((t) => !round.matchedResultIds.has(t.id));
+    root.innerHTML = `
+      <div class="screen mission-screen pairs-screen">
+        <div class="progress">${round.matchedCalcIds.size} / ${round.calcTiles.length} paires trouvées</div>
+        ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
+        ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
+        <div class="pairs-grid">
+          <div class="pairs-column">
+            ${remainingCalc
+              .map(
+                (t) =>
+                  `<button class="pairs-tile calc-tile ${t.id === selectedCalcId ? 'selected' : ''}" data-id="${t.id}">${t.prompt}</button>`
+              )
+              .join('')}
+          </div>
+          <div class="pairs-column">
+            ${remainingResult
+              .map((t) => `<button class="pairs-tile result-tile" data-id="${t.id}">${t.answer}</button>`)
+              .join('')}
+          </div>
+        </div>
+      </div>
+    `;
+    root.querySelectorAll('.calc-tile').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        selectedCalcId = btn.dataset.id;
+        draw();
+      })
+    );
+    root.querySelectorAll('.result-tile').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        if (!selectedCalcId) return;
+        const calcId = selectedCalcId;
+        selectedCalcId = null;
+        onMatch(calcId, btn.dataset.id);
+      })
+    );
+  }
+
+  draw();
+}
+
 export function renderResults(root, { correctCount, questionsTotal, gainedXp, leveledUp, newBadges, onContinue }) {
   root.innerHTML = `
     <div class="screen results-screen">
