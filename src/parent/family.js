@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp } from 'firebase/firestore';
 import { db } from '../shared/firebaseConfig.js';
 import { hashPin } from '../shared/pin.js';
 
@@ -12,18 +12,17 @@ export async function findFamilyByParent(parentUid) {
 
 export async function createFamily({ parentUid, parentEmail, childName, pin }) {
   const familyRef = doc(collection(db, 'families'));
-  const pinHash = await hashPin(pin);
-  const batch = writeBatch(db);
-  batch.set(familyRef, {
+  await setDoc(familyRef, {
     parentUid,
     parentEmail,
     createdAt: serverTimestamp(),
   });
-  batch.set(doc(db, 'families', familyRef.id, 'pairing', 'data'), {
+  const pinHash = await hashPin(pin);
+  await setDoc(doc(db, 'families', familyRef.id, 'pairing', 'data'), {
     childName,
     pinHash,
   });
-  batch.set(doc(db, 'families', familyRef.id, 'profile', 'data'), {
+  await setDoc(doc(db, 'families', familyRef.id, 'profile', 'data'), {
     childName,
     xp: 0,
     avatarLevel: 1,
@@ -31,7 +30,6 @@ export async function createFamily({ parentUid, parentEmail, childName, pin }) {
     streakDays: 0,
     lastSessionDate: null,
   });
-  await batch.commit();
   return familyRef.id;
 }
 
