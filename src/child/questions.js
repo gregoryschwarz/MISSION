@@ -13,15 +13,23 @@ function shuffle(array) {
   return copy;
 }
 
+// Powers of ten (10, 100, ...) have only one nonzero digit worth 1: every
+// digit-respecting subtrahend is therefore either 0 or the number itself, so
+// no valid (positive, non-borrowing, non-trivial) subtraction exists for them.
+function isPowerOfTen(n) {
+  return /^10*$/.test(String(n));
+}
+
+// Picks each digit of b independently in [0, corresponding digit of a], which
+// guarantees no borrowing. Rejects the all-zero (b === 0) and all-matching
+// (b === a) outcomes so the difference is always strictly positive. Callers
+// must not pass a power of ten (see isPowerOfTen) or this loop cannot terminate.
 function noBorrowSubtrahend(a) {
   const digits = String(a).split('').map(Number);
-  const bDigits = digits.map((d) => randomInt(0, d));
-  if (bDigits.every((d) => d === 0)) {
-    const bumpableIndex = digits.findIndex((d) => d > 0);
-    if (bumpableIndex !== -1) {
-      bDigits[bumpableIndex] = randomInt(1, digits[bumpableIndex]);
-    }
-  }
+  let bDigits;
+  do {
+    bDigits = digits.map((d) => randomInt(0, d));
+  } while (bDigits.every((d) => d === 0) || bDigits.every((d, i) => d === digits[i]));
   return Number(bDigits.join(''));
 }
 
@@ -43,7 +51,10 @@ export function generateSubtraction(level = 1) {
     return { type: 'soustraction', a, b, answer: a - b, prompt: `${a} - ${b}` };
   }
   const maxValue = SUBTRACTION_NO_BORROW_MAX[level] ?? SUBTRACTION_NO_BORROW_MAX[1];
-  const a = randomInt(10, maxValue - 1);
+  let a;
+  do {
+    a = randomInt(10, maxValue - 1);
+  } while (isPowerOfTen(a));
   const b = noBorrowSubtrahend(a);
   return { type: 'soustraction', a, b, answer: a - b, prompt: `${a} - ${b}` };
 }
