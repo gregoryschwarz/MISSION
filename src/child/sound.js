@@ -18,7 +18,7 @@ function playTone(frequency, durationMs, type = 'sine') {
     const gain = ctx.createGain();
     oscillator.type = type;
     oscillator.frequency.value = frequency;
-    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.setValueAtTime(0.8, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + durationMs / 1000);
     oscillator.connect(gain);
     gain.connect(ctx.destination);
