@@ -6,11 +6,14 @@ export function renderPairing(root, { onSubmit, error }) {
       <form id="pairing-form">
         <label>Code d'appairage<input id="family-id" type="text" autocomplete="off" required /></label>
         <label>Code secret (4 chiffres)<input id="pin" type="password" inputmode="numeric" maxlength="4" required /></label>
-        ${error ? `<p class="error">${error}</p>` : ''}
+        ${error ? '<p class="error" id="pairing-error"></p>' : ''}
         <button type="submit" class="big-button">Valider</button>
       </form>
     </div>
   `;
+  if (error) {
+    root.querySelector('#pairing-error').textContent = error;
+  }
   root.querySelector('#pairing-form').addEventListener('submit', (event) => {
     event.preventDefault();
     const familyId = root.querySelector('#family-id').value.trim();
@@ -23,11 +26,12 @@ export function renderHome(root, { childName, avatarLevel, badgesCount, onStartM
   root.innerHTML = `
     <div class="screen home-screen">
       <div class="avatar">🦄</div>
-      <h1>${childName ?? 'Luna'} — niveau ${avatarLevel}</h1>
+      <h1><span id="child-name"></span> — niveau ${avatarLevel}</h1>
       <p>${badgesCount} badge${badgesCount > 1 ? 's' : ''} gagné${badgesCount > 1 ? 's' : ''}</p>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
     </div>
   `;
+  root.querySelector('#child-name').textContent = childName ?? 'Luna';
   root.querySelector('#start-mission').addEventListener('click', onStartMission);
 }
 
