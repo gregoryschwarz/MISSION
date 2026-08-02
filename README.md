@@ -43,3 +43,7 @@ Ouvrir l'URL déployée dans Chrome ou Safari sur la tablette, puis utiliser "Aj
 1. Le parent se connecte sur `/parent.html`, crée son compte, puis crée le profil de l'enfant (prénom + code secret à 4 chiffres).
 2. Le dashboard affiche un "code d'appairage".
 3. Sur la tablette, au premier lancement, entrer ce code d'appairage et le code secret.
+
+## Sécurité
+
+Le "code d'appairage" (`familyId`) doit être traité comme un secret partagé, au même titre qu'un mot de passe : toute personne qui le connaît et qui est authentifiée (même anonymement) peut écrire des données de session et de profil pour cette famille. C'est un choix de conception volontaire qui évite de dépendre de Cloud Functions pour valider les écritures côté serveur. Le code secret à 4 chiffres (PIN) constitue un second facteur au-dessus de ce mécanisme, mais ne remplace pas la confidentialité du code d'appairage lui-même. Ne partagez donc ce code qu'avec les personnes autorisées à administrer le profil de l'enfant.
