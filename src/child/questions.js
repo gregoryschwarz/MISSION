@@ -1,17 +1,5 @@
 import { DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
-
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function shuffle(array) {
-  const copy = [...array];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = randomInt(0, i);
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
+import { randomInt, shuffle } from './random.js';
 
 // Powers of ten (10, 100, ...) have only one nonzero digit worth 1: every
 // digit-respecting subtrahend is therefore either 0 or the number itself, so
