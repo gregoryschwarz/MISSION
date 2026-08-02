@@ -57,6 +57,14 @@ describe('generateSubtraction', () => {
     expect(q.a).toBeGreaterThanOrEqual(100);
     expect(q.a).toBeLessThan(999);
   });
+
+  it('never produces a trivial b === a (answer of 0), even across many draws', () => {
+    for (let i = 0; i < 500; i++) {
+      const q = generateSubtraction();
+      expect(q.b).not.toBe(q.a);
+      expect(q.answer).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe('generateMultiplication', () => {
