@@ -7,6 +7,8 @@ import { createSession, currentQuestion, submitAnswer, isSessionComplete, finish
 import { applyProgression } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderHome, renderQuestion, renderResults, renderConnectionError } from './ui.js';
+import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
+import { auraClassForLevel } from './avatar.js';
 
 const root = document.getElementById('app');
 const MISSION_LENGTH = 10;
@@ -15,6 +17,8 @@ const PAUSE_REMINDER_MS = 15 * 60 * 1000;
 let familyId = getStoredFamilyId();
 let session = null;
 let lastFeedback = null;
+let soundEnabled = isSoundEnabled();
+let lastProfile = null;
 
 async function ensureAuth() {
   if (!auth.currentUser) {
@@ -42,16 +46,32 @@ async function saveProfile(targetFamilyId, profile) {
   await setDoc(ref, profile);
 }
 
+function renderHomeScreen(profile) {
+  renderHome(root, {
+    childName: profile.childName,
+    avatarLevel: profile.avatarLevel,
+    badgesCount: profile.badges.length,
+    auraClass: auraClassForLevel(profile.avatarLevel),
+    soundEnabled,
+    onStartMission: startMission,
+    onToggleSound: toggleSound,
+  });
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  setSoundEnabled(soundEnabled);
+  if (lastProfile) {
+    renderHomeScreen(lastProfile);
+  }
+}
+
 async function showHome() {
   try {
     await ensureAuth();
     const profile = await loadProfile(familyId);
-    renderHome(root, {
-      childName: profile.childName,
-      avatarLevel: profile.avatarLevel,
-      badgesCount: profile.badges.length,
-      onStartMission: startMission,
-    });
+    lastProfile = profile;
+    renderHomeScreen(profile);
     flushQueue((summary) => writeSession(familyId, summary)).catch(() => {});
   } catch (err) {
     renderConnectionError(root, { onRetry: showHome });
@@ -80,6 +100,9 @@ function showQuestion() {
 async function handleAnswer(answer) {
   const isCorrect = submitAnswer(session, answer);
   lastFeedback = isCorrect ? 'correct' : 'incorrect';
+  if (soundEnabled) {
+    isCorrect ? playCorrectSound() : playIncorrectSound();
+  }
   if (isSessionComplete(session)) {
     await finishMission();
   } else {
@@ -104,6 +127,12 @@ async function finishMission() {
     await writeSession(familyId, summary);
   } catch (err) {
     enqueueSession(summary);
+  }
+  if (soundEnabled) {
+    playMissionCompleteSound();
+    if (progressionResult.leveledUp) {
+      playLevelUpSound();
+    }
   }
   renderResults(root, {
     correctCount: summary.correctCount,
