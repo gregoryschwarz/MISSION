@@ -144,3 +144,12 @@ input {
 .error {
   color: #c0392b;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-4,
+  .aura-5,
+  .feedback,
+  .confetti span {
+    animation: none;
+  }
+}
