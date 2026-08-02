@@ -2,7 +2,12 @@ const STORAGE_KEY = 'missionsDeLuna.pendingSessions';
 
 export function readQueue(storage = window.localStorage) {
   const raw = storage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : [];
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    return [];
+  }
 }
 
 export function enqueueSession(summary, storage = window.localStorage) {

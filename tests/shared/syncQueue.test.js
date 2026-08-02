@@ -36,4 +36,21 @@ describe('flushQueue', () => {
     expect(result).toEqual({ synced: 0, failed: 1 });
     expect(readQueue(storage)).toHaveLength(1);
   });
+
+  it('handles a mix of successful and failed syncs', async () => {
+    const storage = createFakeStorage();
+    enqueueSession({ id: 1 }, storage);
+    enqueueSession({ id: 2 }, storage);
+    enqueueSession({ id: 3 }, storage);
+
+    const writeSession = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValueOnce(undefined);
+
+    const result = await flushQueue(writeSession, storage);
+    expect(result).toEqual({ synced: 2, failed: 1 });
+    expect(readQueue(storage)).toEqual([{ id: 2 }]);
+  });
 });
