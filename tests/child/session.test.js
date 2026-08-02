@@ -3,6 +3,7 @@ import {
   createSession,
   currentQuestion,
   submitAnswer,
+  recordAnswer,
   isSessionComplete,
   finishSession,
 } from '../../src/child/session.js';
@@ -50,5 +51,29 @@ describe('session flow', () => {
     expect(summary.durationSeconds).toBe(5);
     expect(summary.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     vi.useRealTimers();
+  });
+});
+
+describe('recordAnswer', () => {
+  it('updates breakdown and correctCount for a correct answer, without touching the index', () => {
+    const session = createSession(sampleQuestions);
+    recordAnswer(session, { type: 'addition' }, true);
+    expect(session.breakdown.addition).toEqual({ correct: 1, total: 1 });
+    expect(session.correctCount).toBe(1);
+    expect(session.index).toBe(0);
+  });
+
+  it('updates breakdown without incrementing correctCount for an incorrect answer', () => {
+    const session = createSession(sampleQuestions);
+    recordAnswer(session, { type: 'multiplication' }, false);
+    expect(session.breakdown.multiplication).toEqual({ correct: 0, total: 1 });
+    expect(session.correctCount).toBe(0);
+  });
+
+  it('accumulates across multiple calls for the same type', () => {
+    const session = createSession(sampleQuestions);
+    recordAnswer(session, { type: 'addition' }, true);
+    recordAnswer(session, { type: 'addition' }, false);
+    expect(session.breakdown.addition).toEqual({ correct: 1, total: 2 });
   });
 });

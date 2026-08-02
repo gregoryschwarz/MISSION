@@ -21,18 +21,23 @@ export function isSessionComplete(session) {
   return session.index >= session.questions.length;
 }
 
-export function submitAnswer(session, answer) {
-  if (isSessionComplete(session)) {
-    throw new Error('Cannot submit answer: session is complete');
-  }
-  const question = currentQuestion(session);
-  const isCorrect = answer === question.answer;
+export function recordAnswer(session, question, isCorrect) {
   const breakdown = session.breakdown[question.type];
   breakdown.total += 1;
   if (isCorrect) {
     breakdown.correct += 1;
     session.correctCount += 1;
   }
+  return isCorrect;
+}
+
+export function submitAnswer(session, answer) {
+  if (isSessionComplete(session)) {
+    throw new Error('Cannot submit answer: session is complete');
+  }
+  const question = currentQuestion(session);
+  const isCorrect = answer === question.answer;
+  recordAnswer(session, question, isCorrect);
   session.index += 1;
   return isCorrect;
 }
