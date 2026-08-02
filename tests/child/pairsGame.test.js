@@ -64,6 +64,44 @@ describe('attemptMatch', () => {
     expect(second.firstAttempt).toBe(false);
     expect(second.isCorrect).toBe(true);
   });
+
+  it('throws when attempting to match a calc tile that is already matched', () => {
+    const round = createPairsRound(sampleQuestions);
+    const calcTile = round.calcTiles.find((t) => t.prompt === '2 x 3');
+    const resultTile = round.resultTiles.find((t) => t.answer === 6);
+    attemptMatch(round, calcTile.id, resultTile.id);
+    const anotherResultTile = round.resultTiles.find((t) => t.id !== resultTile.id);
+    expect(() => attemptMatch(round, calcTile.id, anotherResultTile.id)).toThrow();
+  });
+
+  it('throws when attempting to match a result tile that is already matched', () => {
+    const round = createPairsRound(sampleQuestions);
+    const calcTile = round.calcTiles.find((t) => t.prompt === '2 x 3');
+    const resultTile = round.resultTiles.find((t) => t.answer === 6);
+    attemptMatch(round, calcTile.id, resultTile.id);
+    const anotherCalcTile = round.calcTiles.find((t) => t.id !== calcTile.id);
+    expect(() => attemptMatch(round, anotherCalcTile.id, resultTile.id)).toThrow();
+  });
+
+  it('correctly matches two calc tiles that share the same answer to two distinct result tiles', () => {
+    const duplicateAnswerQuestions = [
+      { type: 'addition', a: 2, b: 3, answer: 5, prompt: '2 + 3' },
+      { type: 'soustraction', a: 9, b: 4, answer: 5, prompt: '9 - 4' },
+    ];
+    const round = createPairsRound(duplicateAnswerQuestions);
+    const [calcA, calcB] = round.calcTiles;
+    const [resultX, resultY] = round.resultTiles;
+
+    const first = attemptMatch(round, calcA.id, resultX.id);
+    expect(first.isCorrect).toBe(true);
+
+    const second = attemptMatch(round, calcB.id, resultY.id);
+    expect(second.isCorrect).toBe(true);
+
+    expect(round.matchedCalcIds.size).toBe(2);
+    expect(round.matchedResultIds.size).toBe(2);
+    expect(isPairsRoundComplete(round)).toBe(true);
+  });
 });
 
 describe('isPairsRoundComplete', () => {

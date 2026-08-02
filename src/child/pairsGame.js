@@ -17,6 +17,9 @@ export function createPairsRound(questions) {
 }
 
 export function attemptMatch(round, calcTileId, resultTileId) {
+  if (round.matchedCalcIds.has(calcTileId) || round.matchedResultIds.has(resultTileId)) {
+    throw new Error('Cannot attempt a match on a tile that is already matched');
+  }
   const calcTile = round.calcTiles.find((t) => t.id === calcTileId);
   const resultTile = round.resultTiles.find((t) => t.id === resultTileId);
   const isCorrect = calcTile.answer === resultTile.answer;
