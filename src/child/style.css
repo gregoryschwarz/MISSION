@@ -16,10 +16,50 @@ body {
   width: min(90vw, 480px);
   text-align: center;
   padding: 24px;
+  position: relative;
 }
 
 .avatar {
   font-size: 96px;
+  display: inline-block;
+}
+
+.aura-1 {
+  filter: drop-shadow(0 0 4px #e9defc);
+}
+
+.aura-2 {
+  filter: drop-shadow(0 0 10px #c9b8ff);
+}
+
+.aura-3 {
+  filter: drop-shadow(0 0 14px #ffb8e6) drop-shadow(0 0 4px #b8e0ff);
+}
+
+.aura-4 {
+  filter: drop-shadow(0 0 18px #ffd166) drop-shadow(0 0 8px #ff8fd6);
+  animation: aura-pulse 1.8s ease-in-out infinite;
+}
+
+.aura-5 {
+  filter: drop-shadow(0 0 24px #ffd166) drop-shadow(0 0 12px #ff8fd6) drop-shadow(0 0 6px #8fd6ff);
+  animation: aura-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes aura-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.sound-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
 }
 
 .big-button {
@@ -53,6 +93,10 @@ input {
   margin: 8px 0;
 }
 
+.feedback {
+  animation: pop 0.3s ease-out;
+}
+
 .feedback.correct {
   color: #2e7d32;
   font-weight: bold;
@@ -63,6 +107,12 @@ input {
   font-weight: bold;
 }
 
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
 .pause-reminder {
   background: #fff3b0;
   border-radius: 12px;
@@ -70,6 +120,36 @@ input {
   font-size: 14px;
 }
 
+.confetti {
+  position: relative;
+  height: 40px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.confetti span {
+  position: absolute;
+  top: -20px;
+  font-size: 20px;
+  animation: confetti-fall 1.2s ease-in forwards;
+}
+
+@keyframes confetti-fall {
+  to {
+    transform: translateY(80px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
 .error {
   color: #c0392b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-4,
+  .aura-5,
+  .feedback,
+  .confetti span {
+    animation: none;
+  }
 }

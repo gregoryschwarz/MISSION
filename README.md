@@ -5,7 +5,7 @@ Application PWA de révision maths (niveau CE2) pour tablette, avec suivi parent
 ## Configuration initiale (une seule fois)
 
 1. Créer un projet sur https://console.firebase.google.com
-2. Dans le projet : **Authentication** → activer le fournisseur **Email/Password**.
+2. Dans le projet : **Authentication** → activer les fournisseurs **Email/Password** (pour le parent) et **Anonymous** (pour la tablette de l'enfant, qui s'y connecte sans compte).
 3. Dans le projet : **Firestore Database** → créer une base en mode production.
 4. Dans **Paramètres du projet** → **Général** → section "Vos applications" → créer une application Web, copier les valeurs de config.
 5. Copier `.env.example` vers `.env` et coller les valeurs récupérées à l'étape 4.
