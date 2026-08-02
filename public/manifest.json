@@ -1,0 +1,11 @@
+{
+  "name": "Missions de Luna",
+  "short_name": "Luna",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e9defc",
+  "theme_color": "#c9b8ff",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
