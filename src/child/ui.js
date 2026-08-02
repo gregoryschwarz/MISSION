@@ -22,10 +22,11 @@ export function renderPairing(root, { onSubmit, error }) {
   });
 }
 
-export function renderHome(root, { childName, avatarLevel, badgesCount, onStartMission }) {
+export function renderHome(root, { childName, avatarLevel, badgesCount, auraClass, soundEnabled, onStartMission, onToggleSound }) {
   root.innerHTML = `
     <div class="screen home-screen">
-      <div class="avatar">🦄</div>
+      <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
+      <div class="avatar ${auraClass}">🦄</div>
       <h1><span id="child-name"></span> — niveau ${avatarLevel}</h1>
       <p>${badgesCount} badge${badgesCount > 1 ? 's' : ''} gagné${badgesCount > 1 ? 's' : ''}</p>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
@@ -33,6 +34,7 @@ export function renderHome(root, { childName, avatarLevel, badgesCount, onStartM
   `;
   root.querySelector('#child-name').textContent = childName ?? 'Luna';
   root.querySelector('#start-mission').addEventListener('click', onStartMission);
+  root.querySelector('#sound-toggle').addEventListener('click', onToggleSound);
 }
 
 export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder }) {
@@ -71,6 +73,13 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, le
   root.innerHTML = `
     <div class="screen results-screen">
       <h1>🎉 Mission terminée !</h1>
+      <div class="confetti">
+        <span style="left:10%">🎉</span>
+        <span style="left:30%">✨</span>
+        <span style="left:50%">🎊</span>
+        <span style="left:70%">✨</span>
+        <span style="left:90%">🎉</span>
+      </div>
       <p>${correctCount} / ${questionsTotal} bonnes réponses</p>
       <p>+${gainedXp} XP</p>
       ${leveledUp ? '<p class="level-up">⭐ Niveau supérieur débloqué !</p>' : ''}
