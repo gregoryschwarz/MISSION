@@ -5,6 +5,7 @@ import { getStoredFamilyId, storeFamilyId, pairWithFamily } from './pairing.js';
 import { generateMission } from './questions.js';
 import { createSession, currentQuestion, submitAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression } from '../shared/progression.js';
+import { adjustDifficultyLevels, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderHome, renderQuestion, renderResults, renderConnectionError } from './ui.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
@@ -38,7 +39,7 @@ async function loadProfile(targetFamilyId) {
   const snapshot = await getDoc(ref);
   return snapshot.exists()
     ? snapshot.data()
-    : { xp: 0, avatarLevel: 1, badges: [], streakDays: 0, lastSessionDate: null };
+    : { xp: 0, avatarLevel: 1, badges: [], streakDays: 0, lastSessionDate: null, difficultyLevels: DEFAULT_DIFFICULTY_LEVELS };
 }
 
 async function saveProfile(targetFamilyId, profile) {
@@ -79,7 +80,8 @@ async function showHome() {
 }
 
 function startMission() {
-  session = createSession(generateMission(MISSION_LENGTH));
+  const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  session = createSession(generateMission(MISSION_LENGTH, difficultyLevels));
   lastFeedback = null;
   showQuestion();
 }
@@ -114,6 +116,8 @@ async function finishMission() {
   const summary = finishSession(session);
   const profileBefore = await loadProfile(familyId);
   const progressionResult = applyProgression(profileBefore, summary);
+  const currentDifficultyLevels = profileBefore.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  const nextDifficultyLevels = adjustDifficultyLevels(currentDifficultyLevels, summary.breakdown);
   const nextProfile = {
     ...profileBefore,
     xp: progressionResult.xp,
@@ -121,6 +125,7 @@ async function finishMission() {
     streakDays: progressionResult.streakDays,
     badges: progressionResult.badges,
     lastSessionDate: progressionResult.lastSessionDate,
+    difficultyLevels: nextDifficultyLevels,
   };
   await saveProfile(familyId, nextProfile).catch(() => {});
   try {
