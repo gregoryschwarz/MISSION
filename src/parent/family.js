@@ -1,6 +1,7 @@
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp } from 'firebase/firestore';
 import { db } from '../shared/firebaseConfig.js';
 import { hashPin } from '../shared/pin.js';
+import { DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 
 export async function findFamilyByParent(parentUid) {
   const q = query(collection(db, 'families'), where('parentUid', '==', parentUid));
@@ -29,6 +30,7 @@ export async function createFamily({ parentUid, parentEmail, childName, pin }) {
     badges: [],
     streakDays: 0,
     lastSessionDate: null,
+    difficultyLevels: DEFAULT_DIFFICULTY_LEVELS,
   });
   return familyRef.id;
 }

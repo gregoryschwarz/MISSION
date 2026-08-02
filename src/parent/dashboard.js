@@ -1,4 +1,5 @@
 import { renderBadgeMedallionsHtml } from '../shared/badges.js';
+import { DIFFICULTY_LABELS, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 
 export function aggregateBreakdown(sessions) {
   const totals = {};
@@ -19,6 +20,7 @@ export function aggregateBreakdown(sessions) {
 
 export function renderDashboard(root, { family, profile, sessions, onSignOut }) {
   const breakdown = aggregateBreakdown(sessions);
+  const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   root.innerHTML = `
     <div class="dashboard">
       <header>
@@ -35,7 +37,10 @@ export function renderDashboard(root, { family, profile, sessions, onSignOut }) 
         <h2>Réussite par notion</h2>
         <ul>
           ${Object.entries(breakdown)
-            .map(([type, percent]) => `<li>${type} : ${percent}%</li>`)
+            .map(([type, percent]) => {
+              const level = difficultyLevels[type] ?? 1;
+              return `<li>${type} : ${percent}% — ${DIFFICULTY_LABELS[level]}</li>`;
+            })
             .join('')}
         </ul>
       </section>
