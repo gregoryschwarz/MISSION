@@ -1,3 +1,5 @@
+import { renderBadgeMedallionsHtml } from '../shared/badges.js';
+
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
     <div class="screen pairing-screen">
@@ -22,13 +24,13 @@ export function renderPairing(root, { onSubmit, error }) {
   });
 }
 
-export function renderHome(root, { childName, avatarLevel, badgesCount, auraClass, soundEnabled, onStartMission, onToggleSound }) {
+export function renderHome(root, { childName, avatarLevel, badges, auraClass, soundEnabled, onStartMission, onToggleSound }) {
   root.innerHTML = `
     <div class="screen home-screen">
       <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
       <div class="avatar ${auraClass}">🦄</div>
       <h1><span id="child-name"></span> — niveau ${avatarLevel}</h1>
-      <p>${badgesCount} badge${badgesCount > 1 ? 's' : ''} gagné${badgesCount > 1 ? 's' : ''}</p>
+      <div class="badges-row">${renderBadgeMedallionsHtml(badges)}</div>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
     </div>
   `;

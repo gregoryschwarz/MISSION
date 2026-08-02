@@ -50,7 +50,7 @@ function renderHomeScreen(profile) {
   renderHome(root, {
     childName: profile.childName,
     avatarLevel: profile.avatarLevel,
-    badgesCount: profile.badges.length,
+    badges: profile.badges,
     auraClass: auraClassForLevel(profile.avatarLevel),
     soundEnabled,
     onStartMission: startMission,
