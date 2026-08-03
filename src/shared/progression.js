@@ -1,10 +1,20 @@
+import { DEFAULT_DIFFICULTY_LEVELS } from './difficulty.js';
+
 const XP_PER_CORRECT = 10;
 const XP_PER_LEVEL = 100;
+const MASTERY_LEVEL = 3;
+const OPERATION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison'];
 
 const STREAK_BADGES = [
   { days: 3, id: 'streak-3' },
   { days: 7, id: 'streak-7' },
   { days: 30, id: 'streak-30' },
+];
+
+const PERFECT_MISSION_BADGES = [
+  { count: 1, id: 'perfect-1' },
+  { count: 10, id: 'perfect-10' },
+  { count: 50, id: 'perfect-50' },
 ];
 
 export function xpForSession(correctCount) {
@@ -31,19 +41,46 @@ export function newlyEarnedBadges(streakDays, existingBadges) {
   ).map((b) => b.id);
 }
 
-export function applyProgression(profile, sessionSummary) {
+export function newlyMasteredTypes(previousLevels, nextLevels) {
+  return OPERATION_TYPES.filter(
+    (type) => nextLevels[type] === MASTERY_LEVEL && previousLevels[type] !== MASTERY_LEVEL
+  );
+}
+
+export function newlyEarnedPerfectBadges(perfectMissionsCount, existingBadges) {
+  return PERFECT_MISSION_BADGES.filter(
+    (b) => perfectMissionsCount >= b.count && !existingBadges.includes(b.id)
+  ).map((b) => b.id);
+}
+
+export function applyProgression(profile, sessionSummary, nextDifficultyLevels) {
   const today = sessionSummary.date;
   const gainedXp = xpForSession(sessionSummary.correctCount);
   const xp = profile.xp + gainedXp;
   const avatarLevel = levelForXp(xp);
   const streakDays = updateStreak(profile.streakDays, profile.lastSessionDate, today);
-  const newBadges = newlyEarnedBadges(streakDays, profile.badges);
+  const streakBadges = newlyEarnedBadges(streakDays, profile.badges);
+
+  const previousDifficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  const masteredTypes = newlyMasteredTypes(previousDifficultyLevels, nextDifficultyLevels ?? previousDifficultyLevels);
+  const masteryBadges = masteredTypes.map((type) => `mastery-${type}`);
+
+  const isPerfect = sessionSummary.correctCount === sessionSummary.questionsTotal;
+  const perfectMissionsCount = (profile.perfectMissionsCount ?? 0) + (isPerfect ? 1 : 0);
+  const badgesBeforePerfectCheck = [...profile.badges, ...streakBadges, ...masteryBadges];
+  const perfectBadges = isPerfect
+    ? newlyEarnedPerfectBadges(perfectMissionsCount, badgesBeforePerfectCheck)
+    : [];
+
+  const newBadges = [...streakBadges, ...masteryBadges, ...perfectBadges];
   const badges = [...profile.badges, ...newBadges];
+
   return {
     xp,
     avatarLevel,
     streakDays,
     badges,
+    perfectMissionsCount,
     lastSessionDate: today,
     leveledUp: avatarLevel > profile.avatarLevel,
     newBadges,
