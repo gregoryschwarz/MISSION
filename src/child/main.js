@@ -44,7 +44,15 @@ async function loadProfile(targetFamilyId) {
   const snapshot = await getDoc(ref);
   return snapshot.exists()
     ? snapshot.data()
-    : { xp: 0, avatarLevel: 1, badges: [], streakDays: 0, lastSessionDate: null, difficultyLevels: DEFAULT_DIFFICULTY_LEVELS };
+    : {
+        xp: 0,
+        avatarLevel: 1,
+        badges: [],
+        streakDays: 0,
+        lastSessionDate: null,
+        difficultyLevels: DEFAULT_DIFFICULTY_LEVELS,
+        perfectMissionsCount: 0,
+      };
 }
 
 async function saveProfile(targetFamilyId, profile) {
@@ -167,15 +175,16 @@ async function handlePairsMatch(calcTileId, resultTileId) {
 async function finishMission() {
   const summary = finishSession(session);
   const profileBefore = await loadProfile(familyId);
-  const progressionResult = applyProgression(profileBefore, summary);
   const currentDifficultyLevels = profileBefore.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const nextDifficultyLevels = adjustDifficultyLevels(currentDifficultyLevels, summary.breakdown);
+  const progressionResult = applyProgression(profileBefore, summary, nextDifficultyLevels);
   const nextProfile = {
     ...profileBefore,
     xp: progressionResult.xp,
     avatarLevel: progressionResult.avatarLevel,
     streakDays: progressionResult.streakDays,
     badges: progressionResult.badges,
+    perfectMissionsCount: progressionResult.perfectMissionsCount,
     lastSessionDate: progressionResult.lastSessionDate,
     difficultyLevels: nextDifficultyLevels,
   };
