@@ -30,7 +30,7 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, so
       <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
       <div class="avatar ${auraClass}">🦄</div>
       <h1><span id="child-name"></span> — niveau ${avatarLevel}</h1>
-      <div class="badges-row">${renderBadgeMedallionsHtml(badges)}</div>
+      ${renderBadgeMedallionsHtml(badges)}
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
     </div>
   `;

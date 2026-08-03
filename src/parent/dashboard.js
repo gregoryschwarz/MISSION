@@ -31,7 +31,7 @@ export function renderDashboard(root, { family, profile, sessions, onSignOut }) 
       <section class="progress-summary">
         <p>Niveau ${profile.avatarLevel} — ${profile.xp} XP</p>
         <p>Série actuelle : ${profile.streakDays} jour${profile.streakDays > 1 ? 's' : ''}</p>
-        <div class="badges-row">${renderBadgeMedallionsHtml(profile.badges)}</div>
+        ${renderBadgeMedallionsHtml(profile.badges)}
       </section>
       <section class="breakdown">
         <h2>Réussite par notion</h2>
