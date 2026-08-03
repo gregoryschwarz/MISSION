@@ -31,6 +31,7 @@ export async function createFamily({ parentUid, parentEmail, childName, pin }) {
     streakDays: 0,
     lastSessionDate: null,
     difficultyLevels: DEFAULT_DIFFICULTY_LEVELS,
+    perfectMissionsCount: 0,
   });
   return familyRef.id;
 }
