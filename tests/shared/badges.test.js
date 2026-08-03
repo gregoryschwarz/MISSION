@@ -1,19 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { BADGES, badgeMedallionData, renderBadgeMedallionsHtml } from '../../src/shared/badges.js';
+import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
-  it('defines exactly the 3 streak badges in a fixed order', () => {
-    expect(BADGES.map((b) => b.id)).toEqual(['streak-3', 'streak-7', 'streak-30']);
+  it('defines all 10 badges with a category, in a fixed order', () => {
+    expect(BADGES.map((b) => b.id)).toEqual([
+      'streak-3',
+      'streak-7',
+      'streak-30',
+      'mastery-addition',
+      'mastery-soustraction',
+      'mastery-multiplication',
+      'mastery-comparaison',
+      'perfect-1',
+      'perfect-10',
+      'perfect-50',
+    ]);
+  });
+
+  it('assigns every badge to one of the 3 known categories', () => {
+    const categoryIds = BADGE_CATEGORIES.map((c) => c.id);
+    BADGES.forEach((badge) => expect(categoryIds).toContain(badge.category));
   });
 });
 
 describe('badgeMedallionData', () => {
   it('marks badges as earned when their id is present', () => {
-    const result = badgeMedallionData(['streak-3']);
-    expect(result).toHaveLength(3);
-    expect(result[0]).toMatchObject({ id: 'streak-3', earned: true });
-    expect(result[1]).toMatchObject({ id: 'streak-7', earned: false });
-    expect(result[2]).toMatchObject({ id: 'streak-30', earned: false });
+    const result = badgeMedallionData(['streak-3', 'mastery-addition']);
+    expect(result).toHaveLength(10);
+    expect(result.find((b) => b.id === 'streak-3')).toMatchObject({ earned: true });
+    expect(result.find((b) => b.id === 'mastery-addition')).toMatchObject({ earned: true });
+    expect(result.find((b) => b.id === 'streak-7')).toMatchObject({ earned: false });
   });
 
   it('marks no badges as earned for an empty list', () => {
@@ -22,8 +38,8 @@ describe('badgeMedallionData', () => {
   });
 
   it('preserves the fixed badge order regardless of input order', () => {
-    const result = badgeMedallionData(['streak-30', 'streak-3']);
-    expect(result.map((b) => b.id)).toEqual(['streak-3', 'streak-7', 'streak-30']);
+    const result = badgeMedallionData(['perfect-50', 'streak-3']);
+    expect(result.map((b) => b.id)).toEqual(BADGES.map((b) => b.id));
   });
 });
 
@@ -38,5 +54,18 @@ describe('renderBadgeMedallionsHtml', () => {
     const html = renderBadgeMedallionsHtml([]);
     expect(html).toContain('badge-medallion locked');
     expect(html).toContain('🔒');
+  });
+
+  it('groups badges into 3 category sections with the right titles', () => {
+    const html = renderBadgeMedallionsHtml([]);
+    expect(html).toContain('Série');
+    expect(html).toContain('Maîtrise');
+    expect(html).toContain('Missions parfaites');
+  });
+
+  it('renders all 4 mastery badges and all 3 perfect-mission badges', () => {
+    const html = renderBadgeMedallionsHtml(['mastery-addition', 'perfect-1']);
+    expect(html).toContain('➕');
+    expect(html).toContain('💯');
   });
 });
