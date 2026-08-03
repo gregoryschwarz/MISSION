@@ -211,3 +211,16 @@ input {
 .pairs-tile:active {
   transform: scale(0.97);
 }
+
+.badge-category {
+  margin: 4px 0;
+}
+
+.badge-category-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a6fa3;
+  margin: 4px 0;
+  text-align: center;
+}

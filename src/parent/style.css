@@ -73,3 +73,15 @@ button {
   opacity: 0.5;
   box-shadow: none;
 }
+
+.badge-category {
+  margin: 4px 0;
+}
+
+.badge-category-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 4px 0;
+}
