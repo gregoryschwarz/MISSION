@@ -40,7 +40,7 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, so
 }
 
 export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder }) {
-  const isComparison = question.type === 'comparaison';
+  const isComparison = question.type === 'comparaison' || question.type === 'fraction';
   root.innerHTML = `
     <div class="screen mission-screen">
       <div class="progress">Question ${index + 1} / ${total}</div>
