@@ -8,6 +8,8 @@ describe('DEFAULT_DIFFICULTY_LEVELS', () => {
       soustraction: 1,
       multiplication: 1,
       comparaison: 1,
+      division: 1,
+      fraction: 1,
     });
   });
 });
@@ -21,7 +23,7 @@ describe('DIFFICULTY_LABELS', () => {
 describe('adjustDifficultyLevels', () => {
   it('levels up a type when accuracy is 80% or higher', () => {
     const result = adjustDifficultyLevels(
-      { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1 },
+      { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1 },
       { addition: { correct: 4, total: 5 } }
     );
     expect(result.addition).toBe(2);
@@ -29,7 +31,7 @@ describe('adjustDifficultyLevels', () => {
 
   it('levels down a type when accuracy is below 50%', () => {
     const result = adjustDifficultyLevels(
-      { addition: 2, soustraction: 1, multiplication: 1, comparaison: 1 },
+      { addition: 2, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1 },
       { addition: { correct: 2, total: 5 } }
     );
     expect(result.addition).toBe(1);
@@ -37,7 +39,7 @@ describe('adjustDifficultyLevels', () => {
 
   it('keeps the level unchanged between 50% and 80%', () => {
     const result = adjustDifficultyLevels(
-      { addition: 2, soustraction: 1, multiplication: 1, comparaison: 1 },
+      { addition: 2, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1 },
       { addition: { correct: 3, total: 5 } }
     );
     expect(result.addition).toBe(2);
@@ -45,7 +47,7 @@ describe('adjustDifficultyLevels', () => {
 
   it('never goes above level 3', () => {
     const result = adjustDifficultyLevels(
-      { addition: 3, soustraction: 1, multiplication: 1, comparaison: 1 },
+      { addition: 3, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1 },
       { addition: { correct: 5, total: 5 } }
     );
     expect(result.addition).toBe(3);
@@ -53,7 +55,7 @@ describe('adjustDifficultyLevels', () => {
 
   it('never goes below level 1', () => {
     const result = adjustDifficultyLevels(
-      { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1 },
+      { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1 },
       { addition: { correct: 0, total: 5 } }
     );
     expect(result.addition).toBe(1);
@@ -61,11 +63,20 @@ describe('adjustDifficultyLevels', () => {
 
   it('leaves types absent from the breakdown unchanged', () => {
     const result = adjustDifficultyLevels(
-      { addition: 1, soustraction: 2, multiplication: 1, comparaison: 3 },
+      { addition: 1, soustraction: 2, multiplication: 1, comparaison: 3, division: 1, fraction: 1 },
       { addition: { correct: 5, total: 5 } }
     );
     expect(result.soustraction).toBe(2);
     expect(result.multiplication).toBe(1);
     expect(result.comparaison).toBe(3);
+  });
+
+  it('adjusts division and fraction the same way as the original 4 types', () => {
+    const result = adjustDifficultyLevels(
+      { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 2 },
+      { division: { correct: 5, total: 5 }, fraction: { correct: 1, total: 5 } }
+    );
+    expect(result.division).toBe(2);
+    expect(result.fraction).toBe(1);
   });
 });

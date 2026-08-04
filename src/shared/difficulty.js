@@ -8,6 +8,8 @@ export const DEFAULT_DIFFICULTY_LEVELS = {
   soustraction: 1,
   multiplication: 1,
   comparaison: 1,
+  division: 1,
+  fraction: 1,
 };
 
 export const DIFFICULTY_LABELS = {
