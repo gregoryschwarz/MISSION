@@ -68,6 +68,12 @@ describe('newlyMasteredTypes', () => {
     const next = { addition: 3, soustraction: 3, multiplication: 1, comparaison: 1 };
     expect(newlyMasteredTypes(previous, next)).toEqual(['addition', 'soustraction']);
   });
+
+  it('detects mastery for the new division and fraction types too', () => {
+    const previous = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 2, fraction: 1 };
+    const next = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 3, fraction: 1 };
+    expect(newlyMasteredTypes(previous, next)).toEqual(['division']);
+  });
 });
 
 describe('newlyEarnedPerfectBadges', () => {
