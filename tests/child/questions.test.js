@@ -4,6 +4,8 @@ import {
   generateSubtraction,
   generateMultiplication,
   generateComparison,
+  generateDivision,
+  generateFraction,
   generateMission,
 } from '../../src/child/questions.js';
 
@@ -111,6 +113,65 @@ describe('generateComparison', () => {
   });
 });
 
+describe('generateDivision', () => {
+  it('is always an exact division at level 1 (default), using tables 2/5/10', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateDivision();
+      expect(q.type).toBe('division');
+      expect(q.answer * q.b).toBe(q.a);
+      expect([2, 5, 10]).toContain(q.b);
+    }
+  });
+
+  it('adds tables 3 and 4 at level 2', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateDivision(2);
+      expect(q.answer * q.b).toBe(q.a);
+      expect([2, 3, 4, 5, 10]).toContain(q.b);
+    }
+  });
+
+  it('uses any table from 2 to 10 at level 3', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateDivision(3);
+      expect(q.answer * q.b).toBe(q.a);
+      expect(q.b).toBeGreaterThanOrEqual(2);
+      expect(q.b).toBeLessThanOrEqual(10);
+    }
+  });
+});
+
+describe('generateFraction', () => {
+  it('uses denominator 3 or 4 at level 1 (default)', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateFraction();
+      expect(q.type).toBe('fraction');
+      expect([3, 4]).toContain(q.a.denominator);
+      expect(q.a.denominator).toBe(q.b.denominator);
+      expect(q.a.numerator).not.toBe(q.b.numerator);
+      expect(q.a.numerator).toBeLessThan(q.a.denominator);
+      expect(q.b.numerator).toBeLessThan(q.b.denominator);
+      const expectedAnswer = q.a.numerator > q.b.numerator ? '>' : '<';
+      expect(q.answer).toBe(expectedAnswer);
+      expect(q.options).toEqual(['>', '<']);
+    }
+  });
+
+  it('adds denominator 6 at level 2', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateFraction(2);
+      expect([3, 4, 6]).toContain(q.a.denominator);
+    }
+  });
+
+  it('uses denominators up to 10 at level 3', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateFraction(3);
+      expect([3, 4, 6, 8, 10]).toContain(q.a.denominator);
+    }
+  });
+});
+
 describe('generateMission', () => {
   it('generates the requested number of questions', () => {
     expect(generateMission(10)).toHaveLength(10);
@@ -118,14 +179,27 @@ describe('generateMission', () => {
 
   it('only uses known question types', () => {
     const mission = generateMission(12);
-    const allowed = ['addition', 'soustraction', 'multiplication', 'comparaison'];
+    const allowed = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction'];
     mission.forEach((q) => expect(allowed).toContain(q.type));
+  });
+
+  it('cycles through all 6 types when given enough questions', () => {
+    const mission = generateMission(6);
+    const types = mission.map((q) => q.type).sort();
+    expect(types).toEqual(['addition', 'comparaison', 'division', 'fraction', 'multiplication', 'soustraction']);
   });
 
   it("passes each type's difficulty level through to its generator", () => {
     const tablesSeen = [];
     for (let i = 0; i < 50; i++) {
-      const mission = generateMission(4, { addition: 1, soustraction: 1, multiplication: 3, comparaison: 1 });
+      const mission = generateMission(6, {
+        addition: 1,
+        soustraction: 1,
+        multiplication: 3,
+        comparaison: 1,
+        division: 1,
+        fraction: 1,
+      });
       const multiplication = mission.find((q) => q.type === 'multiplication');
       tablesSeen.push(multiplication.a);
     }

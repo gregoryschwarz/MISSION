@@ -71,15 +71,48 @@ export function generateComparison(level = 1) {
   return { type: 'comparaison', a, b, answer, prompt: `${a} ___ ${b}`, options: ['>', '<'] };
 }
 
+export function generateDivision(level = 1) {
+  const tables = MULTIPLICATION_TABLES_BY_LEVEL[level] ?? MULTIPLICATION_TABLES_BY_LEVEL[1];
+  const table = tables[randomInt(0, tables.length - 1)];
+  const factor = randomInt(1, 10);
+  const dividend = table * factor;
+  return { type: 'division', a: dividend, b: table, answer: factor, prompt: `${dividend} ÷ ${table}` };
+}
+
+const FRACTION_DENOMINATORS_BY_LEVEL = {
+  1: [3, 4],
+  2: [3, 4, 6],
+  3: [3, 4, 6, 8, 10],
+};
+
+export function generateFraction(level = 1) {
+  const denominators = FRACTION_DENOMINATORS_BY_LEVEL[level] ?? FRACTION_DENOMINATORS_BY_LEVEL[1];
+  const denominator = denominators[randomInt(0, denominators.length - 1)];
+  let numeratorA = randomInt(1, denominator - 1);
+  let numeratorB = randomInt(1, denominator - 1);
+  while (numeratorB === numeratorA) numeratorB = randomInt(1, denominator - 1);
+  const answer = numeratorA > numeratorB ? '>' : '<';
+  return {
+    type: 'fraction',
+    a: { numerator: numeratorA, denominator },
+    b: { numerator: numeratorB, denominator },
+    answer,
+    prompt: `${numeratorA}/${denominator} ___ ${numeratorB}/${denominator}`,
+    options: ['>', '<'],
+  };
+}
+
 const GENERATORS = {
   addition: generateAddition,
   soustraction: generateSubtraction,
   multiplication: generateMultiplication,
   comparaison: generateComparison,
+  division: generateDivision,
+  fraction: generateFraction,
 };
 
 export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS) {
-  const types = ['addition', 'soustraction', 'multiplication', 'comparaison'];
+  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction'];
   const questions = [];
   for (let i = 0; i < count; i++) {
     const type = types[i % types.length];
