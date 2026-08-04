@@ -29,6 +29,15 @@ describe('createPairsRound', () => {
     expect(round.matchedCalcIds.size).toBe(0);
     expect(round.matchedResultIds.size).toBe(0);
   });
+
+  it('gives each calc tile and its true result tile a matching pairKey', () => {
+    const round = createPairsRound(sampleQuestions);
+    round.calcTiles.forEach((calcTile) => {
+      const trueResult = round.resultTiles.find((t) => t.pairKey === calcTile.pairKey);
+      expect(trueResult).toBeDefined();
+      expect(trueResult.answer).toBe(calcTile.answer);
+    });
+  });
 });
 
 describe('attemptMatch', () => {
@@ -101,6 +110,43 @@ describe('attemptMatch', () => {
     expect(round.matchedCalcIds.size).toBe(2);
     expect(round.matchedResultIds.size).toBe(2);
     expect(isPairsRoundComplete(round)).toBe(true);
+  });
+});
+
+describe('attemptMatch with symbolic-answer types (comparaison/fraction)', () => {
+  it('matches a comparaison calc tile only to its own result tile, even when another question shares the same symbol', () => {
+    const symbolicQuestions = [
+      { type: 'comparaison', a: 8, b: 3, answer: '>', prompt: '8 ___ 3' },
+      { type: 'comparaison', a: 9, b: 2, answer: '>', prompt: '9 ___ 2' },
+    ];
+    const round = createPairsRound(symbolicQuestions);
+    const calcA = round.calcTiles.find((t) => t.prompt === '8 ___ 3');
+    const trueResultA = round.resultTiles.find((t) => t.pairKey === calcA.pairKey);
+    const wrongResult = round.resultTiles.find((t) => t.pairKey !== calcA.pairKey);
+
+    const wrongAttempt = attemptMatch(round, calcA.id, wrongResult.id);
+    expect(wrongAttempt.isCorrect).toBe(false);
+
+    const rightAttempt = attemptMatch(round, calcA.id, trueResultA.id);
+    expect(rightAttempt.isCorrect).toBe(true);
+  });
+
+  it('applies the same origin-based matching rule to fraction questions, including across types', () => {
+    const mixedQuestions = [
+      { type: 'fraction', a: { numerator: 1, denominator: 4 }, b: { numerator: 3, denominator: 4 }, answer: '<', prompt: '1/4 ___ 3/4' },
+      { type: 'fraction', a: { numerator: 2, denominator: 3 }, b: { numerator: 1, denominator: 3 }, answer: '>', prompt: '2/3 ___ 1/3' },
+      { type: 'comparaison', a: 5, b: 1, answer: '>', prompt: '5 ___ 1' },
+    ];
+    const round = createPairsRound(mixedQuestions);
+    const fractionCalc = round.calcTiles.find((t) => t.prompt === '2/3 ___ 1/3');
+    const comparaisonResult = round.resultTiles.find((t) => t.pairKey !== fractionCalc.pairKey && t.answer === '>');
+    const trueResult = round.resultTiles.find((t) => t.pairKey === fractionCalc.pairKey);
+
+    const crossTypeAttempt = attemptMatch(round, fractionCalc.id, comparaisonResult.id);
+    expect(crossTypeAttempt.isCorrect).toBe(false);
+
+    const correctAttempt = attemptMatch(round, fractionCalc.id, trueResult.id);
+    expect(correctAttempt.isCorrect).toBe(true);
   });
 });
 

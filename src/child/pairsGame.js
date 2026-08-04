@@ -1,11 +1,13 @@
 import { shuffle } from './random.js';
 
+const SYMBOLIC_ANSWER_TYPES = ['comparaison', 'fraction'];
+
 export function createPairsRound(questions) {
   const calcTiles = shuffle(
-    questions.map((q, i) => ({ id: `calc-${i}`, type: q.type, prompt: q.prompt, answer: q.answer }))
+    questions.map((q, i) => ({ id: `calc-${i}`, pairKey: i, type: q.type, prompt: q.prompt, answer: q.answer }))
   );
   const resultTiles = shuffle(
-    questions.map((q, i) => ({ id: `result-${i}`, answer: q.answer }))
+    questions.map((q, i) => ({ id: `result-${i}`, pairKey: i, answer: q.answer }))
   );
   return {
     calcTiles,
@@ -22,7 +24,9 @@ export function attemptMatch(round, calcTileId, resultTileId) {
   }
   const calcTile = round.calcTiles.find((t) => t.id === calcTileId);
   const resultTile = round.resultTiles.find((t) => t.id === resultTileId);
-  const isCorrect = calcTile.answer === resultTile.answer;
+  const isCorrect = SYMBOLIC_ANSWER_TYPES.includes(calcTile.type)
+    ? calcTile.pairKey === resultTile.pairKey
+    : calcTile.answer === resultTile.answer;
   const firstAttempt = !round.attemptedCalcIds.has(calcTileId);
   round.attemptedCalcIds.add(calcTileId);
   if (isCorrect) {
