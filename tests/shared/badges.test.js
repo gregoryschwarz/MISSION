@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
-  it('defines all 10 badges with a category, in a fixed order', () => {
+  it('defines all 12 badges with a category, in a fixed order', () => {
     expect(BADGES.map((b) => b.id)).toEqual([
       'streak-3',
       'streak-7',
@@ -11,6 +11,8 @@ describe('BADGES', () => {
       'mastery-soustraction',
       'mastery-multiplication',
       'mastery-comparaison',
+      'mastery-division',
+      'mastery-fraction',
       'perfect-1',
       'perfect-10',
       'perfect-50',
@@ -25,10 +27,10 @@ describe('BADGES', () => {
 
 describe('badgeMedallionData', () => {
   it('marks badges as earned when their id is present', () => {
-    const result = badgeMedallionData(['streak-3', 'mastery-addition']);
-    expect(result).toHaveLength(10);
+    const result = badgeMedallionData(['streak-3', 'mastery-division']);
+    expect(result).toHaveLength(12);
     expect(result.find((b) => b.id === 'streak-3')).toMatchObject({ earned: true });
-    expect(result.find((b) => b.id === 'mastery-addition')).toMatchObject({ earned: true });
+    expect(result.find((b) => b.id === 'mastery-division')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'streak-7')).toMatchObject({ earned: false });
   });
 
@@ -63,9 +65,9 @@ describe('renderBadgeMedallionsHtml', () => {
     expect(html).toContain('Missions parfaites');
   });
 
-  it('renders all 4 mastery badges and all 3 perfect-mission badges', () => {
-    const html = renderBadgeMedallionsHtml(['mastery-addition', 'perfect-1']);
-    expect(html).toContain('➕');
-    expect(html).toContain('💯');
+  it('renders the new division and fraction mastery badges when earned', () => {
+    const html = renderBadgeMedallionsHtml(['mastery-division', 'mastery-fraction']);
+    expect(html).toContain('➗');
+    expect(html).toContain('🍕');
   });
 });
