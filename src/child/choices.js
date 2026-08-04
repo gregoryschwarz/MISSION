@@ -1,7 +1,7 @@
 import { randomInt, shuffle } from './random.js';
 
 export function generateChoices(question) {
-  if (question.type === 'comparaison') {
+  if (question.type === 'comparaison' || question.type === 'fraction') {
     return ['>', '<'];
   }
   const correct = question.answer;

@@ -47,4 +47,27 @@ describe('generateChoices', () => {
       choices.forEach((c) => expect(Math.abs(c - 50)).toBeLessThanOrEqual(5));
     }
   });
+
+  it('returns exactly [">", "<"] for fraction questions', () => {
+    const question = {
+      type: 'fraction',
+      a: { numerator: 1, denominator: 4 },
+      b: { numerator: 3, denominator: 4 },
+      answer: '<',
+      prompt: '1/4 ___ 3/4',
+      options: ['>', '<'],
+    };
+    expect(generateChoices(question)).toEqual(['>', '<']);
+  });
+
+  it('includes the correct answer among 3 distinct, non-negative choices for division', () => {
+    const question = { type: 'division', a: 20, b: 4, answer: 5, prompt: '20 ÷ 4' };
+    for (let i = 0; i < 30; i++) {
+      const choices = generateChoices(question);
+      expect(choices).toHaveLength(3);
+      expect(choices).toContain(5);
+      expect(new Set(choices).size).toBe(3);
+      choices.forEach((c) => expect(c).toBeGreaterThanOrEqual(0));
+    }
+  });
 });
