@@ -8,6 +8,8 @@ export function createSession(questions) {
       soustraction: { correct: 0, total: 0 },
       multiplication: { correct: 0, total: 0 },
       comparaison: { correct: 0, total: 0 },
+      division: { correct: 0, total: 0 },
+      fraction: { correct: 0, total: 0 },
     },
     startedAt: Date.now(),
   };

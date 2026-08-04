@@ -52,6 +52,12 @@ describe('session flow', () => {
     expect(summary.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     vi.useRealTimers();
   });
+
+  it('initializes breakdown entries for division and fraction', () => {
+    const session = createSession([]);
+    expect(session.breakdown.division).toEqual({ correct: 0, total: 0 });
+    expect(session.breakdown.fraction).toEqual({ correct: 0, total: 0 });
+  });
 });
 
 describe('recordAnswer', () => {
