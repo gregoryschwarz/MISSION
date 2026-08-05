@@ -224,3 +224,36 @@ input {
   margin: 4px 0;
   text-align: center;
 }
+
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar-accessory {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  font-size: 32px;
+}
+
+.badge-medallion.selectable {
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  background: white;
+}
+
+.badge-medallion.selected {
+  box-shadow: 0 0 0 3px #3a2f6b;
+}
+
+.customize-section-title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a6fa3;
+  margin: 16px 0 4px;
+  text-align: center;
+}
