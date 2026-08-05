@@ -6,13 +6,21 @@ import { generateMission } from './questions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderHome, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderConnectionError } from './ui.js';
+import { renderPairing, renderHome, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderConnectionError } from './ui.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
 import { adjustDifficultyLevels, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { pickMissionMode, getLastMissionMode, storeLastMissionMode } from './missionMode.js';
 import { generateChoices } from './choices.js';
 import { createPairsRound, attemptMatch, isPairsRoundComplete } from './pairsGame.js';
+import {
+  characterMedallionData,
+  accessoryMedallionData,
+  emojiForCharacter,
+  emojiForAccessory,
+  DEFAULT_CHARACTER,
+  DEFAULT_ACCESSORY,
+} from '../shared/avatarCustomization.js';
 
 const root = document.getElementById('app');
 const MISSION_LENGTH = 10;
@@ -52,6 +60,8 @@ async function loadProfile(targetFamilyId) {
         lastSessionDate: null,
         difficultyLevels: DEFAULT_DIFFICULTY_LEVELS,
         perfectMissionsCount: 0,
+        selectedCharacter: DEFAULT_CHARACTER,
+        selectedAccessory: DEFAULT_ACCESSORY,
       };
 }
 
@@ -66,9 +76,12 @@ function renderHomeScreen(profile) {
     avatarLevel: profile.avatarLevel,
     badges: profile.badges,
     auraClass: auraClassForLevel(profile.avatarLevel),
+    characterEmoji: emojiForCharacter(profile.selectedCharacter ?? DEFAULT_CHARACTER),
+    accessoryEmoji: emojiForAccessory(profile.selectedAccessory ?? DEFAULT_ACCESSORY),
     soundEnabled,
     onStartMission: startMission,
     onToggleSound: toggleSound,
+    onCustomize: showCustomize,
   });
 }
 
@@ -78,6 +91,33 @@ function toggleSound() {
   if (lastProfile) {
     renderHomeScreen(lastProfile);
   }
+}
+
+function showCustomize() {
+  const profile = lastProfile;
+  renderCustomize(root, {
+    characters: characterMedallionData(profile.avatarLevel),
+    accessories: accessoryMedallionData(profile.badges),
+    selectedCharacterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
+    selectedAccessoryId: profile.selectedAccessory ?? DEFAULT_ACCESSORY,
+    onSelectCharacter: handleSelectCharacter,
+    onSelectAccessory: handleSelectAccessory,
+    onBack: () => renderHomeScreen(lastProfile),
+  });
+}
+
+async function handleSelectCharacter(characterId) {
+  const nextProfile = { ...lastProfile, selectedCharacter: characterId };
+  lastProfile = nextProfile;
+  await saveProfile(familyId, nextProfile).catch(() => {});
+  showCustomize();
+}
+
+async function handleSelectAccessory(accessoryId) {
+  const nextProfile = { ...lastProfile, selectedAccessory: accessoryId };
+  lastProfile = nextProfile;
+  await saveProfile(familyId, nextProfile).catch(() => {});
+  showCustomize();
 }
 
 async function showHome() {
