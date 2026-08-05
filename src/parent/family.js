@@ -2,6 +2,7 @@ import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp
 import { db } from '../shared/firebaseConfig.js';
 import { hashPin } from '../shared/pin.js';
 import { DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
+import { DEFAULT_CHARACTER, DEFAULT_ACCESSORY } from '../shared/avatarCustomization.js';
 
 export async function findFamilyByParent(parentUid) {
   const q = query(collection(db, 'families'), where('parentUid', '==', parentUid));
@@ -32,6 +33,8 @@ export async function createFamily({ parentUid, parentEmail, childName, pin }) {
     lastSessionDate: null,
     difficultyLevels: DEFAULT_DIFFICULTY_LEVELS,
     perfectMissionsCount: 0,
+    selectedCharacter: DEFAULT_CHARACTER,
+    selectedAccessory: DEFAULT_ACCESSORY,
   });
   return familyRef.id;
 }
