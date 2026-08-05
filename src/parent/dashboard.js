@@ -1,4 +1,4 @@
-import { renderBadgeMedallionsHtml } from '../shared/badges.js';
+import { BADGES, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { DIFFICULTY_LABELS, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 
 export function aggregateBreakdown(sessions) {
@@ -84,9 +84,16 @@ export function colorForPercent(percent) {
   return '#c8f0c8';
 }
 
+function emojiForType(type) {
+  const badge = BADGES.find((b) => b.id === `mastery-${type}`);
+  return badge ? badge.emoji : '❓';
+}
+
 export function renderDashboard(root, { family, profile, sessions, onSignOut }) {
   const breakdown = aggregateBreakdown(sessions);
   const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  const weeklyBreakdown = weeklyBreakdownByType(sessions);
+  const weekLabels = Object.values(weeklyBreakdown)[0]?.map((w) => w.weekLabel) ?? [];
   root.innerHTML = `
     <div class="dashboard">
       <header>
@@ -109,6 +116,33 @@ export function renderDashboard(root, { family, profile, sessions, onSignOut }) 
             })
             .join('')}
         </ul>
+      </section>
+      <section class="weekly-progress">
+        <h2>Évolution par semaine</h2>
+        <table class="weekly-progress-table">
+          <thead>
+            <tr>
+              <th></th>
+              ${weekLabels.map((label) => `<th>${label}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(weeklyBreakdown)
+              .map(
+                ([type, weeks]) => `
+              <tr>
+                <td>${emojiForType(type)}</td>
+                ${weeks
+                  .map(
+                    (w) =>
+                      `<td style="background:${colorForPercent(w.percent)}">${w.percent === null ? '' : w.percent + '%'}</td>`
+                  )
+                  .join('')}
+              </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table>
       </section>
       <section class="sessions">
         <h2>Sessions récentes</h2>
