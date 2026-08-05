@@ -34,6 +34,8 @@ let lastFeedback = null;
 let soundEnabled = isSoundEnabled();
 let lastProfile = null;
 let helpVisible = false;
+let cachedChoices = null;
+let cachedChoicesIndex = -1;
 
 async function ensureAuth() {
   if (!auth.currentUser) {
@@ -158,12 +160,21 @@ function startMission() {
   session = createSession(generateMission(MISSION_LENGTH, difficultyLevels));
   lastFeedback = null;
   helpVisible = false;
+  cachedChoicesIndex = -1;
   if (missionMode === 'pairs') {
     pairsRound = createPairsRound(session.questions);
     showPairsRound();
   } else {
     showQuestion();
   }
+}
+
+function choicesForCurrentQuestion(question) {
+  if (cachedChoicesIndex !== session.index) {
+    cachedChoices = generateChoices(question);
+    cachedChoicesIndex = session.index;
+  }
+  return cachedChoices;
 }
 
 function showQuestion() {
@@ -173,7 +184,7 @@ function showQuestion() {
   if (missionMode === 'qcm') {
     renderQuestionQcm(root, {
       question,
-      choices: generateChoices(question),
+      choices: choicesForCurrentQuestion(question),
       index: session.index,
       total: session.questions.length,
       feedback: lastFeedback,
