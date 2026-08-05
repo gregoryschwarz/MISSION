@@ -33,6 +33,7 @@ let pairsRound = null;
 let lastFeedback = null;
 let soundEnabled = isSoundEnabled();
 let lastProfile = null;
+let helpVisible = false;
 
 async function ensureAuth() {
   if (!auth.currentUser) {
@@ -93,6 +94,24 @@ function toggleSound() {
   }
 }
 
+function rerenderCurrentScreen() {
+  if (missionMode === 'pairs') {
+    showPairsRound();
+  } else {
+    showQuestion();
+  }
+}
+
+function openHelp() {
+  helpVisible = true;
+  rerenderCurrentScreen();
+}
+
+function closeHelp() {
+  helpVisible = false;
+  rerenderCurrentScreen();
+}
+
 function showCustomize() {
   const profile = lastProfile;
   renderCustomize(root, {
@@ -138,6 +157,7 @@ function startMission() {
   storeLastMissionMode(missionMode);
   session = createSession(generateMission(MISSION_LENGTH, difficultyLevels));
   lastFeedback = null;
+  helpVisible = false;
   if (missionMode === 'pairs') {
     pairsRound = createPairsRound(session.questions);
     showPairsRound();
@@ -159,6 +179,9 @@ function showQuestion() {
       feedback: lastFeedback,
       showPauseReminder,
       onAnswer: handleAnswer,
+      showHelp: helpVisible,
+      onOpenHelp: openHelp,
+      onCloseHelp: closeHelp,
     });
   } else {
     renderQuestion(root, {
@@ -168,6 +191,9 @@ function showQuestion() {
       feedback: lastFeedback,
       showPauseReminder,
       onAnswer: handleAnswer,
+      showHelp: helpVisible,
+      onOpenHelp: openHelp,
+      onCloseHelp: closeHelp,
     });
   }
 }
@@ -179,6 +205,9 @@ function showPairsRound() {
     feedback: lastFeedback,
     showPauseReminder: elapsedMs >= PAUSE_REMINDER_MS,
     onMatch: handlePairsMatch,
+    showHelp: helpVisible,
+    onOpenHelp: openHelp,
+    onCloseHelp: closeHelp,
   });
 }
 
