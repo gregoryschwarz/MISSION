@@ -24,19 +24,56 @@ export function renderPairing(root, { onSubmit, error }) {
   });
 }
 
-export function renderHome(root, { childName, avatarLevel, badges, auraClass, soundEnabled, onStartMission, onToggleSound }) {
+export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, onStartMission, onToggleSound, onCustomize }) {
   root.innerHTML = `
     <div class="screen home-screen">
       <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
-      <div class="avatar ${auraClass}">🦄</div>
+      <div class="avatar-wrapper">
+        <div class="avatar ${auraClass}">${characterEmoji}</div>
+        ${accessoryEmoji ? `<span class="avatar-accessory">${accessoryEmoji}</span>` : ''}
+      </div>
       <h1><span id="child-name"></span> — niveau ${avatarLevel}</h1>
       ${renderBadgeMedallionsHtml(badges)}
+      <button id="customize" class="big-button">🎨 Personnaliser</button>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
     </div>
   `;
   root.querySelector('#child-name').textContent = childName ?? 'Luna';
   root.querySelector('#start-mission').addEventListener('click', onStartMission);
   root.querySelector('#sound-toggle').addEventListener('click', onToggleSound);
+  root.querySelector('#customize').addEventListener('click', onCustomize);
+}
+
+function customizeMedallionHtml(item, selectedId) {
+  if (!item.unlocked) {
+    return `<div class="badge-medallion locked" title="${item.emoji}">🔒</div>`;
+  }
+  const isSelected = item.id === selectedId;
+  return `<button class="badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}">${item.emoji}</button>`;
+}
+
+export function renderCustomize(root, { characters, accessories, selectedCharacterId, selectedAccessoryId, onSelectCharacter, onSelectAccessory, onBack }) {
+  root.innerHTML = `
+    <div class="screen customize-screen">
+      <h1>🎨 Personnaliser</h1>
+      <p class="customize-section-title">Personnage</p>
+      <div class="badges-row" id="character-options">
+        ${characters.map((c) => customizeMedallionHtml(c, selectedCharacterId)).join('')}
+      </div>
+      <p class="customize-section-title">Accessoire</p>
+      <div class="badges-row" id="accessory-options">
+        ${accessories.map((a) => customizeMedallionHtml(a, selectedAccessoryId)).join('')}
+      </div>
+      <button id="customize-back" class="big-button">Retour</button>
+    </div>
+  `;
+  root.querySelectorAll('#character-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectCharacter(btn.dataset.id))
+  );
+  root.querySelectorAll('#accessory-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectAccessory(btn.dataset.id))
+  );
+  root.querySelector('#customize-back').addEventListener('click', onBack);
 }
 
 export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder }) {
