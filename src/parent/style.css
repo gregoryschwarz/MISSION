@@ -85,3 +85,21 @@ button {
   color: #888;
   margin: 4px 0;
 }
+
+.weekly-progress-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.weekly-progress-table th,
+.weekly-progress-table td {
+  padding: 6px;
+  text-align: center;
+}
+
+.weekly-progress-table th {
+  color: #888;
+  font-weight: normal;
+  font-size: 11px;
+}
