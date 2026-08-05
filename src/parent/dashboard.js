@@ -1,4 +1,4 @@
-import { BADGES, renderBadgeMedallionsHtml } from '../shared/badges.js';
+import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { DIFFICULTY_LABELS, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 
 export function aggregateBreakdown(sessions) {
@@ -86,11 +86,6 @@ export function colorForPercent(percent) {
   if (percent < 50) return '#ffb4a2';
   if (percent < 75) return '#ffe5a0';
   return '#c8f0c8';
-}
-
-function emojiForType(type) {
-  const badge = BADGES.find((b) => b.id === `mastery-${type}`);
-  return badge ? badge.emoji : '❓';
 }
 
 export function renderDashboard(root, { family, profile, sessions, onSignOut }) {

@@ -45,3 +45,8 @@ export function renderBadgeMedallionsHtml(earnedBadgeIds) {
     `;
   }).join('');
 }
+
+export function emojiForType(type) {
+  const badge = BADGES.find((b) => b.id === `mastery-${type}`);
+  return badge ? badge.emoji : '❓';
+}

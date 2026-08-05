@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml } from '../../src/shared/badges.js';
+import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
   it('defines all 12 badges with a category, in a fixed order', () => {
@@ -69,5 +69,20 @@ describe('renderBadgeMedallionsHtml', () => {
     const html = renderBadgeMedallionsHtml(['mastery-division', 'mastery-fraction']);
     expect(html).toContain('➗');
     expect(html).toContain('🍕');
+  });
+});
+
+describe('emojiForType', () => {
+  it('returns the correct emoji for each of the 6 mastery types', () => {
+    expect(emojiForType('addition')).toBe('➕');
+    expect(emojiForType('soustraction')).toBe('➖');
+    expect(emojiForType('multiplication')).toBe('✖️');
+    expect(emojiForType('comparaison')).toBe('⚖️');
+    expect(emojiForType('division')).toBe('➗');
+    expect(emojiForType('fraction')).toBe('🍕');
+  });
+
+  it('returns the fallback emoji for an unknown type', () => {
+    expect(emojiForType('unknown')).toBe('❓');
   });
 });
