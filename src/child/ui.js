@@ -1,4 +1,5 @@
-import { renderBadgeMedallionsHtml } from '../shared/badges.js';
+import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
+import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
@@ -76,10 +77,40 @@ export function renderCustomize(root, { characters, accessories, selectedCharact
   root.querySelector('#customize-back').addEventListener('click', onBack);
 }
 
-export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder }) {
+function helpOverlayHtml(type) {
+  if (type === null) {
+    return `
+      <div class="help-overlay">
+        <div class="help-card">
+          <h2>❓ Aide</h2>
+          ${Object.keys(HELP_TEXT)
+            .map(
+              (t) => `
+            <div class="help-entry">
+              <h3>${emojiForType(t)} ${t}</h3>
+              <p>${helpTextForType(t)}</p>
+            </div>`
+            )
+            .join('')}
+          <button id="help-close" class="big-button">Fermer</button>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="help-overlay">
+      <div class="help-card">
+        <h2>${emojiForType(type)} Aide</h2>
+        <p>${helpTextForType(type)}</p>
+        <button id="help-close" class="big-button">Fermer</button>
+      </div>
+    </div>`;
+}
+
+export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
   const isComparison = question.type === 'comparaison' || question.type === 'fraction';
   root.innerHTML = `
     <div class="screen mission-screen">
+      <button id="help-button" class="help-button" aria-label="Aide">❓</button>
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
@@ -93,6 +124,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
             <input id="answer-input" type="number" inputmode="numeric" required />
             <button type="submit" class="big-button">Valider</button>
           </form>`}
+      ${showHelp ? helpOverlayHtml(question.type) : ''}
     </div>
   `;
   if (isComparison) {
@@ -106,11 +138,16 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
       onAnswer(value);
     });
   }
+  root.querySelector('#help-button').addEventListener('click', onOpenHelp);
+  if (showHelp) {
+    root.querySelector('#help-close').addEventListener('click', onCloseHelp);
+  }
 }
 
-export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, feedback, showPauseReminder }) {
+export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
   root.innerHTML = `
     <div class="screen mission-screen">
+      <button id="help-button" class="help-button" aria-label="Aide">❓</button>
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
@@ -123,6 +160,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
           })
           .join('')}
       </div>
+      ${showHelp ? helpOverlayHtml(question.type) : ''}
     </div>
   `;
   root.querySelectorAll('.answer-btn').forEach((btn) =>
@@ -132,9 +170,13 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
       onAnswer(value);
     })
   );
+  root.querySelector('#help-button').addEventListener('click', onOpenHelp);
+  if (showHelp) {
+    root.querySelector('#help-close').addEventListener('click', onCloseHelp);
+  }
 }
 
-export function renderPairsRound(root, { round, feedback, showPauseReminder, onMatch }) {
+export function renderPairsRound(root, { round, feedback, showPauseReminder, onMatch, showHelp, onOpenHelp, onCloseHelp }) {
   let selectedCalcId = null;
 
   function draw() {
@@ -142,6 +184,7 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
     const remainingResult = round.resultTiles.filter((t) => !round.matchedResultIds.has(t.id));
     root.innerHTML = `
       <div class="screen mission-screen pairs-screen">
+        <button id="help-button" class="help-button" aria-label="Aide">❓</button>
         <div class="progress">${round.matchedCalcIds.size} / ${round.calcTiles.length} paires trouvées</div>
         ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
         ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
@@ -160,6 +203,7 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
               .join('')}
           </div>
         </div>
+        ${showHelp ? helpOverlayHtml(null) : ''}
       </div>
     `;
     root.querySelectorAll('.calc-tile').forEach((btn) =>
@@ -176,6 +220,10 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
         onMatch(calcId, btn.dataset.id);
       })
     );
+    root.querySelector('#help-button').addEventListener('click', onOpenHelp);
+    if (showHelp) {
+      root.querySelector('#help-close').addEventListener('click', onCloseHelp);
+    }
   }
 
   draw();
