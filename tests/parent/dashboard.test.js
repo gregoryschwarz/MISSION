@@ -84,6 +84,16 @@ describe('weeklyBreakdownByType', () => {
   it('returns an empty object for no sessions', () => {
     expect(weeklyBreakdownByType([], { referenceDate })).toEqual({});
   });
+
+  it('does not merge sessions from a prior year that share the same dd/mm week label', () => {
+    const sessions = [
+      { date: '2026-08-03', breakdown: { addition: { correct: 1, total: 1 } } },
+      { date: '2020-08-03', breakdown: { addition: { correct: 0, total: 9 } } },
+    ];
+    const result = weeklyBreakdownByType(sessions, { referenceDate });
+    const currentWeek = result.addition.find((w) => w.weekLabel === '03/08');
+    expect(currentWeek.percent).toBe(100);
+  });
 });
 
 describe('colorForPercent', () => {

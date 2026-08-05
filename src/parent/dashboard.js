@@ -35,6 +35,10 @@ function formatWeekLabel(weekStart) {
   return `${dd}/${mm}`;
 }
 
+function formatBucketKey(weekStart) {
+  return weekStart.toISOString().slice(0, 10);
+}
+
 export function weeklyBreakdownByType(sessions, { weekCount = 8, referenceDate = new Date() } = {}) {
   const currentWeekStart = startOfWeek(referenceDate);
   const weekStarts = [];
@@ -47,29 +51,29 @@ export function weeklyBreakdownByType(sessions, { weekCount = 8, referenceDate =
     Object.keys(session.breakdown).forEach((type) => types.add(type));
   });
 
-  const buckets = {}; // weekLabel -> { type -> { correct, total } }
+  const buckets = {}; // bucketKey (year-aware) -> { type -> { correct, total } }
   weekStarts.forEach((weekStart) => {
-    buckets[formatWeekLabel(weekStart)] = {};
+    buckets[formatBucketKey(weekStart)] = {};
   });
 
   sessions.forEach((session) => {
     const sessionWeekStart = startOfWeek(new Date(session.date));
-    const label = formatWeekLabel(sessionWeekStart);
-    if (!(label in buckets)) return; // hors de la fenêtre des weekCount semaines
+    const bucketKey = formatBucketKey(sessionWeekStart);
+    if (!(bucketKey in buckets)) return; // hors de la fenêtre des weekCount semaines
     Object.entries(session.breakdown).forEach(([type, { correct, total }]) => {
-      if (!buckets[label][type]) buckets[label][type] = { correct: 0, total: 0 };
-      buckets[label][type].correct += correct;
-      buckets[label][type].total += total;
+      if (!buckets[bucketKey][type]) buckets[bucketKey][type] = { correct: 0, total: 0 };
+      buckets[bucketKey][type].correct += correct;
+      buckets[bucketKey][type].total += total;
     });
   });
 
   const result = {};
   types.forEach((type) => {
     result[type] = weekStarts.map((weekStart) => {
-      const label = formatWeekLabel(weekStart);
-      const entry = buckets[label][type];
+      const bucketKey = formatBucketKey(weekStart);
+      const entry = buckets[bucketKey][type];
       return {
-        weekLabel: label,
+        weekLabel: formatWeekLabel(weekStart),
         percent: entry && entry.total > 0 ? Math.round((entry.correct / entry.total) * 100) : null,
       };
     });
