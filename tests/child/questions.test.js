@@ -6,8 +6,10 @@ import {
   generateComparison,
   generateDivision,
   generateFraction,
+  generateGeometry,
   generateMission,
 } from '../../src/child/questions.js';
+import { SHAPES, shapeSides } from '../../src/child/shapes.js';
 
 function digitsReversed(n) {
   return String(n).split('').map(Number).reverse();
@@ -172,6 +174,38 @@ describe('generateFraction', () => {
   });
 });
 
+describe('generateGeometry', () => {
+  it('picks only from triangle, carre, cercle at level 1 (default)', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateGeometry();
+      expect(q.type).toBe('geometrie');
+      expect(['triangle', 'carre', 'cercle']).toContain(q.shape);
+      expect(q.answer).toBe(shapeSides(q.shape));
+    }
+  });
+
+  it('adds rectangle and losange at level 2', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateGeometry(2);
+      expect(['triangle', 'carre', 'cercle', 'rectangle', 'losange']).toContain(q.shape);
+    }
+  });
+
+  it('adds pentagone and hexagone at level 3', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateGeometry(3);
+      expect(Object.keys(SHAPES)).toContain(q.shape);
+    }
+  });
+
+  it('always answers with the real side count of the drawn shape', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateGeometry(3);
+      expect(q.answer).toBe(SHAPES[q.shape].sides);
+    }
+  });
+});
+
 describe('generateMission', () => {
   it('generates the requested number of questions', () => {
     expect(generateMission(10)).toHaveLength(10);
@@ -179,14 +213,22 @@ describe('generateMission', () => {
 
   it('only uses known question types', () => {
     const mission = generateMission(12);
-    const allowed = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction'];
+    const allowed = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie'];
     mission.forEach((q) => expect(allowed).toContain(q.type));
   });
 
-  it('cycles through all 6 types when given enough questions', () => {
-    const mission = generateMission(6);
+  it('cycles through all 7 types when given enough questions', () => {
+    const mission = generateMission(7);
     const types = mission.map((q) => q.type).sort();
-    expect(types).toEqual(['addition', 'comparaison', 'division', 'fraction', 'multiplication', 'soustraction']);
+    expect(types).toEqual([
+      'addition',
+      'comparaison',
+      'division',
+      'fraction',
+      'geometrie',
+      'multiplication',
+      'soustraction',
+    ]);
   });
 
   it("passes each type's difficulty level through to its generator", () => {

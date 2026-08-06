@@ -1,5 +1,6 @@
 import { DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { randomInt, shuffle } from './random.js';
+import { shapeSides } from './shapes.js';
 
 // Powers of ten (10, 100, ...) have only one nonzero digit worth 1: every
 // digit-respecting subtrahend is therefore either 0 or the number itself, so
@@ -102,6 +103,18 @@ export function generateFraction(level = 1) {
   };
 }
 
+const GEOMETRY_SHAPES_BY_LEVEL = {
+  1: ['triangle', 'carre', 'cercle'],
+  2: ['triangle', 'carre', 'cercle', 'rectangle', 'losange'],
+  3: ['triangle', 'carre', 'cercle', 'rectangle', 'losange', 'pentagone', 'hexagone'],
+};
+
+export function generateGeometry(level = 1) {
+  const shapes = GEOMETRY_SHAPES_BY_LEVEL[level] ?? GEOMETRY_SHAPES_BY_LEVEL[1];
+  const shape = shapes[randomInt(0, shapes.length - 1)];
+  return { type: 'geometrie', shape, answer: shapeSides(shape), prompt: 'Combien de côtés a cette forme ?' };
+}
+
 const GENERATORS = {
   addition: generateAddition,
   soustraction: generateSubtraction,
@@ -109,12 +122,13 @@ const GENERATORS = {
   comparaison: generateComparison,
   division: generateDivision,
   fraction: generateFraction,
+  geometrie: generateGeometry,
 };
 
 const FOCUS_RATIO = 0.7;
 
 export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS, focusType = null) {
-  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction'];
+  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie'];
   const hasFocus = focusType && types.includes(focusType);
   const focusCount = hasFocus ? Math.round(count * FOCUS_RATIO) : 0;
   const otherTypes = hasFocus ? types.filter((t) => t !== focusType) : types;
