@@ -1,5 +1,5 @@
 import { signUp, logIn, logOut, watchAuthState } from './auth.js';
-import { findFamilyByParent, createFamily, fetchProfile, fetchSessions } from './family.js';
+import { findFamilyByParent, createFamily, fetchProfile, fetchSessions, setFocusType } from './family.js';
 import { renderDashboard } from './dashboard.js';
 
 const root = document.getElementById('app');
@@ -71,7 +71,16 @@ async function loadDashboard(parentUid) {
   const family = await findFamilyByParent(parentUid);
   if (!family) return;
   const [profile, sessions] = await Promise.all([fetchProfile(family.id), fetchSessions(family.id)]);
-  renderDashboard(root, { family, profile, sessions, onSignOut: logOut });
+  renderDashboard(root, {
+    family,
+    profile,
+    sessions,
+    onSignOut: logOut,
+    onSetFocus: async (focusType) => {
+      await setFocusType(family.id, focusType);
+      await loadDashboard(parentUid);
+    },
+  });
 }
 
 watchAuthState(async (user) => {
