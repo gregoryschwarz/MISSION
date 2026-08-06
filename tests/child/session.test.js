@@ -53,10 +53,11 @@ describe('session flow', () => {
     vi.useRealTimers();
   });
 
-  it('initializes breakdown entries for division and fraction', () => {
+  it('initializes breakdown entries for division, fraction, and geometrie', () => {
     const session = createSession([]);
     expect(session.breakdown.division).toEqual({ correct: 0, total: 0 });
     expect(session.breakdown.fraction).toEqual({ correct: 0, total: 0 });
+    expect(session.breakdown.geometrie).toEqual({ correct: 0, total: 0 });
   });
 });
 

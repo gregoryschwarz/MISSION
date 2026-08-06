@@ -10,6 +10,7 @@ export function createSession(questions) {
       comparaison: { correct: 0, total: 0 },
       division: { correct: 0, total: 0 },
       fraction: { correct: 0, total: 0 },
+      geometrie: { correct: 0, total: 0 },
     },
     startedAt: Date.now(),
   };
