@@ -1,5 +1,6 @@
 import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
+import { dynamicHintSteps } from './hints.js';
 
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
@@ -87,7 +88,7 @@ export function renderCustomize(root, { characters, accessories, selectedCharact
   root.querySelector('#customize-back').addEventListener('click', onBack);
 }
 
-function helpOverlayHtml(type) {
+function helpOverlayHtml(type, question) {
   if (type === null) {
     return `
       <div class="help-overlay">
@@ -106,11 +107,13 @@ function helpOverlayHtml(type) {
         </div>
       </div>`;
   }
+  const hintSteps = dynamicHintSteps(question);
   return `
     <div class="help-overlay">
       <div class="help-card">
         <h2>${emojiForType(type)} Aide</h2>
         <p>${helpTextForType(type)}</p>
+        ${hintSteps ? `<ol class="help-steps">${hintSteps.map((s) => `<li>${s}</li>`).join('')}</ol>` : ''}
         <button id="help-close" class="big-button">Fermer</button>
       </div>
     </div>`;
@@ -134,7 +137,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
             <input id="answer-input" type="number" inputmode="numeric" required />
             <button type="submit" class="big-button">Valider</button>
           </form>`}
-      ${showHelp ? helpOverlayHtml(question.type) : ''}
+      ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
   if (isComparison) {
@@ -170,7 +173,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
           })
           .join('')}
       </div>
-      ${showHelp ? helpOverlayHtml(question.type) : ''}
+      ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
   root.querySelectorAll('.answer-btn').forEach((btn) =>
