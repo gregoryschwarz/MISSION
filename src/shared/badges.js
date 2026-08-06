@@ -8,6 +8,7 @@ export const BADGES = [
   { id: 'mastery-comparaison', category: 'maitrise', emoji: '⚖️', label: 'Comparaison maîtrisée', gradient: ['#cdb4db', '#ffc8dd'] },
   { id: 'mastery-division', category: 'maitrise', emoji: '➗', label: 'Division maîtrisée', gradient: ['#ffe5a0', '#ffcb77'] },
   { id: 'mastery-fraction', category: 'maitrise', emoji: '🍕', label: 'Fractions maîtrisées', gradient: ['#4ecdc4', '#a0e7e5'] },
+  { id: 'mastery-geometrie', category: 'maitrise', emoji: '📐', label: 'Géométrie maîtrisée', gradient: ['#c3aed6', '#e0c3fc'] },
   { id: 'perfect-1', category: 'parfait', emoji: '💯', label: '1 mission parfaite', gradient: ['#ffd166', '#f4a261'] },
   { id: 'perfect-10', category: 'parfait', emoji: '🌈', label: '10 missions parfaites', gradient: ['#ff9a8b', '#ff6a88'] },
   { id: 'perfect-50', category: 'parfait', emoji: '💎', label: '50 missions parfaites', gradient: ['#84fab0', '#8fd3f4'] },

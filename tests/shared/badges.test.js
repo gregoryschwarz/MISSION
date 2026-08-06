@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
-  it('defines all 12 badges with a category, in a fixed order', () => {
+  it('defines all 13 badges with a category, in a fixed order', () => {
     expect(BADGES.map((b) => b.id)).toEqual([
       'streak-3',
       'streak-7',
@@ -13,6 +13,7 @@ describe('BADGES', () => {
       'mastery-comparaison',
       'mastery-division',
       'mastery-fraction',
+      'mastery-geometrie',
       'perfect-1',
       'perfect-10',
       'perfect-50',
@@ -28,7 +29,7 @@ describe('BADGES', () => {
 describe('badgeMedallionData', () => {
   it('marks badges as earned when their id is present', () => {
     const result = badgeMedallionData(['streak-3', 'mastery-division']);
-    expect(result).toHaveLength(12);
+    expect(result).toHaveLength(13);
     expect(result.find((b) => b.id === 'streak-3')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'mastery-division')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'streak-7')).toMatchObject({ earned: false });
@@ -70,16 +71,22 @@ describe('renderBadgeMedallionsHtml', () => {
     expect(html).toContain('➗');
     expect(html).toContain('🍕');
   });
+
+  it('renders the geometrie mastery badge when earned', () => {
+    const html = renderBadgeMedallionsHtml(['mastery-geometrie']);
+    expect(html).toContain('📐');
+  });
 });
 
 describe('emojiForType', () => {
-  it('returns the correct emoji for each of the 6 mastery types', () => {
+  it('returns the correct emoji for each of the 7 mastery types', () => {
     expect(emojiForType('addition')).toBe('➕');
     expect(emojiForType('soustraction')).toBe('➖');
     expect(emojiForType('multiplication')).toBe('✖️');
     expect(emojiForType('comparaison')).toBe('⚖️');
     expect(emojiForType('division')).toBe('➗');
     expect(emojiForType('fraction')).toBe('🍕');
+    expect(emojiForType('geometrie')).toBe('📐');
   });
 
   it('returns the fallback emoji for an unknown type', () => {
