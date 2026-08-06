@@ -208,3 +208,43 @@ describe('generateMission', () => {
     expect(tablesSeen.some((table) => [3, 4, 6, 7, 8, 9].includes(table))).toBe(true);
   });
 });
+
+describe('generateMission with a focusType', () => {
+  it('makes 7 of 10 questions the focus type', () => {
+    const mission = generateMission(10, undefined, 'division');
+    const divisionCount = mission.filter((q) => q.type === 'division').length;
+    expect(divisionCount).toBe(7);
+  });
+
+  it('cycles the other 5 types in catalogue order for the remainder', () => {
+    const mission = generateMission(10, undefined, 'division');
+    const others = mission.filter((q) => q.type !== 'division').map((q) => q.type).sort();
+    expect(others).toEqual(['addition', 'multiplication', 'soustraction']);
+  });
+
+  it('falls back to the normal round-robin mix when focusType is null', () => {
+    const mission = generateMission(6, undefined, null);
+    const types = mission.map((q) => q.type).sort();
+    expect(types).toEqual(['addition', 'comparaison', 'division', 'fraction', 'multiplication', 'soustraction']);
+  });
+
+  it('falls back to the normal round-robin mix for an unknown focusType', () => {
+    const mission = generateMission(6, undefined, 'not-a-real-type');
+    const types = mission.map((q) => q.type).sort();
+    expect(types).toEqual(['addition', 'comparaison', 'division', 'fraction', 'multiplication', 'soustraction']);
+  });
+
+  it("passes the focus type's difficulty level through to its generator", () => {
+    const tablesSeen = [];
+    for (let i = 0; i < 50; i++) {
+      const mission = generateMission(
+        10,
+        { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 3, fraction: 1 },
+        'division'
+      );
+      mission.filter((q) => q.type === 'division').forEach((q) => tablesSeen.push(q.b));
+    }
+    // Level 3 division can use tables 3, 4, 6, 7, 8, 9 — none of which level 1 ever produces (level 1 is limited to 2, 5, 10).
+    expect(tablesSeen.some((table) => [3, 4, 6, 7, 8, 9].includes(table))).toBe(true);
+  });
+});

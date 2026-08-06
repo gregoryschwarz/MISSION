@@ -111,11 +111,16 @@ const GENERATORS = {
   fraction: generateFraction,
 };
 
-export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS) {
+const FOCUS_RATIO = 0.7;
+
+export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS, focusType = null) {
   const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction'];
+  const hasFocus = focusType && types.includes(focusType);
+  const focusCount = hasFocus ? Math.round(count * FOCUS_RATIO) : 0;
+  const otherTypes = hasFocus ? types.filter((t) => t !== focusType) : types;
   const questions = [];
   for (let i = 0; i < count; i++) {
-    const type = types[i % types.length];
+    const type = i < focusCount ? focusType : otherTypes[(i - focusCount) % otherTypes.length];
     const level = difficultyLevels[type] ?? 1;
     questions.push(GENERATORS[type](level));
   }
