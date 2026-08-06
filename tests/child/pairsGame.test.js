@@ -24,6 +24,25 @@ describe('createPairsRound', () => {
     expect(additionTile.answer).toBe(5);
   });
 
+  it('carries the shape field on a geometrie calc tile', () => {
+    const geometryQuestions = [
+      { type: 'geometrie', shape: 'triangle', answer: 3, prompt: 'Combien de côtés a cette forme ?' },
+      { type: 'geometrie', shape: 'carre', answer: 4, prompt: 'Combien de côtés a cette forme ?' },
+    ];
+    const round = createPairsRound(geometryQuestions);
+    const triangleTile = round.calcTiles.find((t) => t.shape === 'triangle');
+    expect(triangleTile).toBeDefined();
+    expect(triangleTile.answer).toBe(3);
+    const carreTile = round.calcTiles.find((t) => t.shape === 'carre');
+    expect(carreTile).toBeDefined();
+    expect(carreTile.answer).toBe(4);
+  });
+
+  it('leaves shape undefined for non-geometrie calc tiles', () => {
+    const round = createPairsRound(sampleQuestions);
+    round.calcTiles.forEach((t) => expect(t.shape).toBeUndefined());
+  });
+
   it('starts with no matched tiles', () => {
     const round = createPairsRound(sampleQuestions);
     expect(round.matchedCalcIds.size).toBe(0);

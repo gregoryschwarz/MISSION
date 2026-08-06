@@ -4,7 +4,7 @@ const SYMBOLIC_ANSWER_TYPES = ['comparaison', 'fraction'];
 
 export function createPairsRound(questions) {
   const calcTiles = shuffle(
-    questions.map((q, i) => ({ id: `calc-${i}`, pairKey: i, type: q.type, prompt: q.prompt, answer: q.answer }))
+    questions.map((q, i) => ({ id: `calc-${i}`, pairKey: i, type: q.type, prompt: q.prompt, shape: q.shape, answer: q.answer }))
   );
   const resultTiles = shuffle(
     questions.map((q, i) => ({ id: `result-${i}`, pairKey: i, answer: q.answer }))
