@@ -43,12 +43,14 @@ function renderFamilySetup(parentUid, parentEmail, error = null) {
   root.innerHTML = `
     <div class="family-setup">
       <h1>Bienvenue ! Créons le profil de votre enfant</h1>
+      <p class="setup-hint">Vous avez déjà un profil enfant ? Vous êtes peut-être connecté avec le mauvais compte.</p>
       <form id="family-form">
         <label>Prénom de l'enfant<input id="child-name" required /></label>
         <label>Code secret à 4 chiffres<input id="pin" type="password" inputmode="numeric" maxlength="4" required /></label>
         ${error ? '<p class="error" id="family-error"></p>' : ''}
         <button type="submit">Créer</button>
       </form>
+      <button id="setup-sign-out" class="link-button">Se déconnecter</button>
     </div>
   `;
   if (error) {
@@ -65,6 +67,7 @@ function renderFamilySetup(parentUid, parentEmail, error = null) {
       renderFamilySetup(parentUid, parentEmail, 'Connexion impossible. Vérifie ta connexion et réessaie.');
     }
   });
+  root.querySelector('#setup-sign-out').addEventListener('click', logOut);
 }
 
 async function loadDashboard(parentUid) {

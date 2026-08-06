@@ -110,3 +110,16 @@ button {
   padding: 6px;
   font-size: 14px;
 }
+
+.setup-hint {
+  color: #888;
+  font-size: 13px;
+  margin-top: -8px;
+}
+
+.link-button {
+  background: none;
+  padding: 8px 0;
+  color: #6a5acd;
+  text-decoration: underline;
+}
