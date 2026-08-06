@@ -1,6 +1,7 @@
 import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { dynamicHintSteps } from './hints.js';
+import { shapeSvg } from './shapes.js';
 
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
@@ -33,6 +34,7 @@ const FOCUS_LABELS = {
   comparaison: 'la comparaison',
   division: 'la division',
   fraction: 'les fractions',
+  geometrie: 'la géométrie',
 };
 
 export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize }) {
@@ -127,6 +129,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
+      ${question.shape ? `<div class="shape-display">${shapeSvg(question.shape)}</div>` : ''}
       ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
       ${isComparison
         ? `<div class="options">
@@ -164,6 +167,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
+      ${question.shape ? `<div class="shape-display">${shapeSvg(question.shape)}</div>` : ''}
       ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
       <div class="options">
         ${choices
@@ -206,7 +210,7 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
             ${remainingCalc
               .map(
                 (t) =>
-                  `<button class="pairs-tile calc-tile ${t.id === selectedCalcId ? 'selected' : ''}" data-id="${t.id}">${t.prompt}</button>`
+                  `<button class="pairs-tile calc-tile ${t.id === selectedCalcId ? 'selected' : ''}" data-id="${t.id}">${t.shape ? `<div class="shape-display">${shapeSvg(t.shape)}</div>` : t.prompt}</button>`
               )
               .join('')}
           </div>
