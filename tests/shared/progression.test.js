@@ -74,6 +74,12 @@ describe('newlyMasteredTypes', () => {
     const next = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 3, fraction: 1 };
     expect(newlyMasteredTypes(previous, next)).toEqual(['division']);
   });
+
+  it('detects mastery for the new geometrie type too', () => {
+    const previous = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 2 };
+    const next = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 3 };
+    expect(newlyMasteredTypes(previous, next)).toEqual(['geometrie']);
+  });
 });
 
 describe('newlyEarnedPerfectBadges', () => {
