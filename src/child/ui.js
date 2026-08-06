@@ -25,7 +25,16 @@ export function renderPairing(root, { onSubmit, error }) {
   });
 }
 
-export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, onStartMission, onToggleSound, onCustomize }) {
+const FOCUS_LABELS = {
+  addition: "l'addition",
+  soustraction: 'la soustraction',
+  multiplication: 'la multiplication',
+  comparaison: 'la comparaison',
+  division: 'la division',
+  fraction: 'les fractions',
+};
+
+export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize }) {
   root.innerHTML = `
     <div class="screen home-screen">
       <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
@@ -34,6 +43,7 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, ch
         ${accessoryEmoji ? `<span class="avatar-accessory">${accessoryEmoji}</span>` : ''}
       </div>
       <h1><span id="child-name"></span> — niveau ${avatarLevel}</h1>
+      ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
       ${renderBadgeMedallionsHtml(badges)}
       <button id="customize" class="big-button">🎨 Personnaliser</button>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>

@@ -88,7 +88,13 @@ export function colorForPercent(percent) {
   return '#c8f0c8';
 }
 
-export function renderDashboard(root, { family, profile, sessions, onSignOut }) {
+const NOTION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction'];
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function renderDashboard(root, { family, profile, sessions, onSignOut, onSetFocus }) {
   const breakdown = aggregateBreakdown(sessions);
   const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const weeklyBreakdown = weeklyBreakdownByType(sessions);
@@ -115,6 +121,19 @@ export function renderDashboard(root, { family, profile, sessions, onSignOut }) 
             })
             .join('')}
         </ul>
+      </section>
+      <section class="focus-selector">
+        <h2>Priorité de révision</h2>
+        <label>
+          Notion à travailler en priorité
+          <select id="focus-type">
+            <option value="">Aucune (mélange habituel)</option>
+            ${NOTION_TYPES.map(
+              (t) =>
+                `<option value="${t}" ${profile.focusType === t ? 'selected' : ''}>${emojiForType(t)} ${capitalize(t)}</option>`
+            ).join('')}
+          </select>
+        </label>
       </section>
       <section class="weekly-progress">
         <h2>Évolution par semaine</h2>
@@ -158,4 +177,5 @@ export function renderDashboard(root, { family, profile, sessions, onSignOut }) 
   `;
   root.querySelector('#child-name').textContent = profile.childName;
   root.querySelector('#sign-out').addEventListener('click', onSignOut);
+  root.querySelector('#focus-type').addEventListener('change', (event) => onSetFocus(event.target.value || null));
 }

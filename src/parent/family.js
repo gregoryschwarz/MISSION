@@ -35,6 +35,7 @@ export async function createFamily({ parentUid, parentEmail, childName, pin }) {
     perfectMissionsCount: 0,
     selectedCharacter: DEFAULT_CHARACTER,
     selectedAccessory: DEFAULT_ACCESSORY,
+    focusType: null,
   });
   return familyRef.id;
 }
@@ -42,6 +43,10 @@ export async function createFamily({ parentUid, parentEmail, childName, pin }) {
 export async function fetchProfile(familyId) {
   const snapshot = await getDoc(doc(db, 'families', familyId, 'profile', 'data'));
   return snapshot.exists() ? snapshot.data() : null;
+}
+
+export async function setFocusType(familyId, focusType) {
+  await setDoc(doc(db, 'families', familyId, 'profile', 'data'), { focusType }, { merge: true });
 }
 
 export async function fetchSessions(familyId) {
