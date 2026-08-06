@@ -88,7 +88,7 @@ export function colorForPercent(percent) {
   return '#c8f0c8';
 }
 
-const NOTION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction'];
+const NOTION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie'];
 
 function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
