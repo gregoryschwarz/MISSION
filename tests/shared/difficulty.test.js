@@ -10,6 +10,7 @@ describe('DEFAULT_DIFFICULTY_LEVELS', () => {
       comparaison: 1,
       division: 1,
       fraction: 1,
+      geometrie: 1,
     });
   });
 });
