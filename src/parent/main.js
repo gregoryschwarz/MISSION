@@ -7,7 +7,7 @@ const root = document.getElementById('app');
 function renderAuthForm(mode = 'login', error = null) {
   root.innerHTML = `
     <div class="auth-screen">
-      <h1>Missions de Luna — Espace parent</h1>
+      <h1>Missions d'Ambre — Espace parent</h1>
       <form id="auth-form">
         <label>Email<input id="email" type="email" required /></label>
         <label>Mot de passe<input id="password" type="password" minlength="6" required /></label>

@@ -5,7 +5,7 @@ import { dynamicHintSteps } from './hints.js';
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
     <div class="screen pairing-screen">
-      <h1>🦄 Missions de Luna</h1>
+      <h1>🦄 Missions d'Ambre</h1>
       <p>Un parent doit entrer le code d'appairage et le code secret.</p>
       <form id="pairing-form">
         <label>Code d'appairage<input id="family-id" type="text" autocomplete="off" required /></label>
@@ -50,7 +50,7 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, ch
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
     </div>
   `;
-  root.querySelector('#child-name').textContent = childName ?? 'Luna';
+  root.querySelector('#child-name').textContent = childName ?? 'Ambre';
   root.querySelector('#start-mission').addEventListener('click', onStartMission);
   root.querySelector('#sound-toggle').addEventListener('click', onToggleSound);
   root.querySelector('#customize').addEventListener('click', onCustomize);
