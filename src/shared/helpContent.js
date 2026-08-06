@@ -11,6 +11,8 @@ export const HELP_TEXT = {
     "Diviser, c'est partager un nombre en parts égales. Par exemple, 12 ÷ 3 veut dire : combien de fois 3 rentre dans 12 ? Tu peux t'aider de tes tables de multiplication à l'envers !",
   fraction:
     "Pour comparer deux fractions, regarde le numérateur (le chiffre du haut) : si les dénominateurs (le chiffre du bas) sont pareils, la fraction avec le plus grand numérateur est la plus grande.",
+  geometrie:
+    "Pour compter les côtés d'une forme, regarde combien de segments droits (lignes) forment son contour. Le cercle n'a aucun côté droit : c'est une ligne courbe, donc 0 côté.",
 };
 
 export function helpTextForType(type) {
