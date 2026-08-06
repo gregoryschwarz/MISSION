@@ -103,3 +103,10 @@ button {
   font-weight: normal;
   font-size: 11px;
 }
+
+.focus-selector select {
+  display: block;
+  margin-top: 4px;
+  padding: 6px;
+  font-size: 14px;
+}

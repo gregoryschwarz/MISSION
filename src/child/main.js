@@ -82,6 +82,7 @@ function renderHomeScreen(profile) {
     characterEmoji: emojiForCharacter(profile.selectedCharacter ?? DEFAULT_CHARACTER),
     accessoryEmoji: emojiForAccessory(profile.selectedAccessory ?? DEFAULT_ACCESSORY),
     soundEnabled,
+    focusType: profile.focusType ?? null,
     onStartMission: startMission,
     onToggleSound: toggleSound,
     onCustomize: showCustomize,
@@ -157,7 +158,7 @@ function startMission() {
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   missionMode = pickMissionMode(getLastMissionMode());
   storeLastMissionMode(missionMode);
-  session = createSession(generateMission(MISSION_LENGTH, difficultyLevels));
+  session = createSession(generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null));
   lastFeedback = null;
   helpVisible = false;
   cachedChoicesIndex = -1;
