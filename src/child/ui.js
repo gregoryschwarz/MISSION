@@ -2,6 +2,32 @@ import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { dynamicHintSteps } from './hints.js';
 import { shapeSvg } from './shapes.js';
+import { coinSvg } from './money.js';
+import { lengthBarSvg } from './length.js';
+import { clockFaceSvg } from './clock.js';
+
+function moneyDisplayHtml(items) {
+  return `<div class="money-display">${items.map((id) => coinSvg(id)).join('')}</div>`;
+}
+
+function lengthDisplayHtml(a, b) {
+  return `<div class="length-display">
+    <div class="length-bar-row">${lengthBarSvg(a)}<span>${a} cm</span></div>
+    <div class="length-bar-row">${lengthBarSvg(b)}<span>${b} cm</span></div>
+  </div>`;
+}
+
+function clockDisplayHtml(hour12, minute) {
+  return `<div class="clock-display">${clockFaceSvg(hour12, minute)}</div>`;
+}
+
+function visualDisplayHtml(q) {
+  if (q.shape) return `<div class="shape-display">${shapeSvg(q.shape)}</div>`;
+  if (q.items) return moneyDisplayHtml(q.items);
+  if (q.type === 'longueur') return lengthDisplayHtml(q.a, q.b);
+  if (q.type === 'temps') return clockDisplayHtml(q.hour12, q.minute);
+  return '';
+}
 
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
@@ -35,6 +61,9 @@ const FOCUS_LABELS = {
   division: 'la division',
   fraction: 'les fractions',
   geometrie: 'la géométrie',
+  monnaie: 'la monnaie',
+  longueur: 'les longueurs',
+  temps: "l'heure",
 };
 
 export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize }) {
@@ -129,7 +158,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
-      ${question.shape ? `<div class="shape-display">${shapeSvg(question.shape)}</div>` : ''}
+      ${visualDisplayHtml(question)}
       ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
       ${hasOptions
         ? `<div class="options">
@@ -172,7 +201,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
-      ${question.shape ? `<div class="shape-display">${shapeSvg(question.shape)}</div>` : ''}
+      ${visualDisplayHtml(question)}
       ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
       <div class="options">
         ${choices
@@ -213,10 +242,10 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
         <div class="pairs-grid">
           <div class="pairs-column">
             ${remainingCalc
-              .map(
-                (t) =>
-                  `<button class="pairs-tile calc-tile ${t.id === selectedCalcId ? 'selected' : ''}" data-id="${t.id}">${t.shape ? `<div class="shape-display">${shapeSvg(t.shape)}</div>` : t.prompt}</button>`
-              )
+              .map((t) => {
+                const visual = visualDisplayHtml(t);
+                return `<button class="pairs-tile calc-tile ${t.id === selectedCalcId ? 'selected' : ''}" data-id="${t.id}">${visual || t.prompt}</button>`;
+              })
               .join('')}
           </div>
           <div class="pairs-column">
