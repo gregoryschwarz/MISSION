@@ -20,7 +20,7 @@ export const HELP_TEXT = {
   temps:
     "La petite aiguille indique l'heure, la grande indique les minutes. Grande aiguille sur le 12 : c'est une heure pile (ex : 3h00). Sur le 6 : une demi-heure (ex : 3h30). L'après-midi, ajoute 12 à l'heure du cadran (3h → 15h).",
   probleme:
-    "Pour résoudre un problème, repère d'abord les nombres et ce qu'on te demande : est-ce qu'on ajoute (le total augmente) ou est-ce qu'on retire (il en reste moins) ? Une fois l'opération choisie, calcule comme d'habitude.",
+    "Pour résoudre un problème, repère les nombres et ce qu'on te demande : est-ce qu'on ajoute (le total augmente) ou est-ce qu'on retire ? Calcule ensuite comme d'habitude.",
 };
 
 export function helpTextForType(type) {
