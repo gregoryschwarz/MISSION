@@ -64,6 +64,7 @@ const FOCUS_LABELS = {
   monnaie: 'la monnaie',
   longueur: 'les longueurs',
   temps: "l'heure",
+  probleme: 'les problèmes',
 };
 
 export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize }) {
