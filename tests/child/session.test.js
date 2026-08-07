@@ -59,6 +59,13 @@ describe('session flow', () => {
     expect(session.breakdown.fraction).toEqual({ correct: 0, total: 0 });
     expect(session.breakdown.geometrie).toEqual({ correct: 0, total: 0 });
   });
+
+  it('initializes breakdown entries for monnaie, longueur, and temps', () => {
+    const session = createSession([]);
+    expect(session.breakdown.monnaie).toEqual({ correct: 0, total: 0 });
+    expect(session.breakdown.longueur).toEqual({ correct: 0, total: 0 });
+    expect(session.breakdown.temps).toEqual({ correct: 0, total: 0 });
+  });
 });
 
 describe('recordAnswer', () => {
