@@ -11,7 +11,9 @@ import {
   generateLength,
   generateTime,
   generateWordProblem,
+  generateSingleTypeMission,
   generateMission,
+  QUESTION_TYPES,
 } from '../../src/child/questions.js';
 import { SHAPES, shapeSides } from '../../src/child/shapes.js';
 import { COINS } from '../../src/child/money.js';
@@ -468,5 +470,46 @@ describe('generateMission with a focusType', () => {
     }
     // Level 3 division can use tables 3, 4, 6, 7, 8, 9 — none of which level 1 ever produces (level 1 is limited to 2, 5, 10).
     expect(tablesSeen.some((table) => [3, 4, 6, 7, 8, 9].includes(table))).toBe(true);
+  });
+});
+
+describe('QUESTION_TYPES', () => {
+  it('matches the registered generator keys exactly', () => {
+    expect(QUESTION_TYPES).toEqual([
+      'addition',
+      'soustraction',
+      'multiplication',
+      'comparaison',
+      'division',
+      'fraction',
+      'geometrie',
+      'monnaie',
+      'longueur',
+      'temps',
+      'probleme',
+    ]);
+  });
+});
+
+describe('generateSingleTypeMission', () => {
+  it('returns exactly `count` questions, all of the requested type', () => {
+    const mission = generateSingleTypeMission(6, 'geometrie');
+    expect(mission).toHaveLength(6);
+    mission.forEach((q) => expect(q.type).toBe('geometrie'));
+  });
+
+  it('passes the level through to the underlying generator', () => {
+    const tablesSeen = [];
+    for (let i = 0; i < 50; i++) {
+      const mission = generateSingleTypeMission(1, 'multiplication', 3);
+      tablesSeen.push(mission[0].a);
+    }
+    // Level 3 multiplication can use tables 3, 4, 6, 7, 8, 9 — none of which level 1 ever produces.
+    expect(tablesSeen.some((table) => [3, 4, 6, 7, 8, 9].includes(table))).toBe(true);
+  });
+
+  it('falls back to addition for an unknown type', () => {
+    const mission = generateSingleTypeMission(3, 'not-a-real-type');
+    mission.forEach((q) => expect(q.type).toBe('addition'));
   });
 });

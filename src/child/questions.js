@@ -192,6 +192,13 @@ const GENERATORS = {
   probleme: generateWordProblem,
 };
 
+export const QUESTION_TYPES = Object.keys(GENERATORS);
+
+export function generateSingleTypeMission(count, type, level = 1) {
+  const generator = GENERATORS[type] ?? GENERATORS.addition;
+  return Array.from({ length: count }, () => generator(level));
+}
+
 const FOCUS_RATIO = 0.7;
 
 export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS, focusType = null) {
