@@ -14,6 +14,7 @@ describe('DEFAULT_DIFFICULTY_LEVELS', () => {
       monnaie: 1,
       longueur: 1,
       temps: 1,
+      probleme: 1,
     });
   });
 });
