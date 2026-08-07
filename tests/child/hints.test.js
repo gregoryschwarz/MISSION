@@ -140,4 +140,14 @@ describe('dynamicHintSteps', () => {
   it('returns null for fraction questions', () => {
     expect(dynamicHintSteps({ type: 'fraction', a: { numerator: 1, denominator: 3 }, b: { numerator: 2, denominator: 3 } })).toBe(null);
   });
+
+  it('delegates to additionHint for probleme questions with operation addition', () => {
+    const question = { type: 'probleme', operation: 'addition', a: 12, b: 3 };
+    expect(dynamicHintSteps(question)).toEqual(additionHint(12, 3));
+  });
+
+  it('delegates to subtractionHint for probleme questions with operation soustraction', () => {
+    const question = { type: 'probleme', operation: 'soustraction', a: 38, b: 15 };
+    expect(dynamicHintSteps(question)).toEqual(subtractionHint(38, 15));
+  });
 });

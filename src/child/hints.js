@@ -99,6 +99,10 @@ export function dynamicHintSteps(question) {
       return multiplicationHint(question.a, question.b);
     case 'division':
       return divisionHint(question.a, question.b);
+    case 'probleme':
+      return question.operation === 'addition'
+        ? additionHint(question.a, question.b)
+        : subtractionHint(question.a, question.b);
     default:
       return null;
   }
