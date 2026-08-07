@@ -66,6 +66,11 @@ describe('session flow', () => {
     expect(session.breakdown.longueur).toEqual({ correct: 0, total: 0 });
     expect(session.breakdown.temps).toEqual({ correct: 0, total: 0 });
   });
+
+  it('initializes a breakdown entry for probleme', () => {
+    const session = createSession([]);
+    expect(session.breakdown.probleme).toEqual({ correct: 0, total: 0 });
+  });
 });
 
 describe('recordAnswer', () => {
