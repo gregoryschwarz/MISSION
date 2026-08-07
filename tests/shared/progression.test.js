@@ -80,6 +80,12 @@ describe('newlyMasteredTypes', () => {
     const next = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 3 };
     expect(newlyMasteredTypes(previous, next)).toEqual(['geometrie']);
   });
+
+  it('detects mastery for the new monnaie, longueur, and temps types too', () => {
+    const previous = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 1, monnaie: 2, longueur: 2, temps: 2 };
+    const next = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 1, monnaie: 3, longueur: 3, temps: 3 };
+    expect(newlyMasteredTypes(previous, next)).toEqual(['monnaie', 'longueur', 'temps']);
+  });
 });
 
 describe('newlyEarnedPerfectBadges', () => {
