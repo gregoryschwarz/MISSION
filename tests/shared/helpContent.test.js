@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { HELP_TEXT, helpTextForType } from '../../src/shared/helpContent.js';
 
 describe('HELP_TEXT', () => {
-  it('defines a help text for each of the 7 question types, in a fixed order', () => {
+  it('defines a help text for each of the 10 question types, in a fixed order', () => {
     expect(Object.keys(HELP_TEXT)).toEqual([
       'addition',
       'soustraction',
@@ -11,6 +11,9 @@ describe('HELP_TEXT', () => {
       'division',
       'fraction',
       'geometrie',
+      'monnaie',
+      'longueur',
+      'temps',
     ]);
   });
 });
