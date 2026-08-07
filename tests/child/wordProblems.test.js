@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NAMES, OBJECTS, wordProblemText } from '../../src/child/wordProblems.js';
+import { NAMES, OBJECTS, ADDITION_TEMPLATES, SUBTRACTION_TEMPLATES, wordProblemText } from '../../src/child/wordProblems.js';
 
 describe('wordProblemText', () => {
   it('produces a non-empty addition statement containing both numbers', () => {
@@ -41,5 +41,27 @@ describe('wordProblemText', () => {
       const objectFound = OBJECTS.some((o) => text.includes(o));
       expect(nameFound || objectFound).toBe(true);
     }
+  });
+
+  it('the pronoun-driven addition templates agree "a-t-elle"/"a-t-il" with the given pronoun', () => {
+    [ADDITION_TEMPLATES[0], ADDITION_TEMPLATES[1]].forEach((template) => {
+      const withElle = template('Léa', 'elle', 'bonbons', 5, 3);
+      expect(withElle).toContain('a-t-elle');
+      expect(withElle).not.toContain('a-t-il');
+      const withIl = template('Tom', 'il', 'bonbons', 5, 3);
+      expect(withIl).toContain('a-t-il');
+      expect(withIl).not.toContain('a-t-elle');
+    });
+  });
+
+  it('the pronoun-driven subtraction templates capitalize "Elle"/"Il" consistently with the given pronoun', () => {
+    [SUBTRACTION_TEMPLATES[0], SUBTRACTION_TEMPLATES[1]].forEach((template) => {
+      const withElle = template('Léa', 'elle', 'bonbons', 5, 3);
+      expect(withElle).toContain('Elle en');
+      expect(withElle).not.toContain('Il en');
+      const withIl = template('Tom', 'il', 'bonbons', 5, 3);
+      expect(withIl).toContain('Il en');
+      expect(withIl).not.toContain('Elle en');
+    });
   });
 });
