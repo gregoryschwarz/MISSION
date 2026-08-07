@@ -122,7 +122,7 @@ function helpOverlayHtml(type, question) {
 }
 
 export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
-  const isComparison = question.type === 'comparaison' || question.type === 'fraction';
+  const hasOptions = Array.isArray(question.options);
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
@@ -131,10 +131,14 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
       <h2>${question.prompt}</h2>
       ${question.shape ? `<div class="shape-display">${shapeSvg(question.shape)}</div>` : ''}
       ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
-      ${isComparison
+      ${hasOptions
         ? `<div class="options">
-            <button class="big-button answer-btn" data-value=">">supérieur &gt;</button>
-            <button class="big-button answer-btn" data-value="<">inférieur &lt;</button>
+            ${question.options
+              .map((choice) => {
+                const label = choice === '>' ? 'supérieur &gt;' : choice === '<' ? 'inférieur &lt;' : choice;
+                return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
+              })
+              .join('')}
           </div>`
         : `<form id="answer-form">
             <input id="answer-input" type="number" inputmode="numeric" required />
@@ -143,7 +147,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
       ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
-  if (isComparison) {
+  if (hasOptions) {
     root.querySelectorAll('.answer-btn').forEach((btn) =>
       btn.addEventListener('click', () => onAnswer(btn.dataset.value))
     );
@@ -161,6 +165,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
 }
 
 export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
+  const hasOptions = Array.isArray(question.options);
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
@@ -183,7 +188,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
   root.querySelectorAll('.answer-btn').forEach((btn) =>
     btn.addEventListener('click', () => {
       const raw = btn.dataset.value;
-      const value = raw === '>' || raw === '<' ? raw : Number(raw);
+      const value = hasOptions ? raw : Number(raw);
       onAnswer(value);
     })
   );
