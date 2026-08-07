@@ -43,6 +43,32 @@ describe('createPairsRound', () => {
     round.calcTiles.forEach((t) => expect(t.shape).toBeUndefined());
   });
 
+  it('carries the items field on a monnaie calc tile', () => {
+    const moneyQuestions = [
+      { type: 'monnaie', items: ['1e', '50c'], answer: 150, prompt: 'Combien y a-t-il en tout ?' },
+    ];
+    const round = createPairsRound(moneyQuestions);
+    expect(round.calcTiles[0].items).toEqual(['1e', '50c']);
+  });
+
+  it('carries a and b on a longueur calc tile', () => {
+    const lengthQuestions = [
+      { type: 'longueur', a: 12, b: 8, answer: '>', prompt: '12 cm ___ 8 cm', options: ['>', '<'] },
+    ];
+    const round = createPairsRound(lengthQuestions);
+    expect(round.calcTiles[0].a).toBe(12);
+    expect(round.calcTiles[0].b).toBe(8);
+  });
+
+  it('carries hour12 and minute on a temps calc tile', () => {
+    const timeQuestions = [
+      { type: 'temps', hour12: 3, minute: 30, hour24: 3, answer: '3h30', prompt: 'Quelle heure est-il ?', options: ['3h30', '4h00', '2h30'] },
+    ];
+    const round = createPairsRound(timeQuestions);
+    expect(round.calcTiles[0].hour12).toBe(3);
+    expect(round.calcTiles[0].minute).toBe(30);
+  });
+
   it('starts with no matched tiles', () => {
     const round = createPairsRound(sampleQuestions);
     expect(round.matchedCalcIds.size).toBe(0);
@@ -166,6 +192,36 @@ describe('attemptMatch with symbolic-answer types (comparaison/fraction)', () =>
 
     const correctAttempt = attemptMatch(round, fractionCalc.id, trueResult.id);
     expect(correctAttempt.isCorrect).toBe(true);
+  });
+});
+
+describe('attemptMatch with symbolic-answer types (longueur/temps)', () => {
+  it('matches a longueur calc tile only to its own result tile, even when another question shares the same symbol', () => {
+    const symbolicQuestions = [
+      { type: 'longueur', a: 12, b: 8, answer: '>', prompt: '12 cm ___ 8 cm', options: ['>', '<'] },
+      { type: 'longueur', a: 15, b: 3, answer: '>', prompt: '15 cm ___ 3 cm', options: ['>', '<'] },
+    ];
+    const round = createPairsRound(symbolicQuestions);
+    const calcA = round.calcTiles.find((t) => t.prompt === '12 cm ___ 8 cm');
+    const trueResultA = round.resultTiles.find((t) => t.pairKey === calcA.pairKey);
+    const wrongResult = round.resultTiles.find((t) => t.pairKey !== calcA.pairKey);
+
+    expect(attemptMatch(round, calcA.id, wrongResult.id).isCorrect).toBe(false);
+    expect(attemptMatch(round, calcA.id, trueResultA.id).isCorrect).toBe(true);
+  });
+
+  it('matches a temps calc tile only to its own result tile, even when another question shares the same formatted answer', () => {
+    const symbolicQuestions = [
+      { type: 'temps', hour12: 3, minute: 0, hour24: 3, answer: '3h00', prompt: 'Quelle heure est-il ?', options: ['3h00', '3h30', '4h00'] },
+      { type: 'temps', hour12: 3, minute: 0, hour24: 15, answer: '3h00', prompt: 'Quelle heure est-il ?', options: ['3h00', '3h30', '4h00'] },
+    ];
+    const round = createPairsRound(symbolicQuestions);
+    const [calcA] = round.calcTiles;
+    const trueResultA = round.resultTiles.find((t) => t.pairKey === calcA.pairKey);
+    const wrongResult = round.resultTiles.find((t) => t.pairKey !== calcA.pairKey);
+
+    expect(attemptMatch(round, calcA.id, wrongResult.id).isCorrect).toBe(false);
+    expect(attemptMatch(round, calcA.id, trueResultA.id).isCorrect).toBe(true);
   });
 });
 

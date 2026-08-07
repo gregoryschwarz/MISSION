@@ -2,6 +2,32 @@ import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { dynamicHintSteps } from './hints.js';
 import { shapeSvg } from './shapes.js';
+import { coinSvg } from './money.js';
+import { lengthBarSvg } from './length.js';
+import { clockFaceSvg } from './clock.js';
+
+function moneyDisplayHtml(items) {
+  return `<div class="money-display">${items.map((id) => coinSvg(id)).join('')}</div>`;
+}
+
+function lengthDisplayHtml(a, b) {
+  return `<div class="length-display">
+    <div class="length-bar-row">${lengthBarSvg(a)}<span>${a} cm</span></div>
+    <div class="length-bar-row">${lengthBarSvg(b)}<span>${b} cm</span></div>
+  </div>`;
+}
+
+function clockDisplayHtml(hour12, minute) {
+  return `<div class="clock-display">${clockFaceSvg(hour12, minute)}</div>`;
+}
+
+function visualDisplayHtml(q) {
+  if (q.shape) return `<div class="shape-display">${shapeSvg(q.shape)}</div>`;
+  if (q.items) return moneyDisplayHtml(q.items);
+  if (q.type === 'longueur') return lengthDisplayHtml(q.a, q.b);
+  if (q.type === 'temps') return clockDisplayHtml(q.hour12, q.minute);
+  return '';
+}
 
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
@@ -35,6 +61,9 @@ const FOCUS_LABELS = {
   division: 'la division',
   fraction: 'les fractions',
   geometrie: 'la géométrie',
+  monnaie: 'la monnaie',
+  longueur: 'les longueurs',
+  temps: "l'heure",
 };
 
 export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize }) {
@@ -122,19 +151,23 @@ function helpOverlayHtml(type, question) {
 }
 
 export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
-  const isComparison = question.type === 'comparaison' || question.type === 'fraction';
+  const hasOptions = Array.isArray(question.options);
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
-      ${question.shape ? `<div class="shape-display">${shapeSvg(question.shape)}</div>` : ''}
+      ${visualDisplayHtml(question)}
       ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
-      ${isComparison
+      ${hasOptions
         ? `<div class="options">
-            <button class="big-button answer-btn" data-value=">">supérieur &gt;</button>
-            <button class="big-button answer-btn" data-value="<">inférieur &lt;</button>
+            ${question.options
+              .map((choice) => {
+                const label = choice === '>' ? 'supérieur &gt;' : choice === '<' ? 'inférieur &lt;' : choice;
+                return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
+              })
+              .join('')}
           </div>`
         : `<form id="answer-form">
             <input id="answer-input" type="number" inputmode="numeric" required />
@@ -143,7 +176,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
       ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
-  if (isComparison) {
+  if (hasOptions) {
     root.querySelectorAll('.answer-btn').forEach((btn) =>
       btn.addEventListener('click', () => onAnswer(btn.dataset.value))
     );
@@ -161,13 +194,14 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
 }
 
 export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
+  const hasOptions = Array.isArray(question.options);
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
       <div class="progress">Question ${index + 1} / ${total}</div>
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <h2>${question.prompt}</h2>
-      ${question.shape ? `<div class="shape-display">${shapeSvg(question.shape)}</div>` : ''}
+      ${visualDisplayHtml(question)}
       ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
       <div class="options">
         ${choices
@@ -183,7 +217,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
   root.querySelectorAll('.answer-btn').forEach((btn) =>
     btn.addEventListener('click', () => {
       const raw = btn.dataset.value;
-      const value = raw === '>' || raw === '<' ? raw : Number(raw);
+      const value = hasOptions ? raw : Number(raw);
       onAnswer(value);
     })
   );
@@ -208,10 +242,10 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
         <div class="pairs-grid">
           <div class="pairs-column">
             ${remainingCalc
-              .map(
-                (t) =>
-                  `<button class="pairs-tile calc-tile ${t.id === selectedCalcId ? 'selected' : ''}" data-id="${t.id}">${t.shape ? `<div class="shape-display">${shapeSvg(t.shape)}</div>` : t.prompt}</button>`
-              )
+              .map((t) => {
+                const visual = visualDisplayHtml(t);
+                return `<button class="pairs-tile calc-tile ${t.id === selectedCalcId ? 'selected' : ''}" data-id="${t.id}">${visual || t.prompt}</button>`;
+              })
               .join('')}
           </div>
           <div class="pairs-column">

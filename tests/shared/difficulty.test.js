@@ -11,6 +11,9 @@ describe('DEFAULT_DIFFICULTY_LEVELS', () => {
       division: 1,
       fraction: 1,
       geometrie: 1,
+      monnaie: 1,
+      longueur: 1,
+      temps: 1,
     });
   });
 });

@@ -1,8 +1,8 @@
 import { randomInt, shuffle } from './random.js';
 
 export function generateChoices(question) {
-  if (question.type === 'comparaison' || question.type === 'fraction') {
-    return ['>', '<'];
+  if (Array.isArray(question.options)) {
+    return question.options;
   }
   const correct = question.answer;
   const distractors = new Set();

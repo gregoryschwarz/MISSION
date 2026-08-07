@@ -13,6 +13,12 @@ export const HELP_TEXT = {
     "Pour comparer deux fractions, regarde le numérateur (le chiffre du haut) : si les dénominateurs (le chiffre du bas) sont pareils, la fraction avec le plus grand numérateur est la plus grande.",
   geometrie:
     "Pour compter les côtés d'une forme, regarde combien de segments droits (lignes) forment son contour. Le cercle n'a aucun côté droit : c'est une ligne courbe, donc 0 côté.",
+  monnaie:
+    "Pour trouver le total, additionne la valeur de chaque pièce ou billet. Astuce : commence par les plus gros billets, puis ajoute les pièces une par une.",
+  longueur:
+    "Pour comparer deux longueurs, regarde simplement quel nombre de centimètres est le plus grand : ce segment-là est le plus long.",
+  temps:
+    "La petite aiguille indique l'heure, la grande indique les minutes. Grande aiguille sur le 12 : c'est une heure pile (ex : 3h00). Sur le 6 : une demi-heure (ex : 3h30). L'après-midi, ajoute 12 à l'heure du cadran (3h → 15h).",
 };
 
 export function helpTextForType(type) {

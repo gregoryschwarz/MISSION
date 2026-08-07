@@ -11,6 +11,9 @@ export function createSession(questions) {
       division: { correct: 0, total: 0 },
       fraction: { correct: 0, total: 0 },
       geometrie: { correct: 0, total: 0 },
+      monnaie: { correct: 0, total: 0 },
+      longueur: { correct: 0, total: 0 },
+      temps: { correct: 0, total: 0 },
     },
     startedAt: Date.now(),
   };

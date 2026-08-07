@@ -70,4 +70,9 @@ describe('generateChoices', () => {
       choices.forEach((c) => expect(c).toBeGreaterThanOrEqual(0));
     }
   });
+
+  it('returns question.options verbatim for any type that defines options, not just comparaison/fraction', () => {
+    const question = { type: 'temps', answer: '14h30', prompt: 'Quelle heure est-il ?', options: ['14h30', '15h00', '13h30'] };
+    expect(generateChoices(question)).toEqual(['14h30', '15h00', '13h30']);
+  });
 });

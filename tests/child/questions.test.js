@@ -7,9 +7,14 @@ import {
   generateDivision,
   generateFraction,
   generateGeometry,
+  generateMoney,
+  generateLength,
+  generateTime,
   generateMission,
 } from '../../src/child/questions.js';
 import { SHAPES, shapeSides } from '../../src/child/shapes.js';
+import { COINS } from '../../src/child/money.js';
+import { formatTime } from '../../src/child/clock.js';
 
 function digitsReversed(n) {
   return String(n).split('').map(Number).reverse();
@@ -206,6 +211,132 @@ describe('generateGeometry', () => {
   });
 });
 
+describe('generateMoney', () => {
+  it('draws 2 coins/billets at level 1 (default)', () => {
+    const q = generateMoney();
+    expect(q.type).toBe('monnaie');
+    expect(q.items).toHaveLength(2);
+  });
+
+  it('draws 3 coins/billets at level 2', () => {
+    expect(generateMoney(2).items).toHaveLength(3);
+  });
+
+  it('draws 4 coins/billets at level 3', () => {
+    expect(generateMoney(3).items).toHaveLength(4);
+  });
+
+  it('always answers with the real sum of the drawn items, in centimes', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateMoney(3);
+      const expectedSum = q.items.reduce((sum, id) => sum + COINS[id].value, 0);
+      expect(q.answer).toBe(expectedSum);
+    }
+  });
+
+  it('only draws known coin/billet ids', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateMoney(3);
+      q.items.forEach((id) => expect(Object.keys(COINS)).toContain(id));
+    }
+  });
+});
+
+describe('generateLength', () => {
+  it('never produces equal lengths', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateLength();
+      expect(q.a).not.toBe(q.b);
+    }
+  });
+
+  it('respects the minimum gap of 5cm at level 1 (default)', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateLength();
+      expect(Math.abs(q.a - q.b)).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it('respects the minimum gap of 3cm at level 2', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateLength(2);
+      expect(Math.abs(q.a - q.b)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('respects the minimum gap of 1cm at level 3', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateLength(3);
+      expect(Math.abs(q.a - q.b)).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('answers with the correct comparison symbol and fixed options', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateLength();
+      const expected = q.a > q.b ? '>' : '<';
+      expect(q.answer).toBe(expected);
+      expect(q.options).toEqual(['>', '<']);
+    }
+  });
+});
+
+describe('generateTime', () => {
+  it('always keeps hour12 within 1-12', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateTime(3);
+      expect(q.hour12).toBeGreaterThanOrEqual(1);
+      expect(q.hour12).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it('only uses morning hours (1h-11h) at level 1 (default)', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateTime();
+      expect(q.hour24).toBeGreaterThanOrEqual(1);
+      expect(q.hour24).toBeLessThanOrEqual(11);
+    }
+  });
+
+  it('adds midday (12h) at level 2', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateTime(2);
+      expect(q.hour24).toBeGreaterThanOrEqual(1);
+      expect(q.hour24).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it('adds afternoon hours (13h-23h) at level 3', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateTime(3);
+      expect(q.hour24).toBeGreaterThanOrEqual(1);
+      expect(q.hour24).toBeLessThanOrEqual(23);
+    }
+  });
+
+  it('only uses whole or half hours', () => {
+    for (let i = 0; i < 30; i++) {
+      expect([0, 30]).toContain(generateTime(3).minute);
+    }
+  });
+
+  it('formats the answer to match hour24 and minute', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateTime(3);
+      expect(q.answer).toBe(formatTime(q.hour24, q.minute));
+    }
+  });
+
+  it('includes the correct answer among 3 unique options', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateTime(3);
+      expect(q.options).toHaveLength(3);
+      expect(q.options).toContain(q.answer);
+      expect(new Set(q.options).size).toBe(3);
+    }
+  });
+});
+
 describe('generateMission', () => {
   it('generates the requested number of questions', () => {
     expect(generateMission(10)).toHaveLength(10);
@@ -213,12 +344,15 @@ describe('generateMission', () => {
 
   it('only uses known question types', () => {
     const mission = generateMission(12);
-    const allowed = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie'];
+    const allowed = [
+      'addition', 'soustraction', 'multiplication', 'comparaison', 'division',
+      'fraction', 'geometrie', 'monnaie', 'longueur', 'temps',
+    ];
     mission.forEach((q) => expect(allowed).toContain(q.type));
   });
 
-  it('cycles through all 7 types when given enough questions', () => {
-    const mission = generateMission(7);
+  it('cycles through all 10 types when given enough questions', () => {
+    const mission = generateMission(10);
     const types = mission.map((q) => q.type).sort();
     expect(types).toEqual([
       'addition',
@@ -226,8 +360,11 @@ describe('generateMission', () => {
       'division',
       'fraction',
       'geometrie',
+      'longueur',
+      'monnaie',
       'multiplication',
       'soustraction',
+      'temps',
     ]);
   });
 

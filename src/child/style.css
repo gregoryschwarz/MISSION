@@ -331,3 +331,69 @@ input {
   height: 48px;
   margin: 0 auto;
 }
+
+.money-display {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 12px auto;
+}
+
+.money-display svg {
+  width: 48px;
+  height: 48px;
+}
+
+.length-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px auto;
+  max-width: 300px;
+}
+
+.length-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.length-bar-row svg {
+  height: 20px;
+  flex: 1;
+}
+
+.clock-display {
+  width: 120px;
+  height: 120px;
+  margin: 12px auto;
+}
+
+.clock-display svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pairs-tile .money-display {
+  gap: 4px;
+}
+
+.pairs-tile .money-display svg {
+  width: 28px;
+  height: 28px;
+}
+
+.pairs-tile .length-display {
+  gap: 4px;
+}
+
+.pairs-tile .length-bar-row svg {
+  height: 12px;
+}
+
+.pairs-tile .clock-display {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+}
