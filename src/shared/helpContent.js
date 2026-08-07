@@ -18,7 +18,7 @@ export const HELP_TEXT = {
   longueur:
     "Pour comparer deux longueurs, regarde simplement quel nombre de centimètres est le plus grand : ce segment-là est le plus long.",
   temps:
-    "Sur une horloge, la petite aiguille indique l'heure et la grande aiguille indique les minutes. Quand la grande aiguille est sur le 12, il est une heure pile. Quand elle est sur le 6, il est et demie. Pour l'après-midi, ajoute 12 à l'heure du cadran (ex : 3h sur le cadran l'après-midi = 15h).",
+    "La petite aiguille indique l'heure, la grande indique les minutes. Grande aiguille sur le 12 : c'est une heure pile (ex : 3h00). Sur le 6 : une demi-heure (ex : 3h30). L'après-midi, ajoute 12 à l'heure du cadran (3h → 15h).",
 };
 
 export function helpTextForType(type) {
