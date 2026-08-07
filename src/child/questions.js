@@ -202,7 +202,7 @@ export function generateSingleTypeMission(count, type, level = 1) {
 const FOCUS_RATIO = 0.7;
 
 export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS, focusType = null) {
-  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie', 'monnaie', 'longueur', 'temps', 'probleme'];
+  const types = QUESTION_TYPES;
   const hasFocus = focusType && types.includes(focusType);
   const focusCount = hasFocus ? Math.round(count * FOCUS_RATIO) : 0;
   const otherTypes = hasFocus ? types.filter((t) => t !== focusType) : types;
