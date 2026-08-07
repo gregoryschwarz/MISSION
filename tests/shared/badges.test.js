@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
-  it('defines all 16 badges with a category, in a fixed order', () => {
+  it('defines all 17 badges with a category, in a fixed order', () => {
     expect(BADGES.map((b) => b.id)).toEqual([
       'streak-3',
       'streak-7',
@@ -17,6 +17,7 @@ describe('BADGES', () => {
       'mastery-monnaie',
       'mastery-longueur',
       'mastery-temps',
+      'mastery-probleme',
       'perfect-1',
       'perfect-10',
       'perfect-50',
@@ -32,7 +33,7 @@ describe('BADGES', () => {
 describe('badgeMedallionData', () => {
   it('marks badges as earned when their id is present', () => {
     const result = badgeMedallionData(['streak-3', 'mastery-division']);
-    expect(result).toHaveLength(16);
+    expect(result).toHaveLength(17);
     expect(result.find((b) => b.id === 'streak-3')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'mastery-division')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'streak-7')).toMatchObject({ earned: false });
@@ -86,10 +87,15 @@ describe('renderBadgeMedallionsHtml', () => {
     expect(html).toContain('📏');
     expect(html).toContain('🕐');
   });
+
+  it('renders the probleme mastery badge when earned', () => {
+    const html = renderBadgeMedallionsHtml(['mastery-probleme']);
+    expect(html).toContain('📖');
+  });
 });
 
 describe('emojiForType', () => {
-  it('returns the correct emoji for each of the 10 mastery types', () => {
+  it('returns the correct emoji for each of the 11 mastery types', () => {
     expect(emojiForType('addition')).toBe('➕');
     expect(emojiForType('soustraction')).toBe('➖');
     expect(emojiForType('multiplication')).toBe('✖️');
@@ -100,6 +106,7 @@ describe('emojiForType', () => {
     expect(emojiForType('monnaie')).toBe('💰');
     expect(emojiForType('longueur')).toBe('📏');
     expect(emojiForType('temps')).toBe('🕐');
+    expect(emojiForType('probleme')).toBe('📖');
   });
 
   it('returns the fallback emoji for an unknown type', () => {

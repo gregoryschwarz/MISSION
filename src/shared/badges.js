@@ -12,6 +12,7 @@ export const BADGES = [
   { id: 'mastery-monnaie', category: 'maitrise', emoji: '💰', label: 'Monnaie maîtrisée', gradient: ['#b08968', '#ddb892'] },
   { id: 'mastery-longueur', category: 'maitrise', emoji: '📏', label: 'Longueurs maîtrisées', gradient: ['#5c6bc0', '#8c9eff'] },
   { id: 'mastery-temps', category: 'maitrise', emoji: '🕐', label: 'Heure maîtrisée', gradient: ['#d84315', '#ff7043'] },
+  { id: 'mastery-probleme', category: 'maitrise', emoji: '📖', label: 'Problèmes maîtrisés', gradient: ['#6a1b9a', '#ab47bc'] },
   { id: 'perfect-1', category: 'parfait', emoji: '💯', label: '1 mission parfaite', gradient: ['#ffd166', '#f4a261'] },
   { id: 'perfect-10', category: 'parfait', emoji: '🌈', label: '10 missions parfaites', gradient: ['#ff9a8b', '#ff6a88'] },
   { id: 'perfect-50', category: 'parfait', emoji: '💎', label: '50 missions parfaites', gradient: ['#84fab0', '#8fd3f4'] },
