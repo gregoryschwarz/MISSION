@@ -10,6 +10,7 @@ import {
   generateMoney,
   generateLength,
   generateTime,
+  generateWordProblem,
   generateMission,
 } from '../../src/child/questions.js';
 import { SHAPES, shapeSides } from '../../src/child/shapes.js';
@@ -337,6 +338,47 @@ describe('generateTime', () => {
   });
 });
 
+describe('generateWordProblem', () => {
+  it('always uses addition or soustraction as the underlying operation', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateWordProblem();
+      expect(['addition', 'soustraction']).toContain(q.operation);
+    }
+  });
+
+  it('has type "probleme" and a non-empty textual prompt', () => {
+    const q = generateWordProblem();
+    expect(q.type).toBe('probleme');
+    expect(q.prompt.length).toBeGreaterThan(0);
+  });
+
+  it('answers with a + b when the operation is addition', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateWordProblem();
+      if (q.operation === 'addition') {
+        expect(q.answer).toBe(q.a + q.b);
+      }
+    }
+  });
+
+  it('answers with a - b when the operation is soustraction', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateWordProblem();
+      if (q.operation === 'soustraction') {
+        expect(q.answer).toBe(q.a - q.b);
+      }
+    }
+  });
+
+  it('includes both numbers in the prompt text', () => {
+    for (let i = 0; i < 30; i++) {
+      const q = generateWordProblem();
+      expect(q.prompt).toContain(String(q.a));
+      expect(q.prompt).toContain(String(q.b));
+    }
+  });
+});
+
 describe('generateMission', () => {
   it('generates the requested number of questions', () => {
     expect(generateMission(10)).toHaveLength(10);
@@ -346,13 +388,13 @@ describe('generateMission', () => {
     const mission = generateMission(12);
     const allowed = [
       'addition', 'soustraction', 'multiplication', 'comparaison', 'division',
-      'fraction', 'geometrie', 'monnaie', 'longueur', 'temps',
+      'fraction', 'geometrie', 'monnaie', 'longueur', 'temps', 'probleme',
     ];
     mission.forEach((q) => expect(allowed).toContain(q.type));
   });
 
-  it('cycles through all 10 types when given enough questions', () => {
-    const mission = generateMission(10);
+  it('cycles through all 11 types when given enough questions', () => {
+    const mission = generateMission(11);
     const types = mission.map((q) => q.type).sort();
     expect(types).toEqual([
       'addition',
@@ -363,6 +405,7 @@ describe('generateMission', () => {
       'longueur',
       'monnaie',
       'multiplication',
+      'probleme',
       'soustraction',
       'temps',
     ]);

@@ -3,6 +3,7 @@ import { randomInt, shuffle } from './random.js';
 import { shapeSides } from './shapes.js';
 import { COINS } from './money.js';
 import { formatTime } from './clock.js';
+import { wordProblemText } from './wordProblems.js';
 
 // Powers of ten (10, 100, ...) have only one nonzero digit worth 1: every
 // digit-respecting subtrahend is therefore either 0 or the number itself, so
@@ -170,6 +171,13 @@ export function generateTime(level = 1) {
   };
 }
 
+export function generateWordProblem(level = 1) {
+  const operation = randomInt(0, 1) === 0 ? 'addition' : 'soustraction';
+  const base = operation === 'addition' ? generateAddition(level) : generateSubtraction(level);
+  const prompt = wordProblemText(operation, base.a, base.b);
+  return { type: 'probleme', operation, a: base.a, b: base.b, answer: base.answer, prompt };
+}
+
 const GENERATORS = {
   addition: generateAddition,
   soustraction: generateSubtraction,
@@ -181,12 +189,13 @@ const GENERATORS = {
   monnaie: generateMoney,
   longueur: generateLength,
   temps: generateTime,
+  probleme: generateWordProblem,
 };
 
 const FOCUS_RATIO = 0.7;
 
 export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS, focusType = null) {
-  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie', 'monnaie', 'longueur', 'temps'];
+  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie', 'monnaie', 'longueur', 'temps', 'probleme'];
   const hasFocus = focusType && types.includes(focusType);
   const focusCount = hasFocus ? Math.round(count * FOCUS_RATIO) : 0;
   const otherTypes = hasFocus ? types.filter((t) => t !== focusType) : types;
