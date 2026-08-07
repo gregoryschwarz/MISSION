@@ -1,6 +1,8 @@
 import { DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { randomInt, shuffle } from './random.js';
 import { shapeSides } from './shapes.js';
+import { COINS } from './money.js';
+import { formatTime } from './clock.js';
 
 // Powers of ten (10, 100, ...) have only one nonzero digit worth 1: every
 // digit-respecting subtrahend is therefore either 0 or the number itself, so
@@ -115,6 +117,59 @@ export function generateGeometry(level = 1) {
   return { type: 'geometrie', shape, answer: shapeSides(shape), prompt: 'Combien de côtés a cette forme ?' };
 }
 
+const MONEY_ITEM_COUNT_BY_LEVEL = { 1: 2, 2: 3, 3: 4 };
+const MONEY_COIN_IDS = Object.keys(COINS);
+
+export function generateMoney(level = 1) {
+  const count = MONEY_ITEM_COUNT_BY_LEVEL[level] ?? MONEY_ITEM_COUNT_BY_LEVEL[1];
+  const items = Array.from({ length: count }, () => MONEY_COIN_IDS[randomInt(0, MONEY_COIN_IDS.length - 1)]);
+  const answer = items.reduce((sum, id) => sum + COINS[id].value, 0);
+  return { type: 'monnaie', items, answer, prompt: 'Combien y a-t-il en tout ?' };
+}
+
+const LENGTH_MIN_GAP_BY_LEVEL = { 1: 5, 2: 3, 3: 1 };
+
+export function generateLength(level = 1) {
+  const minGap = LENGTH_MIN_GAP_BY_LEVEL[level] ?? LENGTH_MIN_GAP_BY_LEVEL[1];
+  const a = randomInt(2, 20);
+  let b;
+  do {
+    b = randomInt(2, 20);
+  } while (Math.abs(a - b) < minGap);
+  const answer = a > b ? '>' : '<';
+  return { type: 'longueur', a, b, answer, prompt: `${a} cm ___ ${b} cm`, options: ['>', '<'] };
+}
+
+const TIME_HOURS_BY_LEVEL = {
+  1: Array.from({ length: 11 }, (_, i) => i + 1),
+  2: Array.from({ length: 12 }, (_, i) => i + 1),
+  3: Array.from({ length: 23 }, (_, i) => i + 1),
+};
+
+export function generateTime(level = 1) {
+  const hours = TIME_HOURS_BY_LEVEL[level] ?? TIME_HOURS_BY_LEVEL[1];
+  const hour24 = hours[randomInt(0, hours.length - 1)];
+  const minute = randomInt(0, 1) === 0 ? 0 : 30;
+  const hour12 = hour24 > 12 ? hour24 - 12 : hour24;
+  const answer = formatTime(hour24, minute);
+  const distractors = new Set();
+  while (distractors.size < 2) {
+    const offsetSteps = randomInt(1, 3) * (randomInt(0, 1) === 0 ? -1 : 1);
+    const totalMinutes = (((hour24 * 60 + minute + offsetSteps * 30) % (24 * 60)) + 24 * 60) % (24 * 60);
+    const candidate = formatTime(Math.floor(totalMinutes / 60), totalMinutes % 60);
+    if (candidate !== answer) distractors.add(candidate);
+  }
+  return {
+    type: 'temps',
+    hour12,
+    minute,
+    hour24,
+    answer,
+    prompt: 'Quelle heure est-il ?',
+    options: shuffle([answer, ...distractors]),
+  };
+}
+
 const GENERATORS = {
   addition: generateAddition,
   soustraction: generateSubtraction,
@@ -123,12 +178,15 @@ const GENERATORS = {
   division: generateDivision,
   fraction: generateFraction,
   geometrie: generateGeometry,
+  monnaie: generateMoney,
+  longueur: generateLength,
+  temps: generateTime,
 };
 
 const FOCUS_RATIO = 0.7;
 
 export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULTY_LEVELS, focusType = null) {
-  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie'];
+  const types = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie', 'monnaie', 'longueur', 'temps'];
   const hasFocus = focusType && types.includes(focusType);
   const focusCount = hasFocus ? Math.round(count * FOCUS_RATIO) : 0;
   const otherTypes = hasFocus ? types.filter((t) => t !== focusType) : types;
