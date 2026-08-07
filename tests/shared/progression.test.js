@@ -86,6 +86,12 @@ describe('newlyMasteredTypes', () => {
     const next = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 1, monnaie: 3, longueur: 3, temps: 3 };
     expect(newlyMasteredTypes(previous, next)).toEqual(['monnaie', 'longueur', 'temps']);
   });
+
+  it('detects mastery for the new probleme type too', () => {
+    const previous = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 1, monnaie: 1, longueur: 1, temps: 1, probleme: 2 };
+    const next = { ...previous, probleme: 3 };
+    expect(newlyMasteredTypes(previous, next)).toEqual(['probleme']);
+  });
 });
 
 describe('newlyEarnedPerfectBadges', () => {
