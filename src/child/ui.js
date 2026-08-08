@@ -53,6 +53,22 @@ export function renderPairing(root, { onSubmit, error }) {
   });
 }
 
+export function renderNotionPicker(root, { types, onSelect, onBack }) {
+  root.innerHTML = `
+    <div class="screen notion-picker-screen">
+      <h1>Choisis une notion</h1>
+      ${types
+        .map((type) => `<button class="big-button notion-btn" data-type="${type}">${emojiForType(type)} ${type.charAt(0).toUpperCase() + type.slice(1)}</button>`)
+        .join('')}
+      <button id="notion-picker-back" class="big-button">Retour</button>
+    </div>
+  `;
+  root.querySelectorAll('.notion-btn').forEach((btn) =>
+    btn.addEventListener('click', () => onSelect(btn.dataset.type))
+  );
+  root.querySelector('#notion-picker-back').addEventListener('click', onBack);
+}
+
 const FOCUS_LABELS = {
   addition: "l'addition",
   soustraction: 'la soustraction',
@@ -67,7 +83,7 @@ const FOCUS_LABELS = {
   probleme: 'les problèmes',
 };
 
-export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize }) {
+export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion }) {
   root.innerHTML = `
     <div class="screen home-screen">
       <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
@@ -80,12 +96,14 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, ch
       ${renderBadgeMedallionsHtml(badges)}
       <button id="customize" class="big-button">🎨 Personnaliser</button>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
+      <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
     </div>
   `;
   root.querySelector('#child-name').textContent = childName ?? 'Ambre';
   root.querySelector('#start-mission').addEventListener('click', onStartMission);
   root.querySelector('#sound-toggle').addEventListener('click', onToggleSound);
   root.querySelector('#customize').addEventListener('click', onCustomize);
+  root.querySelector('#choose-notion').addEventListener('click', onChooseNotion);
 }
 
 function customizeMedallionHtml(item, selectedId) {
