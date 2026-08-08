@@ -92,6 +92,12 @@ describe('newlyMasteredTypes', () => {
     const next = { ...previous, probleme: 3 };
     expect(newlyMasteredTypes(previous, next)).toEqual(['probleme']);
   });
+
+  it('detects mastery for the new accord-pluriel type too', () => {
+    const previous = { addition: 1, soustraction: 1, multiplication: 1, comparaison: 1, division: 1, fraction: 1, geometrie: 1, monnaie: 1, longueur: 1, temps: 1, probleme: 1, 'accord-pluriel': 2 };
+    const next = { ...previous, 'accord-pluriel': 3 };
+    expect(newlyMasteredTypes(previous, next)).toEqual(['accord-pluriel']);
+  });
 });
 
 describe('newlyEarnedPerfectBadges', () => {

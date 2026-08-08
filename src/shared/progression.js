@@ -3,7 +3,7 @@ import { DEFAULT_DIFFICULTY_LEVELS } from './difficulty.js';
 const XP_PER_CORRECT = 10;
 const XP_PER_LEVEL = 100;
 const MASTERY_LEVEL = 3;
-const OPERATION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie', 'monnaie', 'longueur', 'temps', 'probleme'];
+const OPERATION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie', 'monnaie', 'longueur', 'temps', 'probleme', 'accord-pluriel'];
 
 const STREAK_BADGES = [
   { days: 3, id: 'streak-3' },
