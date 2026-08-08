@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'fireba
 import { auth, db } from '../shared/firebaseConfig.js';
 import { getStoredFamilyId, storeFamilyId, pairWithFamily } from './pairing.js';
 import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
+import { generateFrenchMission } from './frenchQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
@@ -87,6 +88,7 @@ function renderHomeScreen(profile) {
     onToggleSound: toggleSound,
     onCustomize: showCustomize,
     onChooseNotion: showNotionPicker,
+    onStartFrenchMission: () => startFrenchMission(),
   });
 }
 
@@ -171,6 +173,22 @@ function startMission(notionType = null) {
     ? generateSingleTypeMission(MISSION_LENGTH, notionType, difficultyLevels[notionType] ?? 1)
     : generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null);
   session = createSession(questions);
+  lastFeedback = null;
+  helpVisible = false;
+  cachedChoicesIndex = -1;
+  if (missionMode === 'pairs') {
+    pairsRound = createPairsRound(session.questions);
+    showPairsRound();
+  } else {
+    showQuestion();
+  }
+}
+
+function startFrenchMission() {
+  const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  missionMode = pickMissionMode(getLastMissionMode());
+  storeLastMissionMode(missionMode);
+  session = createSession(generateFrenchMission(MISSION_LENGTH, difficultyLevels));
   lastFeedback = null;
   helpVisible = false;
   cachedChoicesIndex = -1;
