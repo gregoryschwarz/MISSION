@@ -21,6 +21,8 @@ export const HELP_TEXT = {
     "La petite aiguille indique l'heure, la grande indique les minutes. Grande aiguille sur le 12 : c'est une heure pile (ex : 3h00). Sur le 6 : une demi-heure (ex : 3h30). L'après-midi, ajoute 12 à l'heure du cadran (3h → 15h).",
   probleme:
     "Pour résoudre un problème, repère les nombres et ce qu'on te demande : est-ce qu'on ajoute (le total augmente) ou est-ce qu'on retire ? Calcule ensuite comme d'habitude.",
+  'accord-pluriel':
+    "Pour former le pluriel, ajoute généralement un -s au mot. Attention : certains mots prennent un -x (chevaux, choux, oiseaux...), et d'autres ne changent pas du tout (une souris, des souris).",
 };
 
 export function helpTextForType(type) {
