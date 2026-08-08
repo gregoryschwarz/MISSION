@@ -2,11 +2,11 @@ import { signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../shared/firebaseConfig.js';
 import { getStoredFamilyId, storeFamilyId, pairWithFamily } from './pairing.js';
-import { generateMission } from './questions.js';
+import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderHome, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderConnectionError } from './ui.js';
+import { renderPairing, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderConnectionError } from './ui.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
 import { adjustDifficultyLevels, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
@@ -83,9 +83,18 @@ function renderHomeScreen(profile) {
     accessoryEmoji: emojiForAccessory(profile.selectedAccessory ?? DEFAULT_ACCESSORY),
     soundEnabled,
     focusType: profile.focusType ?? null,
-    onStartMission: startMission,
+    onStartMission: () => startMission(),
     onToggleSound: toggleSound,
     onCustomize: showCustomize,
+    onChooseNotion: showNotionPicker,
+  });
+}
+
+function showNotionPicker() {
+  renderNotionPicker(root, {
+    types: QUESTION_TYPES,
+    onSelect: startMission,
+    onBack: () => renderHomeScreen(lastProfile),
   });
 }
 
@@ -154,11 +163,14 @@ async function showHome() {
   }
 }
 
-function startMission() {
+function startMission(notionType = null) {
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   missionMode = pickMissionMode(getLastMissionMode());
   storeLastMissionMode(missionMode);
-  session = createSession(generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null));
+  const questions = notionType
+    ? generateSingleTypeMission(MISSION_LENGTH, notionType, difficultyLevels[notionType] ?? 1)
+    : generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null);
+  session = createSession(questions);
   lastFeedback = null;
   helpVisible = false;
   cachedChoicesIndex = -1;
