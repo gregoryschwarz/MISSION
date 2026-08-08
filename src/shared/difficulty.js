@@ -15,6 +15,7 @@ export const DEFAULT_DIFFICULTY_LEVELS = {
   longueur: 1,
   temps: 1,
   probleme: 1,
+  'accord-pluriel': 1,
 };
 
 export const DIFFICULTY_LABELS = {
