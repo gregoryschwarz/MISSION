@@ -165,13 +165,9 @@ async function showHome() {
   }
 }
 
-function startMission(notionType = null) {
-  const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+function startMissionWithQuestions(questions) {
   missionMode = pickMissionMode(getLastMissionMode());
   storeLastMissionMode(missionMode);
-  const questions = notionType
-    ? generateSingleTypeMission(MISSION_LENGTH, notionType, difficultyLevels[notionType] ?? 1)
-    : generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null);
   session = createSession(questions);
   lastFeedback = null;
   helpVisible = false;
@@ -184,20 +180,17 @@ function startMission(notionType = null) {
   }
 }
 
+function startMission(notionType = null) {
+  const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  const questions = notionType
+    ? generateSingleTypeMission(MISSION_LENGTH, notionType, difficultyLevels[notionType] ?? 1)
+    : generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null);
+  startMissionWithQuestions(questions);
+}
+
 function startFrenchMission() {
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
-  missionMode = pickMissionMode(getLastMissionMode());
-  storeLastMissionMode(missionMode);
-  session = createSession(generateFrenchMission(MISSION_LENGTH, difficultyLevels));
-  lastFeedback = null;
-  helpVisible = false;
-  cachedChoicesIndex = -1;
-  if (missionMode === 'pairs') {
-    pairsRound = createPairsRound(session.questions);
-    showPairsRound();
-  } else {
-    showQuestion();
-  }
+  startMissionWithQuestions(generateFrenchMission(MISSION_LENGTH, difficultyLevels));
 }
 
 function choicesForCurrentQuestion(question) {
