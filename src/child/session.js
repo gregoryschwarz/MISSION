@@ -15,6 +15,7 @@ export function createSession(questions) {
       longueur: { correct: 0, total: 0 },
       temps: { correct: 0, total: 0 },
       probleme: { correct: 0, total: 0 },
+      'accord-pluriel': { correct: 0, total: 0 },
     },
     startedAt: Date.now(),
   };

@@ -71,6 +71,11 @@ describe('session flow', () => {
     const session = createSession([]);
     expect(session.breakdown.probleme).toEqual({ correct: 0, total: 0 });
   });
+
+  it('initializes a breakdown entry for accord-pluriel', () => {
+    const session = createSession([]);
+    expect(session.breakdown['accord-pluriel']).toEqual({ correct: 0, total: 0 });
+  });
 });
 
 describe('recordAnswer', () => {
