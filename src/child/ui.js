@@ -83,7 +83,7 @@ const FOCUS_LABELS = {
   probleme: 'les problèmes',
 };
 
-export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion }) {
+export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission }) {
   root.innerHTML = `
     <div class="screen home-screen">
       <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
@@ -97,6 +97,7 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, ch
       <button id="customize" class="big-button">🎨 Personnaliser</button>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
       <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
+      <button id="start-french-mission" class="big-button">📚 Mission Français</button>
     </div>
   `;
   root.querySelector('#child-name').textContent = childName ?? 'Ambre';
@@ -104,6 +105,7 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, ch
   root.querySelector('#sound-toggle').addEventListener('click', onToggleSound);
   root.querySelector('#customize').addEventListener('click', onCustomize);
   root.querySelector('#choose-notion').addEventListener('click', onChooseNotion);
+  root.querySelector('#start-french-mission').addEventListener('click', onStartFrenchMission);
 }
 
 function customizeMedallionHtml(item, selectedId) {
