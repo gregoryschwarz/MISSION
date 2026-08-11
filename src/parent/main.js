@@ -1,87 +1,123 @@
-import { signUp, logIn, logOut, watchAuthState } from './auth.js';
-import { findFamilyByParent, createFamily, fetchProfile, fetchSessions, setFocusType } from './family.js';
-import { renderDashboard } from './dashboard.js';
+import { signInWithGoogle, logOut, watchAuthState } from './auth.js';
+import {
+  findFamilyByParent,
+  createFamily,
+  createChild,
+  fetchChildren,
+  fetchChildProfile,
+  fetchSessions,
+  setFocusType,
+  setWeeklyGoalTarget,
+  fetchRewards,
+  fetchRewardRequests,
+  createReward,
+  resolveRewardRequest,
+} from './family.js';
+import { renderDashboard, renderChildrenList } from './dashboard.js';
 
 const root = document.getElementById('app');
 
-function renderAuthForm(mode = 'login', error = null) {
+function renderAuthForm(error = null) {
   root.innerHTML = `
     <div class="auth-screen">
       <h1>Missions d'Ambre — Espace parent</h1>
-      <form id="auth-form">
-        <label>Email<input id="email" type="email" required /></label>
-        <label>Mot de passe<input id="password" type="password" minlength="6" required /></label>
-        ${error ? '<p class="error" id="auth-error"></p>' : ''}
-        <button type="submit">${mode === 'login' ? 'Se connecter' : 'Créer un compte'}</button>
-      </form>
-      <button id="toggle-mode">${mode === 'login' ? 'Créer un compte' : "J'ai déjà un compte"}</button>
+      <p class="setup-hint">Suis les progrès de ton enfant et gère ses récompenses.</p>
+      ${error ? '<p class="error" id="auth-error"></p>' : ''}
+      <button id="google-sign-in" class="google-button">
+        <span class="google-icon">G</span> Se connecter avec Google
+      </button>
     </div>
   `;
   if (error) {
     root.querySelector('#auth-error').textContent = error;
   }
-  root.querySelector('#auth-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const email = root.querySelector('#email').value.trim();
-    const password = root.querySelector('#password').value;
+  root.querySelector('#google-sign-in').addEventListener('click', async () => {
     try {
-      if (mode === 'login') {
-        await logIn(email, password);
-      } else {
-        await signUp(email, password);
-      }
+      await signInWithGoogle();
     } catch (err) {
-      renderAuthForm(mode, err.message);
+      if (err.code === 'auth/popup-closed-by-user') return;
+      console.error('Échec de la connexion Google :', err);
+      renderAuthForm(`Connexion impossible (${err.code ?? err.message ?? 'erreur inconnue'}). Réessaie.`);
     }
-  });
-  root.querySelector('#toggle-mode').addEventListener('click', () => {
-    renderAuthForm(mode === 'login' ? 'signup' : 'login');
   });
 }
 
-function renderFamilySetup(parentUid, parentEmail, error = null) {
-  root.innerHTML = `
-    <div class="family-setup">
-      <h1>Bienvenue ! Créons le profil de votre enfant</h1>
-      <p class="setup-hint">Vous avez déjà un profil enfant ? Vous êtes peut-être connecté avec le mauvais compte.</p>
-      <form id="family-form">
-        <label>Prénom de l'enfant<input id="child-name" required /></label>
-        <label>Code secret à 4 chiffres<input id="pin" type="password" inputmode="numeric" maxlength="4" required /></label>
-        ${error ? '<p class="error" id="family-error"></p>' : ''}
-        <button type="submit">Créer</button>
-      </form>
-      <button id="setup-sign-out" class="link-button">Se déconnecter</button>
-    </div>
-  `;
-  if (error) {
-    root.querySelector('#family-error').textContent = error;
+async function copyChildCode(childId) {
+  try {
+    await navigator.clipboard.writeText(childId);
+  } catch (err) {
+    // Presse-papiers indisponible (ex. contexte non sécurisé) : rien d'affiché,
+    // le parent peut toujours copier le code manuellement à l'écran.
   }
-  root.querySelector('#family-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const childName = root.querySelector('#child-name').value.trim();
-    const pin = root.querySelector('#pin').value.trim();
-    try {
-      await createFamily({ parentUid, parentEmail, childName, pin });
-      await loadDashboard(parentUid);
-    } catch (err) {
-      renderFamilySetup(parentUid, parentEmail, 'Connexion impossible. Vérifie ta connexion et réessaie.');
-    }
-  });
-  root.querySelector('#setup-sign-out').addEventListener('click', logOut);
 }
 
-async function loadDashboard(parentUid) {
-  const family = await findFamilyByParent(parentUid);
-  if (!family) return;
-  const [profile, sessions] = await Promise.all([fetchProfile(family.id), fetchSessions(family.id)]);
+function shareChildCode(childId, childName) {
+  const text = `Code d'appairage Missions d'Ambre pour ${childName ?? 'ton enfant'} : ${childId}`;
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    copyChildCode(childId);
+  }
+}
+
+async function loadChildrenList(familyId, error = null) {
+  const children = await fetchChildren(familyId);
+  renderChildrenList(root, {
+    children,
+    error,
+    onSignOut: logOut,
+    onSelectChild: (childId) => loadDashboard(familyId, childId),
+    onCopyCode: copyChildCode,
+    onShareCode: shareChildCode,
+    onAddChild: async ({ childName, pin }) => {
+      try {
+        const childId = await createChild(familyId, { childName, pin });
+        await loadDashboard(familyId, childId);
+      } catch (err) {
+        await loadChildrenList(familyId, 'Connexion impossible. Vérifie ta connexion et réessaie.');
+      }
+    },
+  });
+}
+
+async function loadDashboard(familyId, childId) {
+  const [profile, sessions, rewards, rewardRequests] = await Promise.all([
+    fetchChildProfile(childId),
+    fetchSessions(childId),
+    fetchRewards(familyId),
+    fetchRewardRequests(childId),
+  ]);
+  if (!profile) {
+    await loadChildrenList(familyId);
+    return;
+  }
   renderDashboard(root, {
-    family,
+    child: { id: childId },
     profile,
     sessions,
+    rewards,
+    rewardRequests,
+    onBack: () => loadChildrenList(familyId),
     onSignOut: logOut,
+    onCopyCode: copyChildCode,
+    onShareCode: shareChildCode,
     onSetFocus: async (focusType) => {
-      await setFocusType(family.id, focusType);
-      await loadDashboard(parentUid);
+      await setFocusType(childId, focusType);
+      await loadDashboard(familyId, childId);
+    },
+    onSetWeeklyGoal: async (target) => {
+      await setWeeklyGoalTarget(childId, target);
+      await loadDashboard(familyId, childId);
+    },
+    onCreateReward: async ({ name, cost }) => {
+      await createReward(familyId, { name, cost });
+      await loadDashboard(familyId, childId);
+    },
+    onResolveRequest: async (requestId, decision) => {
+      const request = rewardRequests.find((r) => r.id === requestId);
+      if (!request) return;
+      await resolveRewardRequest(childId, profile, request, decision);
+      await loadDashboard(familyId, childId);
     },
   });
 }
@@ -92,12 +128,12 @@ watchAuthState(async (user) => {
     return;
   }
   try {
-    const family = await findFamilyByParent(user.uid);
-    if (family) {
-      await loadDashboard(user.uid);
-    } else {
-      renderFamilySetup(user.uid, user.email);
+    let family = await findFamilyByParent(user.uid);
+    if (!family) {
+      const familyId = await createFamily({ parentUid: user.uid, parentEmail: user.email });
+      family = { id: familyId };
     }
+    await loadChildrenList(family.id);
   } catch (err) {
     root.innerHTML = '<div class="auth-screen"><p class="error">Connexion impossible. Vérifie ta connexion et recharge la page.</p></div>';
   }

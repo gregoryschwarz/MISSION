@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { aggregateBreakdown, weeklyBreakdownByType, colorForPercent } from '../../src/parent/dashboard.js';
+import {
+  aggregateBreakdown,
+  weeklyBreakdownByType,
+  colorForPercent,
+  computeInsights,
+  dailyActivityLast7Days,
+  dailyActivityChartSvg,
+} from '../../src/parent/dashboard.js';
 
 describe('aggregateBreakdown', () => {
   it('computes a success percentage per question type across sessions', () => {
@@ -93,6 +100,94 @@ describe('weeklyBreakdownByType', () => {
     const result = weeklyBreakdownByType(sessions, { referenceDate });
     const currentWeek = result.addition.find((w) => w.weekLabel === '03/08');
     expect(currentWeek.percent).toBe(100);
+  });
+});
+
+describe('computeInsights', () => {
+  it('returns nulls when no notion has enough attempts', () => {
+    const sessions = [{ breakdown: { addition: { correct: 1, total: 2 } } }];
+    expect(computeInsights(sessions)).toEqual({ strongType: null, weakType: null });
+  });
+
+  it('picks the best and worst notion once at least 3 attempts are recorded', () => {
+    const sessions = [
+      { breakdown: { addition: { correct: 5, total: 5 }, soustraction: { correct: 1, total: 5 } } },
+    ];
+    const result = computeInsights(sessions);
+    expect(result.strongType).toEqual({ type: 'addition', percent: 100 });
+    expect(result.weakType).toEqual({ type: 'soustraction', percent: 20 });
+  });
+
+  it('reports only a weak point when the single eligible notion is below 75%', () => {
+    const sessions = [{ breakdown: { addition: { correct: 1, total: 4 } } }];
+    const result = computeInsights(sessions);
+    expect(result.strongType).toBe(null);
+    expect(result.weakType).toEqual({ type: 'addition', percent: 25 });
+  });
+
+  it('reports only a strong point when the single eligible notion is 75% or above', () => {
+    const sessions = [{ breakdown: { addition: { correct: 3, total: 4 } } }];
+    const result = computeInsights(sessions);
+    expect(result.strongType).toEqual({ type: 'addition', percent: 75 });
+    expect(result.weakType).toBe(null);
+  });
+
+  it('aggregates across multiple sessions before applying the threshold', () => {
+    const sessions = [
+      { breakdown: { addition: { correct: 1, total: 1 } } },
+      { breakdown: { addition: { correct: 3, total: 3 } } },
+    ];
+    const result = computeInsights(sessions);
+    expect(result.strongType.type).toBe('addition');
+    expect(result.strongType.percent).toBe(100);
+  });
+});
+
+describe('dailyActivityLast7Days', () => {
+  const referenceDate = new Date('2026-08-11T00:00:00Z');
+
+  it('returns 7 days ending on the reference date, oldest first', () => {
+    const result = dailyActivityLast7Days([], { referenceDate });
+    expect(result).toHaveLength(7);
+    expect(result[0].dateKey).toBe('2026-08-05');
+    expect(result[6].dateKey).toBe('2026-08-11');
+  });
+
+  it('sums correct answers and totals per day from sessions', () => {
+    const sessions = [
+      { date: '2026-08-11', correctCount: 9, questionsTotal: 10 },
+      { date: '2026-08-11', correctCount: 3, questionsTotal: 5 },
+      { date: '2026-08-10', correctCount: 4, questionsTotal: 4 },
+    ];
+    const result = dailyActivityLast7Days(sessions, { referenceDate });
+    const today = result.find((d) => d.dateKey === '2026-08-11');
+    const yesterday = result.find((d) => d.dateKey === '2026-08-10');
+    expect(today).toMatchObject({ correctCount: 12, questionsTotal: 15 });
+    expect(yesterday).toMatchObject({ correctCount: 4, questionsTotal: 4 });
+  });
+
+  it('ignores sessions outside the 7-day window', () => {
+    const sessions = [{ date: '2026-07-01', correctCount: 5, questionsTotal: 5 }];
+    const result = dailyActivityLast7Days(sessions, { referenceDate });
+    result.forEach((d) => expect(d.questionsTotal).toBe(0));
+  });
+});
+
+describe('dailyActivityChartSvg', () => {
+  it('renders an svg with one label per day', () => {
+    const days = dailyActivityLast7Days(
+      [{ date: '2026-08-11', correctCount: 9, questionsTotal: 10 }],
+      { referenceDate: new Date('2026-08-11T00:00:00Z') }
+    );
+    const svg = dailyActivityChartSvg(days);
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('11/08');
+    expect((svg.match(/<rect/g) ?? []).length).toBe(14);
+  });
+
+  it('does not throw when every day is empty', () => {
+    const days = dailyActivityLast7Days([], { referenceDate: new Date('2026-08-11T00:00:00Z') });
+    expect(() => dailyActivityChartSvg(days)).not.toThrow();
   });
 });
 
