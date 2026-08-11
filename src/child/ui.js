@@ -1,10 +1,42 @@
-import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
+import { emojiForType, renderBadgeMedallionsHtml, badgeAlbumData, BADGES } from '../shared/badges.js';
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
+import { DIFFICULTY_LABELS } from '../shared/difficulty.js';
 import { dynamicHintSteps } from './hints.js';
 import { shapeSvg } from './shapes.js';
 import { coinSvg } from './money.js';
 import { lengthBarSvg } from './length.js';
 import { clockFaceSvg } from './clock.js';
+
+// Navigation par onglets persistante, affichée uniquement sur les 4 écrans
+// "hub" (accueil, défis, avatar, récompenses) — absente pendant une mission
+// active pour ne pas distraire l'enfant en plein exercice.
+const BOTTOM_TABS = [
+  { id: 'missions', emoji: '🏠', label: 'Missions' },
+  { id: 'defis', emoji: '🎯', label: 'Défis' },
+  { id: 'avatar', emoji: '🎨', label: 'Avatar' },
+  { id: 'recompenses', emoji: '🎁', label: 'Récompenses' },
+];
+
+function bottomTabsHtml(activeTab) {
+  return `
+    <nav class="bottom-tabs">
+      ${BOTTOM_TABS.map(
+        (t) => `
+        <button class="bottom-tab ${t.id === activeTab ? 'active' : ''}" data-tab="${t.id}">
+          <span class="bottom-tab-icon">${t.emoji}</span>
+          <span class="bottom-tab-label">${t.label}</span>
+        </button>`
+      ).join('')}
+    </nav>
+  `;
+}
+
+function attachBottomTabs(root, onNavigate) {
+  if (!onNavigate) return;
+  root.querySelectorAll('.bottom-tab').forEach((btn) =>
+    btn.addEventListener('click', () => onNavigate(btn.dataset.tab))
+  );
+}
 
 function moneyDisplayHtml(items) {
   return `<div class="money-display">${items.map((id) => coinSvg(id)).join('')}</div>`;
@@ -35,7 +67,7 @@ export function renderPairing(root, { onSubmit, error }) {
       <h1>🦄 Missions d'Ambre</h1>
       <p>Un parent doit entrer le code d'appairage et le code secret.</p>
       <form id="pairing-form">
-        <label>Code d'appairage<input id="family-id" type="text" autocomplete="off" required /></label>
+        <label>Code d'appairage<input id="child-id" type="text" autocomplete="off" required /></label>
         <label>Code secret (4 chiffres)<input id="pin" type="password" inputmode="numeric" maxlength="4" required /></label>
         ${error ? '<p class="error" id="pairing-error"></p>' : ''}
         <button type="submit" class="big-button">Valider</button>
@@ -47,26 +79,38 @@ export function renderPairing(root, { onSubmit, error }) {
   }
   root.querySelector('#pairing-form').addEventListener('submit', (event) => {
     event.preventDefault();
-    const familyId = root.querySelector('#family-id').value.trim();
+    const childId = root.querySelector('#child-id').value.trim();
     const pin = root.querySelector('#pin').value.trim();
-    onSubmit({ familyId, pin });
+    onSubmit({ childId, pin });
   });
 }
 
-export function renderNotionPicker(root, { types, onSelect, onBack }) {
+export function renderNotionPicker(root, { types, difficultyLevels = {}, onSelect, onBack, onNavigate }) {
   root.innerHTML = `
-    <div class="screen notion-picker-screen">
+    <div class="screen notion-picker-screen with-tabs">
       <h1>Choisis une notion</h1>
-      ${types
-        .map((type) => `<button class="big-button notion-btn" data-type="${type}">${emojiForType(type)} ${type.charAt(0).toUpperCase() + type.slice(1)}</button>`)
-        .join('')}
+      <div class="notion-grid">
+        ${types
+          .map((type, i) => {
+            const level = difficultyLevels[type] ?? 1;
+            return `
+              <button class="notion-card theme-${type}" data-type="${type}" style="animation-delay:${i * 40}ms">
+                <span class="notion-card-emoji">${emojiForType(type)}</span>
+                <span class="notion-card-label">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                <span class="notion-card-level">${DIFFICULTY_LABELS[level] ?? DIFFICULTY_LABELS[1]}</span>
+              </button>`;
+          })
+          .join('')}
+      </div>
       <button id="notion-picker-back" class="big-button">Retour</button>
     </div>
+    ${bottomTabsHtml('defis')}
   `;
-  root.querySelectorAll('.notion-btn').forEach((btn) =>
+  root.querySelectorAll('.notion-card').forEach((btn) =>
     btn.addEventListener('click', () => onSelect(btn.dataset.type))
   );
   root.querySelector('#notion-picker-back').addEventListener('click', onBack);
+  attachBottomTabs(root, onNavigate);
 }
 
 const FOCUS_LABELS = {
@@ -83,22 +127,98 @@ const FOCUS_LABELS = {
   probleme: 'les problèmes',
 };
 
-export function renderHome(root, { childName, avatarLevel, badges, auraClass, characterEmoji, accessoryEmoji, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission }) {
-  root.innerHTML = `
-    <div class="screen home-screen">
-      <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
-      <div class="avatar-wrapper">
-        <div class="avatar ${auraClass}">${characterEmoji}</div>
-        ${accessoryEmoji ? `<span class="avatar-accessory">${accessoryEmoji}</span>` : ''}
+function statPillHtml(emoji, value, label) {
+  return `<div class="stat-pill" title="${label}"><span>${emoji}</span><span>${value}</span></div>`;
+}
+
+const STREAK_BANNER_CONTENT = {
+  'played-today': { className: 'streak-banner-success', text: (days) => `✅ Bravo, mission du jour faite ! Série de ${days} jour${days > 1 ? 's' : ''} 🔥 Reviens demain !` },
+  'at-risk': { className: 'streak-banner-warning', text: (days) => `🔥 N'oublie pas de jouer aujourd'hui pour garder ta série de ${days} jour${days > 1 ? 's' : ''} !` },
+  broken: { className: 'streak-banner-danger', text: () => '🔥 Commence une nouvelle série aujourd\'hui !' },
+};
+
+function streakBannerHtml(streakStatus, streakDays) {
+  const content = STREAK_BANNER_CONTENT[streakStatus];
+  if (!content) return '';
+  return `<p class="streak-banner ${content.className}">${content.text(streakDays ?? 0)}</p>`;
+}
+
+function dailyChallengeCardHtml(progress, target, completed, onStartId) {
+  if (completed) {
+    return `
+      <div class="daily-challenge-card daily-challenge-done">
+        <p class="daily-challenge-title">🔥 Défi du jour relevé !</p>
+        <p class="daily-challenge-subtitle">Reviens demain pour un nouveau défi ✅</p>
+      </div>`;
+  }
+  const percent = target ? Math.round((progress / target) * 100) : 0;
+  return `
+    <div class="daily-challenge-card">
+      <p class="daily-challenge-title">🔥 Défi du jour</p>
+      <p class="daily-challenge-subtitle">Réussis ${target} exercices aujourd'hui</p>
+      <div class="xp-bar daily-challenge-bar" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="${target}">
+        <div class="xp-bar-fill" style="width:${percent}%"></div>
       </div>
-      <h1><span id="child-name"></span> — niveau ${avatarLevel}</h1>
+      <p class="daily-challenge-progress-label">${progress}/${target}</p>
+      <button id="${onStartId}" class="big-button">Continue tes missions !</button>
+    </div>`;
+}
+
+function weeklyGoalCardHtml(progress, target) {
+  if (!target) return '';
+  const completed = progress >= target;
+  const percent = Math.min(100, Math.round((progress / target) * 100));
+  return `
+    <div class="daily-challenge-card weekly-goal-card ${completed ? 'daily-challenge-done' : ''}">
+      <p class="daily-challenge-title">🎯 Objectif de la semaine</p>
+      <p class="daily-challenge-subtitle">${completed ? 'Objectif atteint, bravo ! 🎉' : `${target} mission${target > 1 ? 's' : ''} à réussir cette semaine`}</p>
+      <div class="xp-bar daily-challenge-bar" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="${target}">
+        <div class="xp-bar-fill" style="width:${percent}%"></div>
+      </div>
+      <p class="daily-challenge-progress-label">${Math.min(progress, target)}/${target} missions</p>
+    </div>`;
+}
+
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, badges, auraClass, characterEmoji, hatEmoji, capeEmoji, decorGradient, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
+  const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
+  root.innerHTML = `
+    <div class="screen home-screen with-tabs">
+      <div class="home-header" style="background:${decorGradient ?? ''}">
+        <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
+        <div class="avatar-wrapper">
+          ${capeEmoji ? `<span class="avatar-cape">${capeEmoji}</span>` : ''}
+          <div class="avatar ${auraClass}">${characterEmoji}</div>
+          ${hatEmoji ? `<span class="avatar-hat">${hatEmoji}</span>` : ''}
+        </div>
+        <h1><span id="child-name"></span><span class="home-level">Niveau ${avatarLevel}</span></h1>
+        ${
+          xpProgress
+            ? `<div class="xp-bar" role="progressbar" aria-valuenow="${xpProgress.current}" aria-valuemin="0" aria-valuemax="${xpProgress.target}">
+                <div class="xp-bar-fill" style="width:${xpPercent}%"></div>
+              </div>
+              <p class="xp-bar-label">${xpProgress.current}/${xpProgress.target} XP</p>`
+            : ''
+        }
+        <div class="stat-pills">
+          ${statPillHtml('🪙', coins ?? 0, 'Pièces')}
+          ${statPillHtml('🔥', streakDays ?? 0, 'Série de jours')}
+          ${statPillHtml('🏅', (badges ?? []).length, 'Badges')}
+          ${statPillHtml('✅', totalCorrectCount ?? 0, 'Bonnes réponses')}
+        </div>
+      </div>
+      ${streakBannerHtml(streakStatus, streakDays)}
+      ${dailyChallengeCardHtml(dailyChallengeProgress ?? 0, dailyChallengeTarget ?? 5, !!dailyChallengeCompleted, 'daily-challenge-start')}
+      ${weeklyGoalCardHtml(weeklyGoalProgress ?? 0, weeklyGoalTarget ?? 0)}
       ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
       ${renderBadgeMedallionsHtml(badges)}
       <button id="customize" class="big-button">🎨 Personnaliser</button>
       <button id="start-mission" class="big-button">✨ Mission du jour</button>
       <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
       <button id="start-french-mission" class="big-button">📚 Mission Français</button>
+      <button id="show-rewards" class="big-button">🎁 Récompenses</button>
+      <button id="show-badges" class="big-button">🏅 Mes badges</button>
     </div>
+    ${bottomTabsHtml('missions')}
   `;
   root.querySelector('#child-name').textContent = childName ?? 'Ambre';
   root.querySelector('#start-mission').addEventListener('click', onStartMission);
@@ -106,38 +226,82 @@ export function renderHome(root, { childName, avatarLevel, badges, auraClass, ch
   root.querySelector('#customize').addEventListener('click', onCustomize);
   root.querySelector('#choose-notion').addEventListener('click', onChooseNotion);
   root.querySelector('#start-french-mission').addEventListener('click', onStartFrenchMission);
+  root.querySelector('#show-rewards').addEventListener('click', onShowRewards);
+  root.querySelector('#show-badges').addEventListener('click', onShowBadgeAlbum);
+  root.querySelector('#daily-challenge-start')?.addEventListener('click', onStartMission);
+  attachBottomTabs(root, onNavigate);
 }
 
-function customizeMedallionHtml(item, selectedId) {
+// `coins` n'est fourni que pour les catégories achetables (les personnages) :
+// un médaillon verrouillé mais avec un coût affiche alors un bouton d'achat
+// plutôt qu'un simple cadenas — cf. les maquettes ("🔒 80").
+function customizeMedallionHtml(item, selectedId, coins = null) {
+  const label = item.name ?? item.emoji ?? '';
   if (!item.unlocked) {
-    return `<div class="badge-medallion locked" title="${item.emoji}">🔒</div>`;
+    if (coins !== null && item.cost > 0) {
+      const affordable = coins >= item.cost;
+      return `<button class="badge-medallion buyable ${affordable ? '' : 'unaffordable'}" data-id="${item.id}" data-cost="${item.cost}" title="${label} — ${item.cost} 🪙">
+        <span class="medallion-lock">🔒</span>
+        <span class="medallion-cost">${item.cost}🪙</span>
+      </button>`;
+    }
+    return `<div class="badge-medallion locked" title="${label}">🔒</div>`;
   }
   const isSelected = item.id === selectedId;
-  return `<button class="badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}">${item.emoji}</button>`;
+  return `<button class="badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}">${item.emoji ?? '🚫'}</button>`;
 }
 
-export function renderCustomize(root, { characters, accessories, selectedCharacterId, selectedAccessoryId, onSelectCharacter, onSelectAccessory, onBack }) {
+function customizeDecorSwatchHtml(decor, selectedId) {
+  if (!decor.unlocked) {
+    return `<div class="decor-swatch locked" title="${decor.name}">🔒</div>`;
+  }
+  const isSelected = decor.id === selectedId;
+  const gradient = `linear-gradient(160deg, ${decor.gradient.join(', ')})`;
+  return `<button class="decor-swatch selectable ${isSelected ? 'selected' : ''}" data-id="${decor.id}" title="${decor.name}" style="background:${gradient}"></button>`;
+}
+
+export function renderCustomize(root, { characters, hats, capes, decors, coins = 0, selectedCharacterId, selectedHatId, selectedCapeId, selectedDecorId, onSelectCharacter, onSelectHat, onSelectCape, onSelectDecor, onPurchaseCharacter, onBack, onNavigate }) {
   root.innerHTML = `
-    <div class="screen customize-screen">
+    <div class="screen customize-screen with-tabs">
       <h1>🎨 Personnaliser</h1>
+      <p class="coins-balance">🪙 ${coins} pièces disponibles</p>
       <p class="customize-section-title">Personnage</p>
       <div class="badges-row" id="character-options">
-        ${characters.map((c) => customizeMedallionHtml(c, selectedCharacterId)).join('')}
+        ${characters.map((c) => customizeMedallionHtml(c, selectedCharacterId, coins)).join('')}
       </div>
-      <p class="customize-section-title">Accessoire</p>
-      <div class="badges-row" id="accessory-options">
-        ${accessories.map((a) => customizeMedallionHtml(a, selectedAccessoryId)).join('')}
+      <p class="customize-section-title">Chapeau</p>
+      <div class="badges-row" id="hat-options">
+        ${hats.map((h) => customizeMedallionHtml(h, selectedHatId)).join('')}
+      </div>
+      <p class="customize-section-title">Cape</p>
+      <div class="badges-row" id="cape-options">
+        ${capes.map((c) => customizeMedallionHtml(c, selectedCapeId)).join('')}
+      </div>
+      <p class="customize-section-title">Décor</p>
+      <div class="badges-row" id="decor-options">
+        ${decors.map((d) => customizeDecorSwatchHtml(d, selectedDecorId)).join('')}
       </div>
       <button id="customize-back" class="big-button">Retour</button>
     </div>
+    ${bottomTabsHtml('avatar')}
   `;
   root.querySelectorAll('#character-options .badge-medallion.selectable').forEach((btn) =>
     btn.addEventListener('click', () => onSelectCharacter(btn.dataset.id))
   );
-  root.querySelectorAll('#accessory-options .badge-medallion.selectable').forEach((btn) =>
-    btn.addEventListener('click', () => onSelectAccessory(btn.dataset.id))
+  root.querySelectorAll('#character-options .badge-medallion.buyable:not(.unaffordable)').forEach((btn) =>
+    btn.addEventListener('click', () => onPurchaseCharacter(btn.dataset.id, Number(btn.dataset.cost)))
+  );
+  root.querySelectorAll('#hat-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectHat(btn.dataset.id))
+  );
+  root.querySelectorAll('#cape-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectCape(btn.dataset.id))
+  );
+  root.querySelectorAll('#decor-options .decor-swatch.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectDecor(btn.dataset.id))
   );
   root.querySelector('#customize-back').addEventListener('click', onBack);
+  attachBottomTabs(root, onNavigate);
 }
 
 function helpOverlayHtml(type, question) {
@@ -301,10 +465,12 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
   draw();
 }
 
-export function renderResults(root, { correctCount, questionsTotal, gainedXp, leveledUp, newBadges, onContinue }) {
+export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, leveledUp, newBadges, justCompletedDailyChallenge, onContinue }) {
+  const earnedBadgesData = newBadges.map((id) => BADGES.find((b) => b.id === id)).filter(Boolean);
   root.innerHTML = `
     <div class="screen results-screen">
-      <h1>🎉 Mission terminée !</h1>
+      <div class="results-medal">${leveledUp ? '🏆' : '🎉'}</div>
+      <h1>Mission terminée !</h1>
       <div class="confetti">
         <span style="left:10%">🎉</span>
         <span style="left:30%">✨</span>
@@ -313,13 +479,96 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, le
         <span style="left:90%">🎉</span>
       </div>
       <p>${correctCount} / ${questionsTotal} bonnes réponses</p>
-      <p>+${gainedXp} XP</p>
-      ${leveledUp ? '<p class="level-up">⭐ Niveau supérieur débloqué !</p>' : ''}
-      ${newBadges.length ? `<p class="badge-earned">🏅 Nouveau badge : ${newBadges.join(', ')}</p>` : ''}
+      <div class="results-gains">
+        <span class="stat-pill stat-pill-light gain-pop" style="animation-delay:0.1s">✨ +${gainedXp} XP</span>
+        ${gainedCoins ? `<span class="stat-pill stat-pill-light gain-pop" style="animation-delay:0.25s">🪙 +${gainedCoins}</span>` : ''}
+      </div>
+      ${leveledUp ? '<p class="level-up-banner">⭐ Niveau supérieur débloqué !</p>' : ''}
+      ${justCompletedDailyChallenge ? '<p class="level-up">🔥 Défi du jour relevé ! Bonus +20 XP et +10 🪙</p>' : ''}
+      ${
+        earnedBadgesData.length
+          ? `<p class="badge-earned">🏅 Nouveau badge !</p>
+             <div class="badges-row">
+               ${earnedBadgesData
+                 .map(
+                   (b, i) =>
+                     `<div class="badge-medallion earned badge-pop" style="background: linear-gradient(135deg, ${b.gradient[0]}, ${b.gradient[1]});animation-delay:${0.4 + i * 0.15}s" title="${b.label}">${b.emoji}</div>`
+                 )
+                 .join('')}
+             </div>`
+          : ''
+      }
       <button id="continue" class="big-button">Retour à l'accueil</button>
     </div>
   `;
   root.querySelector('#continue').addEventListener('click', onContinue);
+}
+
+export function renderRewards(root, { coins, rewards, pendingRewardIds = [], onRequest, onBack, onNavigate }) {
+  root.innerHTML = `
+    <div class="screen rewards-screen with-tabs">
+      <h1>🎁 Récompenses</h1>
+      <p class="coins-balance">🪙 ${coins} pièces disponibles</p>
+      ${
+        rewards.length
+          ? rewards
+              .map((r) => {
+                const pending = pendingRewardIds.includes(r.id);
+                const affordable = coins >= r.cost;
+                const disabled = pending || !affordable;
+                return `
+                  <div class="reward-card">
+                    <span class="reward-card-name">${r.name}</span>
+                    <span class="reward-card-cost">${r.cost} 🪙</span>
+                    <button class="big-button reward-exchange" data-id="${r.id}" ${disabled ? 'disabled' : ''}>
+                      ${pending ? 'Demande envoyée ⏳' : 'Échanger'}
+                    </button>
+                  </div>`;
+              })
+              .join('')
+          : "<p>Ton parent n'a pas encore ajouté de récompense.</p>"
+      }
+      <button id="rewards-back" class="big-button">Retour</button>
+    </div>
+    ${bottomTabsHtml('recompenses')}
+  `;
+  root.querySelectorAll('.reward-exchange:not([disabled])').forEach((btn) =>
+    btn.addEventListener('click', () => onRequest(btn.dataset.id))
+  );
+  root.querySelector('#rewards-back').addEventListener('click', onBack);
+  attachBottomTabs(root, onNavigate);
+}
+
+export function renderBadgeAlbum(root, { earnedBadgeIds, badgeDates, totalBadgeCount, onBack }) {
+  const album = badgeAlbumData(earnedBadgeIds, badgeDates);
+  const percent = totalBadgeCount ? Math.round((album.length / totalBadgeCount) * 100) : 0;
+  root.innerHTML = `
+    <div class="screen badge-album-screen">
+      <h1>🏅 Ma collection</h1>
+      <p class="badge-album-count">${album.length} badge${album.length > 1 ? 's' : ''} sur ${totalBadgeCount}</p>
+      <div class="xp-bar badge-album-progress" role="progressbar" aria-valuenow="${album.length}" aria-valuemin="0" aria-valuemax="${totalBadgeCount}">
+        <div class="xp-bar-fill" style="width:${percent}%"></div>
+      </div>
+      ${
+        album.length
+          ? `<h2>Badges gagnés 🎉</h2><ul class="badge-album-list">${album
+              .map(
+                (b) => `
+              <li class="badge-album-entry">
+                <div class="badge-medallion" style="background: linear-gradient(135deg, ${b.gradient[0]}, ${b.gradient[1]})">${b.emoji}</div>
+                <div>
+                  <p class="badge-album-label">${b.label}</p>
+                  ${b.unlockedAtLabel ? `<p class="badge-album-date">🔓 Débloqué le ${b.unlockedAtLabel}</p>` : ''}
+                </div>
+              </li>`
+              )
+              .join('')}</ul>`
+          : "<p>Pas encore de badge — lance une mission pour commencer à en gagner !</p>"
+      }
+      <button id="badge-album-back" class="big-button">Retour</button>
+    </div>
+  `;
+  root.querySelector('#badge-album-back').addEventListener('click', onBack);
 }
 
 export function renderConnectionError(root, { onRetry }) {
