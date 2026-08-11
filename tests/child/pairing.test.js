@@ -7,7 +7,7 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 import { getDoc } from 'firebase/firestore';
-import { pairWithFamily, getStoredFamilyId, storeFamilyId } from '../../src/child/pairing.js';
+import { pairWithChild, getStoredChildId, storeChildId } from '../../src/child/pairing.js';
 
 function createFakeStorage() {
   const store = new Map();
@@ -17,14 +17,14 @@ function createFakeStorage() {
   };
 }
 
-describe('pairWithFamily', () => {
-  it('succeeds when the family exists and the pin matches', async () => {
+describe('pairWithChild', () => {
+  it('succeeds when the child exists and the pin matches', async () => {
     const pinHash = await hashPin('1234');
     getDoc.mockResolvedValueOnce({
       exists: () => true,
       data: () => ({ pinHash, childName: 'Luna' }),
     });
-    const result = await pairWithFamily({}, 'family-abc', '1234');
+    const result = await pairWithChild({}, 'child-abc', '1234');
     expect(result).toEqual({ success: true, childName: 'Luna' });
   });
 
@@ -34,21 +34,21 @@ describe('pairWithFamily', () => {
       exists: () => true,
       data: () => ({ pinHash, childName: 'Luna' }),
     });
-    const result = await pairWithFamily({}, 'family-abc', '0000');
+    const result = await pairWithChild({}, 'child-abc', '0000');
     expect(result).toEqual({ success: false, reason: 'wrong-pin' });
   });
 
-  it('fails when the family does not exist', async () => {
+  it('fails when the child does not exist', async () => {
     getDoc.mockResolvedValueOnce({ exists: () => false });
-    const result = await pairWithFamily({}, 'unknown', '1234');
-    expect(result).toEqual({ success: false, reason: 'unknown-family' });
+    const result = await pairWithChild({}, 'unknown', '1234');
+    expect(result).toEqual({ success: false, reason: 'unknown-child' });
   });
 });
 
-describe('familyId storage', () => {
-  it('stores and retrieves the family id', () => {
+describe('childId storage', () => {
+  it('stores and retrieves the child id', () => {
     const storage = createFakeStorage();
-    storeFamilyId('family-abc', storage);
-    expect(getStoredFamilyId(storage)).toBe('family-abc');
+    storeChildId('child-abc', storage);
+    expect(getStoredChildId(storage)).toBe('child-abc');
   });
 });

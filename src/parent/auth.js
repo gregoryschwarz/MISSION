@@ -1,17 +1,10 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-} from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../shared/firebaseConfig.js';
 
-export function signUp(email, password) {
-  return createUserWithEmailAndPassword(auth, email, password);
-}
+const googleProvider = new GoogleAuthProvider();
 
-export function logIn(email, password) {
-  return signInWithEmailAndPassword(auth, email, password);
+export function signInWithGoogle() {
+  return signInWithPopup(auth, googleProvider);
 }
 
 export function logOut() {
