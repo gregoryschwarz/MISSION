@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType } from '../../src/shared/badges.js';
+import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType, formatDateFr, badgeAlbumData } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
   it('defines all 18 badges with a category, in a fixed order', () => {
@@ -97,6 +97,41 @@ describe('renderBadgeMedallionsHtml', () => {
   it('renders the accord-pluriel mastery badge when earned', () => {
     const html = renderBadgeMedallionsHtml(['mastery-accord-pluriel']);
     expect(html).toContain('🔤');
+  });
+});
+
+describe('formatDateFr', () => {
+  it('formats an ISO date into a French long date', () => {
+    expect(formatDateFr('2026-08-07')).toBe('7 août 2026');
+  });
+  it('formats a single-digit month correctly', () => {
+    expect(formatDateFr('2026-01-03')).toBe('3 janvier 2026');
+  });
+});
+
+describe('badgeAlbumData', () => {
+  it('only includes earned badges', () => {
+    const result = badgeAlbumData(['streak-3'], { 'streak-3': '2026-08-07' });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ id: 'streak-3', unlockedAt: '2026-08-07', unlockedAtLabel: '7 août 2026' });
+  });
+
+  it('returns an empty array when nothing is earned', () => {
+    expect(badgeAlbumData([], {})).toEqual([]);
+  });
+
+  it('handles a missing unlock date gracefully', () => {
+    const result = badgeAlbumData(['streak-3'], {});
+    expect(result[0].unlockedAt).toBeNull();
+    expect(result[0].unlockedAtLabel).toBeNull();
+  });
+
+  it('sorts the most recently unlocked badge first', () => {
+    const result = badgeAlbumData(['streak-3', 'perfect-1'], {
+      'streak-3': '2026-08-01',
+      'perfect-1': '2026-08-07',
+    });
+    expect(result.map((b) => b.id)).toEqual(['perfect-1', 'streak-3']);
   });
 });
 

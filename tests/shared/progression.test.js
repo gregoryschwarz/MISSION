@@ -2,7 +2,15 @@ import { describe, it, expect } from 'vitest';
 import {
   xpForSession,
   levelForXp,
+  xpProgressForLevel,
+  coinsForSession,
+  spendCoins,
+  refundCoins,
   updateStreak,
+  streakStatus,
+  applyDailyChallenge,
+  weekStartKey,
+  applyWeeklyGoal,
   newlyEarnedBadges,
   newlyMasteredTypes,
   newlyEarnedPerfectBadges,
@@ -26,6 +34,47 @@ describe('levelForXp', () => {
   });
 });
 
+describe('xpProgressForLevel', () => {
+  it('returns progress within the current 100xp level', () => {
+    expect(xpProgressForLevel(0)).toEqual({ current: 0, target: 100 });
+    expect(xpProgressForLevel(40)).toEqual({ current: 40, target: 100 });
+    expect(xpProgressForLevel(140)).toEqual({ current: 40, target: 100 });
+  });
+});
+
+describe('coinsForSession', () => {
+  it('awards 1 coin per correct answer', () => {
+    expect(coinsForSession(6, false)).toBe(6);
+  });
+  it('adds a bonus of 5 coins for a perfect mission', () => {
+    expect(coinsForSession(10, true)).toBe(15);
+  });
+});
+
+describe('spendCoins', () => {
+  it('deducts coins when the balance is sufficient', () => {
+    expect(spendCoins(10, 5)).toBe(5);
+  });
+  it('returns null when the balance is insufficient', () => {
+    expect(spendCoins(3, 5)).toBeNull();
+  });
+  it('returns null for a negative amount', () => {
+    expect(spendCoins(10, -1)).toBeNull();
+  });
+  it('allows spending the exact balance down to zero', () => {
+    expect(spendCoins(5, 5)).toBe(0);
+  });
+});
+
+describe('refundCoins', () => {
+  it('credits back coins to the balance', () => {
+    expect(refundCoins(5, 8)).toBe(13);
+  });
+  it('ignores a negative amount', () => {
+    expect(refundCoins(5, -1)).toBe(5);
+  });
+});
+
 describe('updateStreak', () => {
   it('starts a streak at 1 for the first session', () => {
     expect(updateStreak(0, null, '2026-08-02')).toBe(1);
@@ -38,6 +87,108 @@ describe('updateStreak', () => {
   });
   it('keeps the streak unchanged for the same day', () => {
     expect(updateStreak(2, '2026-08-02', '2026-08-02')).toBe(2);
+  });
+});
+
+describe('streakStatus', () => {
+  it('returns "none" when the child never played', () => {
+    expect(streakStatus(null, '2026-08-02')).toBe('none');
+  });
+  it('returns "played-today" for the same day', () => {
+    expect(streakStatus('2026-08-02', '2026-08-02')).toBe('played-today');
+  });
+  it('returns "at-risk" the day after the last session', () => {
+    expect(streakStatus('2026-08-01', '2026-08-02')).toBe('at-risk');
+  });
+  it('returns "broken" after a gap of more than one day', () => {
+    expect(streakStatus('2026-07-20', '2026-08-02')).toBe('broken');
+  });
+});
+
+describe('applyDailyChallenge', () => {
+  it('starts progress at 0 for a child who never played the challenge', () => {
+    const profile = {};
+    const result = applyDailyChallenge(profile, { date: '2026-08-02', correctCount: 3 });
+    expect(result).toMatchObject({
+      dailyChallengeDate: '2026-08-02',
+      dailyChallengeProgress: 3,
+      dailyChallengeCompleted: false,
+      justCompletedDailyChallenge: false,
+      bonusXp: 0,
+      bonusCoins: 0,
+    });
+  });
+
+  it('accumulates progress across sessions on the same day', () => {
+    const profile = { dailyChallengeDate: '2026-08-02', dailyChallengeProgress: 3, dailyChallengeCompleted: false };
+    const result = applyDailyChallenge(profile, { date: '2026-08-02', correctCount: 2 });
+    expect(result.dailyChallengeProgress).toBe(5);
+    expect(result.dailyChallengeCompleted).toBe(true);
+    expect(result.justCompletedDailyChallenge).toBe(true);
+    expect(result.bonusXp).toBeGreaterThan(0);
+    expect(result.bonusCoins).toBeGreaterThan(0);
+  });
+
+  it('caps progress at the target and does not re-award the bonus once already completed', () => {
+    const profile = { dailyChallengeDate: '2026-08-02', dailyChallengeProgress: 5, dailyChallengeCompleted: true };
+    const result = applyDailyChallenge(profile, { date: '2026-08-02', correctCount: 4 });
+    expect(result.dailyChallengeProgress).toBe(5);
+    expect(result.justCompletedDailyChallenge).toBe(false);
+    expect(result.bonusXp).toBe(0);
+    expect(result.bonusCoins).toBe(0);
+  });
+
+  it('resets progress on a new day even if yesterday was completed', () => {
+    const profile = { dailyChallengeDate: '2026-08-01', dailyChallengeProgress: 5, dailyChallengeCompleted: true };
+    const result = applyDailyChallenge(profile, { date: '2026-08-02', correctCount: 2 });
+    expect(result.dailyChallengeProgress).toBe(2);
+    expect(result.dailyChallengeCompleted).toBe(false);
+  });
+});
+
+describe('weekStartKey', () => {
+  it('returns the same Monday for every day in that week', () => {
+    expect(weekStartKey('2026-08-03')).toBe('2026-08-03'); // lundi
+    expect(weekStartKey('2026-08-05')).toBe('2026-08-03'); // mercredi
+    expect(weekStartKey('2026-08-09')).toBe('2026-08-03'); // dimanche
+  });
+  it('rolls over to the next Monday correctly', () => {
+    expect(weekStartKey('2026-08-10')).toBe('2026-08-10'); // lundi suivant
+  });
+});
+
+describe('applyWeeklyGoal', () => {
+  it('starts progress at 1 for the first mission of the week', () => {
+    const profile = { weeklyGoalTarget: 5 };
+    const result = applyWeeklyGoal(profile, { date: '2026-08-03' });
+    expect(result).toEqual({
+      weeklyGoalWeekStart: '2026-08-03',
+      weeklyGoalProgress: 1,
+      weeklyGoalTarget: 5,
+      weeklyGoalCompleted: false,
+    });
+  });
+
+  it('accumulates progress across missions in the same week', () => {
+    const profile = { weeklyGoalTarget: 3, weeklyGoalWeekStart: '2026-08-03', weeklyGoalProgress: 2 };
+    const result = applyWeeklyGoal(profile, { date: '2026-08-05' });
+    expect(result.weeklyGoalProgress).toBe(3);
+    expect(result.weeklyGoalCompleted).toBe(true);
+  });
+
+  it('resets progress when a new week starts', () => {
+    const profile = { weeklyGoalTarget: 3, weeklyGoalWeekStart: '2026-08-03', weeklyGoalProgress: 3 };
+    const result = applyWeeklyGoal(profile, { date: '2026-08-10' });
+    expect(result.weeklyGoalWeekStart).toBe('2026-08-10');
+    expect(result.weeklyGoalProgress).toBe(1);
+    expect(result.weeklyGoalCompleted).toBe(false);
+  });
+
+  it('is never completed when no target has been set', () => {
+    const profile = {};
+    const result = applyWeeklyGoal(profile, { date: '2026-08-03' });
+    expect(result.weeklyGoalTarget).toBe(0);
+    expect(result.weeklyGoalCompleted).toBe(false);
   });
 });
 
@@ -125,6 +276,39 @@ describe('applyProgression', () => {
     expect(result.streakDays).toBe(3);
     expect(result.newBadges).toEqual(['streak-3']);
     expect(result.badges).toEqual(['streak-3']);
+    expect(result.totalCorrectCount).toBe(3);
+    expect(result.gainedCoins).toBe(3);
+    expect(result.coins).toBe(3);
+    expect(result.badgeDates).toEqual({ 'streak-3': '2026-08-02' });
+  });
+
+  it('preserves existing badge unlock dates and adds new ones', () => {
+    const profile = {
+      xp: 0,
+      avatarLevel: 1,
+      streakDays: 6,
+      badges: ['streak-3'],
+      badgeDates: { 'streak-3': '2026-08-01' },
+      lastSessionDate: '2026-08-01',
+    };
+    const summary = { date: '2026-08-02', correctCount: 1 };
+    const result = applyProgression(profile, summary);
+    expect(result.badgeDates).toEqual({ 'streak-3': '2026-08-01', 'streak-7': '2026-08-02' });
+  });
+
+  it('carries over the existing coin balance and adds the perfect-mission bonus', () => {
+    const profile = { xp: 0, avatarLevel: 1, streakDays: 0, badges: [], lastSessionDate: null, coins: 20 };
+    const summary = { date: '2026-08-02', correctCount: 10, questionsTotal: 10 };
+    const result = applyProgression(profile, summary);
+    expect(result.gainedCoins).toBe(15);
+    expect(result.coins).toBe(35);
+  });
+
+  it('accumulates totalCorrectCount across sessions', () => {
+    const profile = { xp: 0, avatarLevel: 1, streakDays: 0, badges: [], lastSessionDate: null, totalCorrectCount: 133 };
+    const summary = { date: '2026-08-02', correctCount: 7 };
+    const result = applyProgression(profile, summary);
+    expect(result.totalCorrectCount).toBe(140);
   });
 
   it('awards a mastery badge when a type reaches level 3 this mission', () => {

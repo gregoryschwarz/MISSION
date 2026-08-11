@@ -1,48 +1,80 @@
 import { describe, it, expect } from 'vitest';
 import {
   CHARACTERS,
-  ACCESSORIES,
+  HATS,
+  CAPES,
+  DECORS,
   DEFAULT_CHARACTER,
-  DEFAULT_ACCESSORY,
+  DEFAULT_HAT,
+  DEFAULT_CAPE,
+  DEFAULT_DECOR,
   unlockedCharacters,
-  unlockedAccessories,
+  unlockedHats,
+  unlockedCapes,
+  unlockedDecors,
   characterMedallionData,
-  accessoryMedallionData,
+  hatMedallionData,
+  capeMedallionData,
+  decorMedallionData,
   emojiForCharacter,
-  emojiForAccessory,
+  emojiForHat,
+  emojiForCape,
+  decorGradientCss,
 } from '../../src/shared/avatarCustomization.js';
 
 describe('CHARACTERS', () => {
-  it('defines 3 characters with the unicorn unlocked from level 1', () => {
-    expect(CHARACTERS.map((c) => c.id)).toEqual(['unicorn', 'butterfly', 'panda']);
+  it('defines 9 characters with the unicorn unlocked from level 1', () => {
+    expect(CHARACTERS).toHaveLength(9);
     expect(CHARACTERS.find((c) => c.id === 'unicorn').requiredLevel).toBe(1);
   });
-});
 
-describe('ACCESSORIES', () => {
-  it('defines 3 accessories with badge-based unlock conditions', () => {
-    expect(ACCESSORIES.map((a) => a.id)).toEqual(['crown', 'star', 'flower']);
-    expect(ACCESSORIES.find((a) => a.id === 'crown').requiresAnyOf).toEqual(['streak-30']);
-    expect(ACCESSORIES.find((a) => a.id === 'flower').requiresAnyOf).toEqual(['perfect-10']);
+  it('spreads required levels from 1 to 9 without duplicates', () => {
+    const levels = CHARACTERS.map((c) => c.requiredLevel).sort((a, b) => a - b);
+    expect(levels).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
-  it('unlocks the star with any of the 6 mastery badges', () => {
-    const star = ACCESSORIES.find((a) => a.id === 'star');
-    expect(star.requiresAnyOf).toEqual([
-      'mastery-addition',
-      'mastery-soustraction',
-      'mastery-multiplication',
-      'mastery-comparaison',
-      'mastery-division',
-      'mastery-fraction',
+  it('gives every character a coin cost, free for the default unicorn', () => {
+    expect(CHARACTERS.find((c) => c.id === 'unicorn').cost).toBe(0);
+    CHARACTERS.forEach((c) => expect(typeof c.cost).toBe('number'));
+  });
+});
+
+describe('HATS and CAPES', () => {
+  it('defines 4 hats including a free "none" option', () => {
+    expect(HATS).toHaveLength(4);
+    expect(HATS.find((h) => h.id === 'none-hat').requiresAnyOf).toEqual([]);
+    expect(HATS.find((h) => h.id === 'crown').requiresAnyOf).toEqual(['streak-30']);
+  });
+
+  it('defines 4 capes including a free "none" option', () => {
+    expect(CAPES).toHaveLength(4);
+    expect(CAPES.find((c) => c.id === 'none-cape').requiresAnyOf).toEqual([]);
+    expect(CAPES.find((c) => c.id === 'star-cape').requiresAnyOf).toEqual(['streak-7']);
+  });
+});
+
+describe('DECORS', () => {
+  it('defines the 8 named décors from the cahier des charges, unlocked by level', () => {
+    expect(DECORS.map((d) => d.name)).toEqual([
+      'Menthe',
+      'Crème',
+      'Soleil',
+      'Corail',
+      'Forêt',
+      'Bonbon',
+      'Arc-en-ciel',
+      'Nuit étoilée',
     ]);
+    expect(DECORS.map((d) => d.requiredLevel)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
 
-describe('DEFAULT_CHARACTER and DEFAULT_ACCESSORY', () => {
-  it('defaults to the unicorn and no accessory', () => {
+describe('defaults', () => {
+  it('defaults to the unicorn, no hat, no cape, and the Menthe décor', () => {
     expect(DEFAULT_CHARACTER).toBe('unicorn');
-    expect(DEFAULT_ACCESSORY).toBe(null);
+    expect(DEFAULT_HAT).toBe('none-hat');
+    expect(DEFAULT_CAPE).toBe('none-cape');
+    expect(DEFAULT_DECOR).toBe('menthe');
   });
 });
 
@@ -51,73 +83,92 @@ describe('unlockedCharacters', () => {
     expect(unlockedCharacters(1).map((c) => c.id)).toEqual(['unicorn']);
   });
 
-  it('unlocks the butterfly at level 3', () => {
-    expect(unlockedCharacters(3).map((c) => c.id)).toEqual(['unicorn', 'butterfly']);
+  it('unlocks progressively as the level rises', () => {
+    expect(unlockedCharacters(3).map((c) => c.id)).toEqual(['unicorn', 'butterfly', 'cat']);
+    expect(unlockedCharacters(9)).toHaveLength(9);
   });
 
-  it('unlocks the panda at level 5', () => {
-    expect(unlockedCharacters(5).map((c) => c.id)).toEqual(['unicorn', 'butterfly', 'panda']);
+  it('also unlocks a character purchased with coins regardless of level', () => {
+    const result = unlockedCharacters(1, ['dragon']);
+    expect(result.map((c) => c.id)).toEqual(['unicorn', 'dragon']);
   });
 
-  it('never returns duplicates or drops the unicorn at high levels', () => {
-    const result = unlockedCharacters(9);
-    expect(result).toHaveLength(3);
-    expect(result.map((c) => c.id)).toContain('unicorn');
+  it('does not duplicate a character both unlocked by level and owned', () => {
+    const result = unlockedCharacters(3, ['unicorn', 'butterfly']);
+    expect(result.map((c) => c.id)).toEqual(['unicorn', 'butterfly', 'cat']);
   });
 });
 
-describe('unlockedAccessories', () => {
-  it('returns an empty list when no relevant badge is present', () => {
-    expect(unlockedAccessories([])).toEqual([]);
-    expect(unlockedAccessories(['streak-3'])).toEqual([]);
+describe('unlockedHats and unlockedCapes', () => {
+  it('always includes the free "none" option even with no badges', () => {
+    expect(unlockedHats([]).map((h) => h.id)).toEqual(['none-hat']);
+    expect(unlockedCapes([]).map((c) => c.id)).toEqual(['none-cape']);
   });
 
   it('unlocks the crown with streak-30', () => {
-    expect(unlockedAccessories(['streak-30']).map((a) => a.id)).toEqual(['crown']);
+    expect(unlockedHats(['streak-30']).map((h) => h.id)).toEqual(['none-hat', 'crown']);
   });
 
-  it('unlocks the star with any single mastery badge', () => {
-    expect(unlockedAccessories(['mastery-division']).map((a) => a.id)).toEqual(['star']);
+  it('unlocks the top-hat with any single mastery badge', () => {
+    expect(unlockedHats(['mastery-division']).map((h) => h.id)).toEqual(['none-hat', 'top-hat']);
   });
 
-  it('unlocks the flower with perfect-10', () => {
-    expect(unlockedAccessories(['perfect-10']).map((a) => a.id)).toEqual(['flower']);
+  it('unlocks the star-cape with streak-7', () => {
+    expect(unlockedCapes(['streak-7']).map((c) => c.id)).toEqual(['none-cape', 'star-cape']);
   });
 
-  it('unlocks multiple accessories at once when multiple badges are present', () => {
-    const result = unlockedAccessories(['streak-30', 'mastery-fraction', 'perfect-10']);
-    expect(result.map((a) => a.id)).toEqual(['crown', 'star', 'flower']);
+  it('unlocks the diamond-cape with perfect-50', () => {
+    expect(unlockedCapes(['perfect-50']).map((c) => c.id)).toEqual(['none-cape', 'diamond-cape']);
+  });
+});
+
+describe('unlockedDecors', () => {
+  it('only Menthe is unlocked at level 1', () => {
+    expect(unlockedDecors(1).map((d) => d.id)).toEqual(['menthe']);
+  });
+
+  it('unlocks all 8 décors at level 8 or above', () => {
+    expect(unlockedDecors(8)).toHaveLength(8);
+    expect(unlockedDecors(12)).toHaveLength(8);
   });
 });
 
 describe('characterMedallionData', () => {
   it('marks only the unicorn as unlocked at level 1', () => {
     const result = characterMedallionData(1);
-    expect(result).toHaveLength(3);
+    expect(result).toHaveLength(9);
     expect(result.find((c) => c.id === 'unicorn').unlocked).toBe(true);
-    expect(result.find((c) => c.id === 'butterfly').unlocked).toBe(false);
-    expect(result.find((c) => c.id === 'panda').unlocked).toBe(false);
+    expect(result.find((c) => c.id === 'dragon').unlocked).toBe(false);
   });
 
-  it('marks the butterfly as unlocked at level 3', () => {
-    const result = characterMedallionData(3);
-    expect(result.find((c) => c.id === 'butterfly').unlocked).toBe(true);
-    expect(result.find((c) => c.id === 'panda').unlocked).toBe(false);
+  it('marks a purchased character as unlocked even below its required level', () => {
+    const result = characterMedallionData(1, ['dragon']);
+    expect(result.find((c) => c.id === 'dragon').unlocked).toBe(true);
+  });
+
+  it('carries the coin cost on every entry', () => {
+    const result = characterMedallionData(1);
+    expect(result.find((c) => c.id === 'dragon').cost).toBe(100);
   });
 });
 
-describe('accessoryMedallionData', () => {
-  it('marks no accessory as unlocked with an empty badge list', () => {
-    const result = accessoryMedallionData([]);
-    expect(result).toHaveLength(3);
-    result.forEach((a) => expect(a.unlocked).toBe(false));
-  });
+describe('hatMedallionData and capeMedallionData', () => {
+  it('marks only the free option as unlocked with an empty badge list', () => {
+    const hats = hatMedallionData([]);
+    expect(hats.find((h) => h.id === 'none-hat').unlocked).toBe(true);
+    expect(hats.find((h) => h.id === 'crown').unlocked).toBe(false);
 
-  it('marks only the crown as unlocked with streak-30', () => {
-    const result = accessoryMedallionData(['streak-30']);
-    expect(result.find((a) => a.id === 'crown').unlocked).toBe(true);
-    expect(result.find((a) => a.id === 'star').unlocked).toBe(false);
-    expect(result.find((a) => a.id === 'flower').unlocked).toBe(false);
+    const capes = capeMedallionData([]);
+    expect(capes.find((c) => c.id === 'none-cape').unlocked).toBe(true);
+    expect(capes.find((c) => c.id === 'star-cape').unlocked).toBe(false);
+  });
+});
+
+describe('decorMedallionData', () => {
+  it('marks décors unlocked according to avatar level', () => {
+    const result = decorMedallionData(4);
+    expect(result.find((d) => d.id === 'corail').unlocked).toBe(true);
+    expect(result.find((d) => d.id === 'foret').unlocked).toBe(false);
   });
 });
 
@@ -131,16 +182,33 @@ describe('emojiForCharacter', () => {
   });
 });
 
-describe('emojiForAccessory', () => {
-  it('returns the emoji for a known accessory id', () => {
-    expect(emojiForAccessory('crown')).toBe('👑');
+describe('emojiForHat and emojiForCape', () => {
+  it('returns null for the "none" options and for missing/unknown ids', () => {
+    expect(emojiForHat('none-hat')).toBe(null);
+    expect(emojiForHat(null)).toBe(null);
+    expect(emojiForHat('unknown')).toBe(null);
+    expect(emojiForCape('none-cape')).toBe(null);
+    expect(emojiForCape(null)).toBe(null);
   });
 
-  it('returns null for a null accessory id', () => {
-    expect(emojiForAccessory(null)).toBe(null);
+  it('returns the emoji for a known hat or cape id', () => {
+    expect(emojiForHat('crown')).toBe('👑');
+    expect(emojiForCape('rainbow-cape')).toBe('🌈');
+  });
+});
+
+describe('decorGradientCss', () => {
+  it('returns a two-stop linear-gradient for a simple décor', () => {
+    expect(decorGradientCss('soleil')).toBe('linear-gradient(160deg, #ffd166, #ffb84d)');
   });
 
-  it('returns null for an unknown accessory id', () => {
-    expect(emojiForAccessory('unknown')).toBe(null);
+  it('supports multi-stop gradients like arc-en-ciel', () => {
+    expect(decorGradientCss('arc-en-ciel')).toBe(
+      'linear-gradient(160deg, #ef476f, #ffd166, #06d6a0, #118ab2)'
+    );
+  });
+
+  it('falls back to the default décor for an unknown id', () => {
+    expect(decorGradientCss('unknown')).toBe(decorGradientCss('menthe'));
   });
 });

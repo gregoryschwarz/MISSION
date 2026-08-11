@@ -52,6 +52,29 @@ export function renderBadgeMedallionsHtml(earnedBadgeIds) {
   }).join('');
 }
 
+const MONTHS_FR = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
+
+// Formate une date "YYYY-MM-DD" en "7 août 2026".
+export function formatDateFr(isoDate) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return `${day} ${MONTHS_FR[month - 1]} ${year}`;
+}
+
+// Données pour l'album des badges : uniquement les badges gagnés, avec leur
+// date de déblocage formatée, triés du plus récent au plus ancien.
+export function badgeAlbumData(earnedBadgeIds, badgeDates = {}) {
+  return BADGES.filter((badge) => earnedBadgeIds.includes(badge.id))
+    .map((badge) => ({
+      ...badge,
+      unlockedAt: badgeDates[badge.id] ?? null,
+      unlockedAtLabel: badgeDates[badge.id] ? formatDateFr(badgeDates[badge.id]) : null,
+    }))
+    .sort((a, b) => (b.unlockedAt ?? '').localeCompare(a.unlockedAt ?? ''));
+}
+
 export function emojiForType(type) {
   const badge = BADGES.find((b) => b.id === `mastery-${type}`);
   return badge ? badge.emoji : '❓';

@@ -1,0 +1,85 @@
+/*
+ * Design tokens partagés entre l'espace enfant et l'espace parent.
+ * Source : docs/cahier-des-charges.md (section "Philosophie visuelle").
+ * Ne pas mettre de couleur/police/espacement en dur ailleurs : utiliser ces variables.
+ */
+:root {
+  /* --- Couleurs de base --- */
+  --color-bg: #fff9f2; /* fond crème */
+  --color-card: #ffffff;
+  --color-text: #1d1e2c;
+  --color-text-muted: #6f7080;
+
+  --color-mint: #06d6a0; /* marque / succès */
+  --color-sun: #ffd166; /* primaire */
+  --color-coral: #f25f5c; /* secondaire / erreur */
+  --color-sage: #8cb369; /* tertiaire */
+  --color-pink: #ef476f; /* accent */
+
+  /* --- Couleur par thème de maths ---
+     Les 5 thèmes du cahier des charges ont une couleur fixe.
+     Les thèmes additionnels de l'app actuelle (division, comparaison, monnaie,
+     longueur, temps, problème) reprennent la même palette en rotation. */
+  --theme-addition: var(--color-mint);
+  --theme-soustraction: var(--color-coral);
+  --theme-multiplication: var(--color-sun);
+  --theme-fraction: var(--color-sage);
+  --theme-geometrie: var(--color-pink);
+  --theme-division: var(--color-sun);
+  --theme-comparaison: var(--color-coral);
+  --theme-monnaie: var(--color-sage);
+  --theme-longueur: var(--color-pink);
+  --theme-temps: var(--color-mint);
+  --theme-probleme: var(--color-coral);
+  --theme-default: var(--color-sun);
+
+  /* --- Typographie ---
+     Fredoka = titres et gros chiffres ("côté jeu")
+     Figtree = texte, données, formulaires ("côté sérieux/parent") */
+  --font-display: 'Fredoka', 'Comic Sans MS', sans-serif;
+  --font-body: 'Figtree', 'Segoe UI', sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 30px;
+  --text-3xl: 40px;
+
+  /* --- Espacement : grille de 8pt --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* --- Arrondis --- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* --- Ombres à deux niveaux --- */
+  --shadow-card: 0 2px 6px rgba(29, 30, 44, 0.08);
+  --shadow-raised: 0 10px 24px rgba(29, 30, 44, 0.18);
+
+  /* --- Cibles tactiles --- */
+  --tap-min-height: 56px;
+}
+
+/* Fonction utilitaire : classe générique pour colorer un élément selon son thème,
+   ex. <div class="theme-addition"> ou data-type utilisé en JS avec var(--theme-*). */
+.theme-addition { --theme-color: var(--theme-addition); }
+.theme-soustraction { --theme-color: var(--theme-soustraction); }
+.theme-multiplication { --theme-color: var(--theme-multiplication); }
+.theme-fraction { --theme-color: var(--theme-fraction); }
+.theme-geometrie { --theme-color: var(--theme-geometrie); }
+.theme-division { --theme-color: var(--theme-division); }
+.theme-comparaison { --theme-color: var(--theme-comparaison); }
+.theme-monnaie { --theme-color: var(--theme-monnaie); }
+.theme-longueur { --theme-color: var(--theme-longueur); }
+.theme-temps { --theme-color: var(--theme-temps); }
+.theme-probleme { --theme-color: var(--theme-probleme); }
