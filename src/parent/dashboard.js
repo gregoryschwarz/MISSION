@@ -141,7 +141,7 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
       : profile.lastSessionDate ?? null;
 
   let daysSinceLastActivity = null;
-  let lastActivityLabel = 'Aucune activit? enregistr?e';
+  let lastActivityLabel = 'Aucune activité enregistrée';
 
   if (latestDate) {
     const latest = new Date(`${latestDate}T00:00:00Z`);
@@ -178,13 +178,13 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
     (weakType && weakType.percent < 50)
   ) {
     status = 'attention';
-    statusLabel = '? travailler';
+    statusLabel = 'À travailler';
   } else if (
     (weeklyTarget > 0 && weeklyProgress < weeklyTarget) ||
     (weakType && weakType.percent < 75)
   ) {
     status = 'encourage';
-    statusLabel = '? encourager';
+    statusLabel = 'À encourager';
   }
 
   return {
@@ -463,31 +463,31 @@ export function renderChildrenList(root, { children, pairingRequests = [], onSel
 
 function weeklyWatchHtml(watch) {
   const weakLabel = watch.weakType
-    ? `${emojiForType(watch.weakType.type)} ${capitalize(watch.weakType.type)} ? ${watch.weakType.percent}%`
-    : 'Pas assez de donn?es';
+    ? `${emojiForType(watch.weakType.type)} ${capitalize(watch.weakType.type)} · ${watch.weakType.percent}%`
+    : 'Pas assez de données';
 
   const focusLabel = watch.focusType
     ? `${emojiForType(watch.focusType)} ${capitalize(watch.focusType)}`
-    : 'Aucune priorit?';
+    : 'Aucune priorité';
 
   const goalLabel =
     watch.weeklyTarget > 0
       ? `${watch.weeklyProgress}/${watch.weeklyTarget} missions`
-      : 'Aucun objectif fix?';
+      : 'Aucun objectif fixé';
 
   return `
     <section class="weekly-watch weekly-watch-${watch.status}">
       <div class="weekly-watch-header">
         <div>
-          <h2>?? ? surveiller cette semaine</h2>
-          <p class="setup-hint">Synth?se automatique des derni?res missions.</p>
+          <h2>👀 À surveiller cette semaine</h2>
+          <p class="setup-hint">Synthèse automatique des dernières missions.</p>
         </div>
         <span class="weekly-watch-status">${escapeHtml(watch.statusLabel)}</span>
       </div>
 
       <div class="weekly-watch-grid">
         <div class="weekly-watch-item">
-          <span>Derni?re activit?</span>
+          <span>Dernière activité</span>
           <strong>${escapeHtml(watch.lastActivityLabel)}</strong>
         </div>
 
@@ -497,12 +497,12 @@ function weeklyWatchHtml(watch) {
         </div>
 
         <div class="weekly-watch-item">
-          <span>Notion ? surveiller</span>
+          <span>Notion à surveiller</span>
           <strong>${escapeHtml(weakLabel)}</strong>
         </div>
 
         <div class="weekly-watch-item">
-          <span>Priorit? parent</span>
+          <span>Priorité parent</span>
           <strong>${escapeHtml(focusLabel)}</strong>
         </div>
       </div>
