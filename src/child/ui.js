@@ -236,18 +236,24 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
           ${statPillHtml('✅', totalCorrectCount ?? 0, 'Bonnes réponses')}
         </div>
       </div>
-      ${streakBannerHtml(streakStatus, streakDays)}
-      ${dailyChallengeCardHtml(dailyChallengeProgress ?? 0, dailyChallengeTarget ?? 5, !!dailyChallengeCompleted, 'daily-challenge-start')}
-      ${weeklyGoalCardHtml(weeklyGoalProgress ?? 0, weeklyGoalTarget ?? 0, weeklyRewardText, weeklyRewardDays)}
-      ${dailyMissionLimit > 0 ? `<p class="daily-limit-banner ${dailyMissionCount >= dailyMissionLimit ? 'limit-reached' : ''}">${dailyMissionCount >= dailyMissionLimit ? '🌙 Bravo, objectif du jour terminé. Reviens demain !' : `⏱️ ${dailyMissionCount}/${dailyMissionLimit} missions aujourd’hui`}</p>` : ''}
-      ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
-      ${renderBadgeMedallionsHtml(badges)}
-      <button id="customize" class="big-button">🎨 Personnaliser</button>
-      <button id="start-mission" class="big-button">✨ Mission du jour</button>
-      <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
-      <button id="start-french-mission" class="big-button">📚 Mission Français</button>
-      <button id="show-rewards" class="big-button">🎁 Récompenses</button>
-      <button id="show-badges" class="big-button">🏅 Mes badges</button>
+      <main class="home-content">
+        ${streakBannerHtml(streakStatus, streakDays)}
+        <div class="home-goals">
+          ${dailyChallengeCardHtml(dailyChallengeProgress ?? 0, dailyChallengeTarget ?? 5, !!dailyChallengeCompleted, 'daily-challenge-start')}
+          ${weeklyGoalCardHtml(weeklyGoalProgress ?? 0, weeklyGoalTarget ?? 0, weeklyRewardText, weeklyRewardDays)}
+        </div>
+        ${dailyMissionLimit > 0 ? `<p class="daily-limit-banner ${dailyMissionCount >= dailyMissionLimit ? 'limit-reached' : ''}">${dailyMissionCount >= dailyMissionLimit ? '🌙 Bravo, objectif du jour terminé. Reviens demain !' : `⏱️ ${dailyMissionCount}/${dailyMissionLimit} missions aujourd’hui`}</p>` : ''}
+        ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
+        ${renderBadgeMedallionsHtml(badges)}
+        <div class="home-actions">
+          <button id="customize" class="big-button">🎨 Personnaliser</button>
+          <button id="start-mission" class="big-button">✨ Mission du jour</button>
+          <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
+          <button id="start-french-mission" class="big-button">📚 Mission Français</button>
+          <button id="show-rewards" class="big-button">🎁 Récompenses</button>
+          <button id="show-badges" class="big-button">🏅 Mes badges</button>
+        </div>
+      </main>
     </div>
     ${bottomTabsHtml('missions')}
   `;

@@ -9,6 +9,9 @@
   --color-card: #ffffff;
   --color-text: #1d1e2c;
   --color-text-muted: #6f7080;
+  --color-border: #e8e1d5;
+  --color-surface-soft: #f3efe8;
+  --color-surface-raised: #ffffff;
 
   --color-mint: #06d6a0; /* marque / succès */
   --color-sun: #ffd166; /* primaire */
@@ -68,6 +71,26 @@
 
   /* --- Cibles tactiles --- */
   --tap-min-height: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-bg: #11131d;
+    --color-card: #1b1e2b;
+    --color-text: #f7f3eb;
+    --color-text-muted: #b8b9c7;
+    --color-border: #35394a;
+    --color-surface-soft: #242837;
+    --color-surface-raised: #2b3041;
+    --color-mint: #36dcb1;
+    --color-sun: #f6c95d;
+    --color-coral: #ff7c78;
+    --color-sage: #a4c985;
+    --color-pink: #ff6f94;
+    --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.28);
+    --shadow-raised: 0 14px 32px rgba(0, 0, 0, 0.42);
+  }
 }
 
 /* Fonction utilitaire : classe générique pour colorer un élément selon son thème,

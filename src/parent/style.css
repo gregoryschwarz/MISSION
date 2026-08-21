@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   font-family: var(--font-body);
 }
 
@@ -21,12 +21,12 @@ h1, h2, h3 {
 }
 
 .dashboard, .auth-screen, .family-setup {
-  width: min(100%, 640px);
+  width: min(100%, 1280px);
 }
 
 section {
   background: var(--color-card);
-  border: 1px solid #f0ebe1;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   margin-bottom: var(--space-4);
@@ -50,6 +50,7 @@ input, select {
   border: 1px solid #ddd7c9;
   border-radius: var(--radius-sm);
   color: var(--color-text);
+  background: var(--color-card);
   font-size: var(--text-base);
 }
 
@@ -499,4 +500,111 @@ button:active {
 
 .weekly-watch-recommendation-neutral {
   border-left: 4px solid #9b8ec4;
+}
+
+@media (min-width: 920px) {
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  .dashboard > header,
+  .dashboard > .progress-summary,
+  .dashboard > .weekly-watch,
+  .dashboard > .focus-selector,
+  .dashboard > .rewards {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard > section {
+    margin-bottom: 0;
+  }
+
+  .dashboard > .insights,
+  .dashboard > .breakdown,
+  .dashboard > .daily-activity,
+  .dashboard > .monthly-activity,
+  .dashboard > .weekly-progress,
+  .dashboard > .sessions {
+    grid-column: span 6;
+  }
+
+  .dashboard > .notification-settings {
+    grid-column: span 12;
+  }
+
+  .weekly-watch-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .focus-selector {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  .focus-selector > h2,
+  .focus-selector > .setup-hint {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 919px) {
+  .dashboard, .auth-screen, .family-setup {
+    width: min(100%, 640px);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  section,
+  .weekly-watch-item,
+  .weekly-watch-recommendation,
+  .weekly-watch-status,
+  .google-button {
+    background: var(--color-card);
+    border-color: var(--color-border);
+  }
+
+  .child-row,
+  .reward-list li,
+  .reward-request,
+  .reward-days {
+    border-color: var(--color-border);
+  }
+
+  .recommendation-card,
+  .insight-weak,
+  .weekly-watch-encourage {
+    background: #443815;
+    color: #ffe9a8;
+  }
+
+  .insight-strong,
+  .weekly-watch-ok,
+  .calendar-day.active {
+    background: #153c34;
+    color: #b8f5df;
+  }
+
+  .weekly-watch-attention {
+    background: #482421;
+    color: #ffc0bc;
+  }
+
+  .weekly-watch-insufficient,
+  .calendar-day,
+  .breakdown-bar {
+    background: var(--color-surface-soft);
+  }
+
+  .weekly-watch-focus-button {
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+  }
+
+  .weekly-progress-table td[style] {
+    color: #171923;
+  }
 }
