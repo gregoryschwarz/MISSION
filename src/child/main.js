@@ -5,7 +5,7 @@ import { getStoredChildId, storeChildId, clearStoredChildId, resolvePairingCode,
 import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
 import { generateFrenchMission } from './frenchQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
-import { applyProgression, applyDailyChallenge, applyWeeklyGoal, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
+import { applyProgression, applyDailyChallenge, applyWeeklyGoal, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, coinRewardBreakdown, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
@@ -28,6 +28,7 @@ import {
   avatarPackData,
   packIdsForSelectedItems,
   purchaseAvatarPack,
+  nextCoinPurchaseGoal,
   decorGradientCss,
   DEFAULT_CHARACTER,
   DEFAULT_HAT,
@@ -131,6 +132,7 @@ function renderHomeScreen(profile) {
     streakStatus: streakStatus(profile.lastSessionDate ?? null, today),
     totalCorrectCount: profile.totalCorrectCount ?? 0,
     coins: profile.coins ?? 0,
+    coinGoal: nextCoinPurchaseGoal(profile, avatarPackSettings),
     dailyChallengeProgress: dailyChallengeIsToday ? profile.dailyChallengeProgress ?? 0 : 0,
     dailyChallengeCompleted: dailyChallengeIsToday ? !!profile.dailyChallengeCompleted : false,
     dailyChallengeTarget: DAILY_CHALLENGE_TARGET,
@@ -150,6 +152,7 @@ function renderHomeScreen(profile) {
     companionId: profile.selectedCompanion ?? DEFAULT_COMPANION,
     companionAccessoryId: profile.selectedCompanionAccessory ?? DEFAULT_COMPANION_ACCESSORY,
     decorGradient: decorGradientCss(profile.selectedDecor ?? DEFAULT_DECOR),
+    decorId: profile.selectedDecor ?? DEFAULT_DECOR,
     soundEnabled,
     focusType: profile.focusType ?? null,
     onStartMission: () => startMission(),
@@ -571,6 +574,11 @@ async function finishMission() {
   const previousDailyMissionCount = profileBefore.dailyMissionCountDate === summary.date ? profileBefore.dailyMissionCount ?? 0 : 0;
   const finalXp = progressionResult.xp + dailyChallenge.bonusXp;
   const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins;
+  const rewardBreakdown = coinRewardBreakdown(
+    summary.correctCount,
+    summary.correctCount === summary.questionsTotal,
+    dailyChallenge.justCompletedDailyChallenge
+  );
   const finalAvatarLevel = levelForXp(finalXp);
   const finalLeveledUp = finalAvatarLevel > profileBefore.avatarLevel;
   const nextProfile = {
@@ -612,6 +620,8 @@ async function finishMission() {
     questionsTotal: summary.questionsTotal,
     gainedXp: finalXp - profileBefore.xp,
     gainedCoins: finalCoins - (profileBefore.coins ?? 0),
+    coinBreakdown: rewardBreakdown,
+    coinGoal: nextCoinPurchaseGoal({ ...nextProfile, coins: finalCoins }, avatarPackSettings),
     leveledUp: finalLeveledUp,
     newBadges: progressionResult.newBadges,
     justCompletedDailyChallenge: dailyChallenge.justCompletedDailyChallenge,

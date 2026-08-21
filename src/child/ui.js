@@ -39,6 +39,35 @@ function blockAvatarHtml(characterId, hatId = 'none-hat', capeId = 'none-cape', 
   </div>`;
 }
 
+const DECOR_SCENES = {
+  menthe: ['🌿', '🌼', '🍀'], creme: ['☁️', '✨', '🌾'], soleil: ['☀️', '🌻', '✨'], corail: ['🪸', '🐚', '🌊'],
+  foret: ['🌲', '🍄', '🌳'], bonbon: ['🍭', '☁️', '🍬'], 'arc-en-ciel': ['🌈', '☁️', '⭐'], 'nuit-etoilee': ['🌙', '⭐', '✨'],
+  'haunted-manor': ['🏚️', '🦇', '🌕'], 'pumpkin-night': ['🎃', '🌙', '🍂'], 'snow-village': ['🏠', '❄️', '🎄'], 'aurora-sky': ['✨', '🏔️', '🌌'],
+  'block-city': ['🏙️', '🧊', '🔷'], 'neon-arcade': ['🕹️', '⚡', '💠'], 'mystic-stage': ['🎤', '✨', '🎵'], 'moon-concert': ['🌙', '🎶', '⭐'],
+  'enchanted-grove': ['🌳', '🧚', '🍄'], 'candy-clouds': ['☁️', '🍬', '🌈'], 'crystal-cave': ['💎', '✨', '🔮'],
+  'ocean-lagoon': ['🌴', '🌊', '🐚'], 'zen-garden': ['🎋', '🪨', '🌸'], 'sunset-beach': ['🌅', '🌴', '🌊'],
+};
+
+function decorSceneHtml(decorId) {
+  const scene = DECOR_SCENES[decorId] ?? DECOR_SCENES.menthe;
+  return `<div class="decor-landscape" aria-hidden="true">
+    <span class="decor-object decor-object-left">${scene[0]}</span>
+    <span class="decor-object decor-object-sky">${scene[1]}</span>
+    <span class="decor-object decor-object-right">${scene[2]}</span>
+    <span class="decor-ground"></span>
+  </div>`;
+}
+
+function coinGoalHtml(goal, compact = false) {
+  if (!goal) return '';
+  const progress = goal.cost > 0 ? Math.min(100, Math.round(((goal.cost - goal.remaining) / goal.cost) * 100)) : 100;
+  return `<div class="coin-goal ${goal.affordable ? 'coin-goal-ready' : ''} ${compact ? 'coin-goal-compact' : ''}">
+    <div class="coin-goal-copy"><span>${goal.affordable ? '🎉 ACHAT DISPONIBLE' : '🎯 PROCHAIN OBJECTIF'}</span><strong>${goal.emoji} ${escapeHtml(goal.name)}</strong></div>
+    <div class="coin-goal-progress"><div style="width:${progress}%"></div></div>
+    <small>${goal.affordable ? `Tu as les ${goal.cost} pièces nécessaires !` : `Encore ${goal.remaining} pièce${goal.remaining > 1 ? 's' : ''} sur ${goal.cost}`}</small>
+  </div>`;
+}
+
 // Navigation par onglets persistante, affichée uniquement sur les 4 écrans
 // "hub" (accueil, défis, avatar, récompenses) — absente pendant une mission
 // active pour ne pas distraire l'enfant en plein exercice.
@@ -269,14 +298,17 @@ function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
   root.innerHTML = `
     <div class="screen home-screen with-tabs">
-      <div class="home-header" style="background:${decorGradient ?? ''}">
+      <div class="home-header decor-scene decor-${decorId ?? 'menthe'}" style="background:${decorGradient ?? ''}">
         <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
-        <div class="avatar-wrapper">
-          <div class="avatar ${auraClass}">${blockAvatarHtml(characterId, hatId, capeId, false, hairstyleId, outfitId, companionId, companionAccessoryId)}</div>
+        <div class="home-avatar-stage">
+          ${decorSceneHtml(decorId)}
+          <div class="avatar-wrapper">
+            <div class="avatar ${auraClass}">${blockAvatarHtml(characterId, hatId, capeId, false, hairstyleId, outfitId, companionId, companionAccessoryId)}</div>
+          </div>
         </div>
         <h1><span id="child-name"></span><span class="home-level">Niveau ${avatarLevel}</span></h1>
         ${
@@ -293,6 +325,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
           ${statPillHtml('🏅', (badges ?? []).length, 'Badges')}
           ${statPillHtml('✅', totalCorrectCount ?? 0, 'Bonnes réponses')}
         </div>
+        ${coinGoalHtml(coinGoal, true)}
       </div>
       <main class="home-content">
         ${streakBannerHtml(streakStatus, streakDays)}
@@ -398,8 +431,9 @@ export function renderCustomize(root, { characters, hats, capes, hairstyles, out
         <p class="coins-balance">🪙 ${coins} pièces</p>
       </header>
       <div class="customize-layout">
-        <aside class="customize-preview" style="background:${previewGradient}">
+        <aside class="customize-preview decor-scene decor-${selectedDecor.id}" style="background:${previewGradient}">
           <span class="customize-preview-label">APERÇU</span>
+          ${decorSceneHtml(selectedDecor.id)}
           <div class="customize-preview-stage">${blockAvatarHtml(selectedCharacterId, selectedHatId, selectedCapeId, false, selectedHairstyleId, selectedOutfitId, selectedCompanionId, selectedCompanionAccessoryId)}</div>
           <strong>${selectedCompanion?.emoji ? `${selectedCompanion.emoji} ${selectedCompanion.name}` : 'Ton avatar est prêt !'}</strong>
           <small>Choisis chaque élément pour créer ton style.</small>
@@ -668,7 +702,7 @@ function resultNotionsHtml(breakdown) {
     </div>`;
 }
 
-export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, weeklyRewardText, breakdown = {}, incorrectQuestions = [], onRetryMistakes = null, onContinue }) {
+export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, coinBreakdown, coinGoal, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, weeklyRewardText, breakdown = {}, incorrectQuestions = [], onRetryMistakes = null, onContinue }) {
   const earnedBadgesData = newBadges.map((id) => BADGES.find((b) => b.id === id)).filter(Boolean);
   const scorePercent = questionsTotal ? Math.round((correctCount / questionsTotal) * 100) : 0;
   const appreciation = scorePercent >= 90
@@ -702,6 +736,12 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
             <span class="result-gain gain-pop" style="animation-delay:0.1s">✨ <strong>+${gainedXp}</strong><small>XP</small></span>
             <span class="result-gain gain-pop" style="animation-delay:0.25s">🪙 <strong>+${gainedCoins}</strong><small>pièces</small></span>
           </div>
+          ${coinBreakdown ? `<div class="coin-breakdown" aria-label="Détail des pièces gagnées">
+            <span><strong>+${coinBreakdown.answerCoins}</strong> bonnes réponses</span>
+            ${coinBreakdown.perfectBonus ? `<span><strong>+${coinBreakdown.perfectBonus}</strong> mission parfaite</span>` : ''}
+            ${coinBreakdown.dailyBonus ? `<span><strong>+${coinBreakdown.dailyBonus}</strong> défi du jour</span>` : ''}
+          </div>` : ''}
+          ${coinGoalHtml(coinGoal)}
           ${leveledUp ? '<p class="result-event">⭐ Niveau supérieur débloqué !</p>' : ''}
           ${justCompletedDailyChallenge ? '<p class="result-event">🔥 Défi du jour relevé ! Bonus obtenu.</p>' : ''}
           ${justCompletedWeeklyGoal ? `<div class="weekly-bonus-celebration"><div>🎊 🎁 🎊</div><h2>SUPER BONUS DÉBLOQUÉ !</h2><strong>${escapeHtml(weeklyRewardText ?? 'Ta récompense de la semaine')}</strong></div>` : ''}

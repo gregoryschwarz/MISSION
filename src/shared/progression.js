@@ -41,6 +41,20 @@ export function coinsForSession(correctCount, isPerfect) {
   return correctCount * COINS_PER_CORRECT + (isPerfect ? PERFECT_MISSION_COIN_BONUS : 0);
 }
 
+// Détail affichable à la fin d'une mission : l'enfant comprend précisément
+// d'où viennent ses pièces au lieu de ne voir qu'un total abstrait.
+export function coinRewardBreakdown(correctCount, isPerfect, completedDailyChallenge = false) {
+  const answerCoins = correctCount * COINS_PER_CORRECT;
+  const perfectBonus = isPerfect ? PERFECT_MISSION_COIN_BONUS : 0;
+  const dailyBonus = completedDailyChallenge ? DAILY_CHALLENGE_COIN_BONUS : 0;
+  return {
+    answerCoins,
+    perfectBonus,
+    dailyBonus,
+    total: answerCoins + perfectBonus + dailyBonus,
+  };
+}
+
 // Retire `amount` pièces du profil si le solde est suffisant.
 // Retourne le nouveau solde, ou null si le solde est insuffisant (rien n'est débité).
 export function spendCoins(currentCoins, amount) {

@@ -34,6 +34,7 @@ import {
   packIdsForSelectedItems,
   purchaseAvatarPack,
   configuredAvatarPacks,
+  nextCoinPurchaseGoal,
   unlockHintForItem,
   emojiForCharacter,
   emojiForHat,
@@ -307,6 +308,21 @@ describe('Avatar packs', () => {
     const settings = [{ id: 'magic-pack', active: false, cost: 25, requiredLevel: 3 }];
     expect(configuredAvatarPacks(settings).find((pack) => pack.id === 'magic-pack')).toMatchObject({ active: false, cost: 25, requiredLevel: 3 });
     expect(purchaseAvatarPack({ avatarLevel: 12, coins: 500 }, 'magic-pack', settings)).toEqual({ success: false, reason: 'inactive-pack' });
+  });
+
+  it('suggests the nearest accessible coin purchase and reports progress', () => {
+    const profile = { avatarLevel: 4, coins: 50, ownedCharacterIds: CHARACTERS.map((item) => item.id), ownedPackIds: ['starter-pack'] };
+    expect(nextCoinPurchaseGoal(profile)).toMatchObject({
+      id: 'creative-pack', cost: 60, remaining: 10, affordable: false, kind: 'pack',
+    });
+    expect(nextCoinPurchaseGoal({ ...profile, coins: 70 })).toMatchObject({
+      id: 'creative-pack', remaining: 0, affordable: true,
+    });
+  });
+
+  it('ignores inactive and already owned packs for the next purchase goal', () => {
+    const settings = [{ id: 'creative-pack', active: false }];
+    expect(nextCoinPurchaseGoal({ avatarLevel: 4, coins: 50, ownedPackIds: ['starter-pack', 'ninja-pack'] }, settings)?.id).not.toBe('creative-pack');
   });
 });
 

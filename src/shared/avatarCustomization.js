@@ -394,6 +394,30 @@ export function avatarPackData(avatarLevel, ownedPackIds = DEFAULT_OWNED_PACK_ID
   }));
 }
 
+// Retourne le prochain achat accessible avec des pièces. Les objets déjà
+// débloqués par le niveau sont ignorés puisqu'ils n'ont pas besoin d'être
+// achetés. Le but est de proposer un objectif concret et atteignable.
+export function nextCoinPurchaseGoal(profile, settings = []) {
+  const avatarLevel = profile.avatarLevel ?? 1;
+  const coins = profile.coins ?? 0;
+  const ownedCharacterIds = profile.ownedCharacterIds ?? [];
+  const ownedPackIds = [...new Set([...DEFAULT_OWNED_PACK_IDS, ...(profile.ownedPackIds ?? [])])];
+  const characterGoals = CHARACTERS
+    .filter((item) => item.cost > 0 && avatarLevel < item.requiredLevel && !ownedCharacterIds.includes(item.id))
+    .map((item) => ({ id: item.id, name: item.name, emoji: item.emoji, cost: item.cost, kind: 'personnage' }));
+  const packGoals = configuredAvatarPacks(settings)
+    .filter((pack) => pack.active && pack.cost > 0 && avatarLevel >= pack.requiredLevel && !ownedPackIds.includes(pack.id))
+    .map((pack) => ({ id: pack.id, name: pack.name, emoji: pack.emoji, cost: pack.cost, kind: 'pack' }));
+  const goal = [...characterGoals, ...packGoals]
+    .sort((a, b) => Math.max(0, a.cost - coins) - Math.max(0, b.cost - coins) || a.cost - b.cost)[0];
+  if (!goal) return null;
+  return {
+    ...goal,
+    remaining: Math.max(0, goal.cost - coins),
+    affordable: coins >= goal.cost,
+  };
+}
+
 export function packIdsForSelectedItems(selectedItemIds = []) {
   return [...new Set(selectedItemIds.map(packIdForItem).filter(Boolean))];
 }

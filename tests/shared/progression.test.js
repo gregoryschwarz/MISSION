@@ -4,6 +4,7 @@ import {
   levelForXp,
   xpProgressForLevel,
   coinsForSession,
+  coinRewardBreakdown,
   spendCoins,
   refundCoins,
   updateStreak,
@@ -48,6 +49,26 @@ describe('coinsForSession', () => {
   });
   it('adds a bonus of 5 coins for a perfect mission', () => {
     expect(coinsForSession(10, true)).toBe(15);
+  });
+});
+
+describe('coinRewardBreakdown', () => {
+  it('explains answer, perfect and daily challenge coins separately', () => {
+    expect(coinRewardBreakdown(10, true, true)).toEqual({
+      answerCoins: 10,
+      perfectBonus: 5,
+      dailyBonus: 10,
+      total: 25,
+    });
+  });
+
+  it('does not invent bonuses for an ordinary mission', () => {
+    expect(coinRewardBreakdown(7, false, false)).toEqual({
+      answerCoins: 7,
+      perfectBonus: 0,
+      dailyBonus: 0,
+      total: 7,
+    });
   });
 });
 
