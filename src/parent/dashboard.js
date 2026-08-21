@@ -455,6 +455,32 @@ function rewardsSectionHtml(rewards, rewardRequests, coins) {
   `;
 }
 
+export function avatarPacksSectionHtml(avatarPacks = []) {
+  const activeCount = avatarPacks.filter((pack) => pack.active !== false).length;
+  return `
+    <section class="avatar-pack-settings">
+      <div class="avatar-pack-settings-heading">
+        <div><h2>🛍️ Packs Avatar</h2><p class="setup-hint">${activeCount}/${avatarPacks.length} packs visibles dans la boutique enfant. Les packs déjà achetés restent acquis.</p></div>
+        <button id="sync-avatar-packs" type="button">➕ Rechercher de nouveaux packs</button>
+      </div>
+      <div class="parent-pack-grid">
+        ${avatarPacks.map((pack) => `
+          <article class="parent-pack-card ${pack.active === false ? 'pack-inactive' : ''}" data-pack-id="${pack.id}">
+            <div class="parent-pack-title"><span>${pack.emoji}</span><div><strong>${escapeHtml(pack.name)}</strong><small>${pack.itemIds.length} éléments</small></div></div>
+            <p>${escapeHtml(pack.description)}</p>
+            <div class="parent-pack-fields">
+              <label>Niveau<input class="pack-level" type="number" min="1" max="99" step="1" value="${pack.requiredLevel}" /></label>
+              <label>Prix<input class="pack-cost" type="number" min="0" max="9999" step="1" value="${pack.cost}" /></label>
+            </div>
+            <div class="parent-pack-actions">
+              <button class="pack-save" type="button">Enregistrer</button>
+              <button class="pack-toggle ${pack.active === false ? 'button-success' : 'button-danger'}" type="button" data-active="${pack.active !== false}">${pack.active === false ? 'Activer' : 'Masquer'}</button>
+            </div>
+          </article>`).join('')}
+      </div>
+    </section>`;
+}
+
 export function renderPairingRequestsSection(root, pairingRequests, onResolvePairing) {
   const section = root.querySelector('.pairing-requests');
   if (!section) return;
@@ -722,7 +748,7 @@ function breakdownBarsHtml(breakdown, difficultyLevels) {
   `;
 }
 
-export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], onBack, onSignOut, onSetFocus, onSetWeeklyGoal, onSetDailyLimit, onCreateReward, onUpdateReward, onResolveRequest, onCopyCode, onShareCode, onEnableNotifications }) {
+export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onSetFocus, onSetWeeklyGoal, onSetDailyLimit, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
   const breakdown = aggregateBreakdown(sessions);
   const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const dailyBreakdown = dailyBreakdownByType(sessions);
@@ -844,6 +870,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
             .join('')}
         </ul>
       </section>
+      ${avatarPacksSectionHtml(avatarPacks)}
       ${rewardsSectionHtml(rewards, rewardRequests, profile.coins)}
     </div>
   `;
@@ -904,4 +931,17 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   root.querySelectorAll('.reward-reject').forEach((btn) =>
     btn.addEventListener('click', () => onResolveRequest(btn.dataset.id, 'rejected'))
   );
+  root.querySelector('#sync-avatar-packs')?.addEventListener('click', onSyncAvatarPacks);
+  root.querySelectorAll('.pack-save').forEach((button) => button.addEventListener('click', () => {
+    const card = button.closest('.parent-pack-card');
+    const requiredLevel = Number(card.querySelector('.pack-level').value);
+    const cost = Number(card.querySelector('.pack-cost').value);
+    if (!Number.isInteger(requiredLevel) || requiredLevel < 1 || requiredLevel > 99) return;
+    if (!Number.isInteger(cost) || cost < 0 || cost > 9999) return;
+    onUpdateAvatarPack(card.dataset.packId, { requiredLevel, cost });
+  }));
+  root.querySelectorAll('.pack-toggle').forEach((button) => button.addEventListener('click', () => {
+    const card = button.closest('.parent-pack-card');
+    onUpdateAvatarPack(card.dataset.packId, { active: button.dataset.active !== 'true' });
+  }));
 }

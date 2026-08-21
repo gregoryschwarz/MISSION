@@ -348,8 +348,22 @@ export function companionAccessoryMedallionData(ownedPackIds = DEFAULT_OWNED_PAC
   return packMedallions(COMPANION_ACCESSORIES, ownedPackIds);
 }
 
-export function avatarPackData(avatarLevel, ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
-  return AVATAR_PACKS.map((pack) => ({
+export function configuredAvatarPacks(settings = []) {
+  return AVATAR_PACKS.map((pack) => {
+    const setting = settings.find((item) => item.id === pack.id) ?? {};
+    return {
+      ...pack,
+      active: setting.active !== false,
+      cost: Number.isInteger(setting.cost) && setting.cost >= 0 ? setting.cost : pack.cost,
+      requiredLevel: Number.isInteger(setting.requiredLevel) && setting.requiredLevel >= 1
+        ? setting.requiredLevel
+        : pack.requiredLevel,
+    };
+  });
+}
+
+export function avatarPackData(avatarLevel, ownedPackIds = DEFAULT_OWNED_PACK_IDS, settings = []) {
+  return configuredAvatarPacks(settings).map((pack) => ({
     ...pack,
     owned: ownedPackIds.includes(pack.id),
     levelUnlocked: avatarLevel >= pack.requiredLevel,
@@ -360,11 +374,12 @@ export function packIdsForSelectedItems(selectedItemIds = []) {
   return [...new Set(selectedItemIds.map(packIdForItem).filter(Boolean))];
 }
 
-export function purchaseAvatarPack(profile, packId) {
-  const pack = AVATAR_PACKS.find((item) => item.id === packId);
+export function purchaseAvatarPack(profile, packId, settings = []) {
+  const pack = configuredAvatarPacks(settings).find((item) => item.id === packId);
   if (!pack) return { success: false, reason: 'unknown-pack' };
   const ownedPackIds = [...new Set([...DEFAULT_OWNED_PACK_IDS, ...(profile.ownedPackIds ?? [])])];
   if (ownedPackIds.includes(pack.id)) return { success: false, reason: 'already-owned' };
+  if (!pack.active) return { success: false, reason: 'inactive-pack' };
   if ((profile.avatarLevel ?? 1) < pack.requiredLevel) return { success: false, reason: 'level-locked' };
   if ((profile.coins ?? 0) < pack.cost) return { success: false, reason: 'insufficient-coins' };
   return {

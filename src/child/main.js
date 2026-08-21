@@ -8,7 +8,7 @@ import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionCo
 import { applyProgression, applyDailyChallenge, applyWeeklyGoal, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderConnectionError } from './ui.js';
-import { fetchRewards, fetchRewardRequests, requestReward } from '../parent/family.js';
+import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
 import { BADGES } from '../shared/badges.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
@@ -58,6 +58,7 @@ let lastFeedback = null;
 let answerReview = null;
 let soundEnabled = isSoundEnabled();
 let lastProfile = null;
+let avatarPackSettings = [];
 let helpVisible = false;
 let cachedChoices = null;
 let cachedChoicesIndex = -1;
@@ -272,7 +273,8 @@ function showCustomize() {
     outfits: outfitMedallionData(ownedPackIds),
     companions: companionMedallionData(ownedPackIds),
     companionAccessories: companionAccessoryMedallionData(ownedPackIds),
-    packs: avatarPackData(profile.avatarLevel, ownedPackIds),
+    packs: avatarPackData(profile.avatarLevel, ownedPackIds, avatarPackSettings)
+      .filter((pack) => pack.active || pack.owned),
     decors: decorMedallionData(profile.avatarLevel, ownedPackIds),
     coins: profile.coins ?? 0,
     selectedCharacterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
@@ -345,7 +347,7 @@ async function handleSelectDecor(decorId) {
 
 async function handlePurchasePack(packId) {
   if (!lastProfile) return;
-  const purchase = purchaseAvatarPack(lastProfile, packId);
+  const purchase = purchaseAvatarPack(lastProfile, packId, avatarPackSettings);
   if (!purchase.success) return;
   const nextProfile = {
     ...lastProfile,
@@ -388,6 +390,9 @@ async function showHome() {
     const profile = await loadProfile(childId);
     lastProfile = profile;
     childFamilyId = profile.familyId ?? childFamilyId;
+    avatarPackSettings = childFamilyId
+      ? await fetchAvatarPackSettings(childFamilyId).catch(() => [])
+      : [];
     renderHomeScreen(profile);
     flushQueue((summary) => writeSession(childId, summary)).catch(() => {});
   } catch (err) {

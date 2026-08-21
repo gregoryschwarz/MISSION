@@ -11,6 +11,8 @@ import {
   DEFAULT_COMPANION,
   DEFAULT_COMPANION_ACCESSORY,
   DEFAULT_OWNED_PACK_IDS,
+  AVATAR_PACKS,
+  configuredAvatarPacks,
 } from '../shared/avatarCustomization.js';
 import { spendCoins, refundCoins } from '../shared/progression.js';
 
@@ -205,6 +207,45 @@ export async function setDailyMissionLimit(childId, dailyMissionLimit) {
 export async function fetchSessions(childId) {
   const snapshot = await getDocs(collection(db, 'children', childId, 'sessions'));
   return snapshot.docs.map((d) => d.data()).sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+// --- Packs Avatar gérés par le parent ---
+// Les visuels restent dans le catalogue versionné ; cette sous-collection ne
+// contient que les réglages familiaux. Les nouveaux packs sont ajoutés ici
+// automatiquement lors de la prochaine ouverture du tableau de bord.
+export async function ensureAvatarPackSettings(familyId) {
+  const packsRef = collection(db, 'families', familyId, 'avatarPacks');
+  const snapshot = await getDocs(packsRef);
+  const existingIds = new Set(snapshot.docs.map((packDoc) => packDoc.id));
+  const missing = AVATAR_PACKS.filter((pack) => !existingIds.has(pack.id));
+  if (!missing.length) return false;
+  const batch = writeBatch(db);
+  missing.forEach((pack) => {
+    batch.set(doc(packsRef, pack.id), {
+      active: true,
+      cost: pack.cost,
+      requiredLevel: pack.requiredLevel,
+      createdAt: serverTimestamp(),
+    });
+  });
+  await batch.commit();
+  return true;
+}
+
+export async function fetchAvatarPackSettings(familyId) {
+  const snapshot = await getDocs(collection(db, 'families', familyId, 'avatarPacks'));
+  const settings = snapshot.docs.map((packDoc) => ({ id: packDoc.id, ...packDoc.data() }));
+  return configuredAvatarPacks(settings);
+}
+
+export async function updateAvatarPackSetting(familyId, packId, changes) {
+  const allowed = {};
+  if (typeof changes.active === 'boolean') allowed.active = changes.active;
+  if (Number.isInteger(changes.cost) && changes.cost >= 0) allowed.cost = changes.cost;
+  if (Number.isInteger(changes.requiredLevel) && changes.requiredLevel >= 1) allowed.requiredLevel = changes.requiredLevel;
+  if (!Object.keys(allowed).length) return false;
+  await setDoc(doc(db, 'families', familyId, 'avatarPacks', packId), allowed, { merge: true });
+  return true;
 }
 
 // --- Récompenses réelles ---

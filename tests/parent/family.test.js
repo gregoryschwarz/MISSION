@@ -49,6 +49,9 @@ import {
   requestReward,
   fetchRewardRequests,
   resolveRewardRequest,
+  ensureAvatarPackSettings,
+  fetchAvatarPackSettings,
+  updateAvatarPackSetting,
 } from '../../src/parent/family.js';
 
 beforeEach(() => {
@@ -114,6 +117,32 @@ describe('ensureDefaultRewards', () => {
     expect(await ensureDefaultRewards('family-abc')).toBe(true);
     expect(batch.update).toHaveBeenCalledWith(expect.anything(), { emoji: '🌙', active: true });
     expect(batch.commit).toHaveBeenCalledOnce();
+  });
+});
+
+describe('family avatar pack settings', () => {
+  it('automatically adds every pack missing from the family catalogue', async () => {
+    const batch = { set: vi.fn(), update: vi.fn(), commit: vi.fn() };
+    writeBatch.mockReturnValueOnce(batch);
+    getDocs.mockResolvedValueOnce({ docs: [] });
+    expect(await ensureAvatarPackSettings('family-abc')).toBe(true);
+    expect(batch.set).toHaveBeenCalledTimes(15);
+    expect(batch.commit).toHaveBeenCalledOnce();
+  });
+
+  it('merges parent overrides with every code-defined pack', async () => {
+    getDocs.mockResolvedValueOnce({
+      docs: [{ id: 'magic-pack', data: () => ({ active: false, cost: 42, requiredLevel: 11 }) }],
+    });
+    const packs = await fetchAvatarPackSettings('family-abc');
+    expect(packs).toHaveLength(15);
+    expect(packs.find((pack) => pack.id === 'magic-pack')).toMatchObject({ active: false, cost: 42, requiredLevel: 11 });
+    expect(packs.find((pack) => pack.id === 'starter-pack').active).toBe(true);
+  });
+
+  it('stores only valid editable fields for a pack', async () => {
+    expect(await updateAvatarPackSetting('family-abc', 'magic-pack', { active: false, cost: 75, requiredLevel: 9, name: 'ignored' })).toBe(true);
+    expect(setDoc).toHaveBeenCalledWith(expect.anything(), { active: false, cost: 75, requiredLevel: 9 }, { merge: true });
   });
 });
 

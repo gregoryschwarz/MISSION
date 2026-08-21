@@ -20,6 +20,9 @@ import {
   createReward,
   updateReward,
   resolveRewardRequest,
+  ensureAvatarPackSettings,
+  fetchAvatarPackSettings,
+  updateAvatarPackSetting,
 } from './family.js';
 import { renderDashboard, renderChildrenList, renderPairingRequestsSection } from './dashboard.js';
 
@@ -131,12 +134,13 @@ async function loadChildrenList(familyId, error = null) {
 async function loadDashboard(familyId, childId) {
   stopPairingRefresh();
   stopRewardRefresh();
-  await ensureDefaultRewards(familyId);
-  const [profile, sessions, rewards, rewardRequests] = await Promise.all([
+  await Promise.all([ensureDefaultRewards(familyId), ensureAvatarPackSettings(familyId)]);
+  const [profile, sessions, rewards, rewardRequests, avatarPacks] = await Promise.all([
     fetchChildProfile(childId),
     fetchSessions(childId),
     fetchRewards(familyId),
     fetchRewardRequests(childId),
+    fetchAvatarPackSettings(familyId),
   ]);
   if (!profile) {
     await loadChildrenList(familyId);
@@ -148,6 +152,7 @@ async function loadDashboard(familyId, childId) {
     sessions,
     rewards,
     rewardRequests,
+    avatarPacks,
     onBack: () => loadChildrenList(familyId),
     onSignOut: logOut,
     onCopyCode: copyChildCode,
@@ -170,6 +175,14 @@ async function loadDashboard(familyId, childId) {
     },
     onUpdateReward: async (rewardId, changes) => {
       await updateReward(familyId, rewardId, changes);
+      await loadDashboard(familyId, childId);
+    },
+    onUpdateAvatarPack: async (packId, changes) => {
+      await updateAvatarPackSetting(familyId, packId, changes);
+      await loadDashboard(familyId, childId);
+    },
+    onSyncAvatarPacks: async () => {
+      await ensureAvatarPackSettings(familyId);
       await loadDashboard(familyId, childId);
     },
     onResolveRequest: async (requestId, decision) => {

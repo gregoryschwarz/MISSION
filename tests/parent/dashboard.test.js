@@ -8,7 +8,21 @@ import {
   computeWeeklyWatch,
   dailyActivityLast7Days,
   dailyActivityChartSvg,
+  avatarPacksSectionHtml,
 } from '../../src/parent/dashboard.js';
+
+describe('avatarPacksSectionHtml', () => {
+  it('renders editable active and inactive packs for the parent', () => {
+    const html = avatarPacksSectionHtml([
+      { id: 'p1', name: 'Pack actif', emoji: '🎨', description: 'Premier', itemIds: ['a'], cost: 20, requiredLevel: 3, active: true },
+      { id: 'p2', name: 'Pack masqué', emoji: '🌙', description: 'Second', itemIds: ['b', 'c'], cost: 40, requiredLevel: 5, active: false },
+    ]);
+    expect(html).toContain('1/2 packs visibles');
+    expect(html).toContain('Pack actif');
+    expect(html).toContain('pack-inactive');
+    expect(html).toContain('Rechercher de nouveaux packs');
+  });
+});
 
 describe('aggregateBreakdown', () => {
   it('computes a success percentage per question type across sessions', () => {

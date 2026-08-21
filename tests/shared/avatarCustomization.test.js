@@ -33,6 +33,7 @@ import {
   avatarPackData,
   packIdsForSelectedItems,
   purchaseAvatarPack,
+  configuredAvatarPacks,
   emojiForCharacter,
   emojiForHat,
   emojiForCape,
@@ -288,6 +289,12 @@ describe('Avatar packs', () => {
   it('rejects packs that are too expensive or above the current level', () => {
     expect(purchaseAvatarPack({ avatarLevel: 5, coins: 500 }, 'halloween-pack')).toEqual({ success: false, reason: 'level-locked' });
     expect(purchaseAvatarPack({ avatarLevel: 6, coins: 149 }, 'halloween-pack')).toEqual({ success: false, reason: 'insufficient-coins' });
+  });
+
+  it('applies parent price, level and activation overrides safely', () => {
+    const settings = [{ id: 'magic-pack', active: false, cost: 25, requiredLevel: 3 }];
+    expect(configuredAvatarPacks(settings).find((pack) => pack.id === 'magic-pack')).toMatchObject({ active: false, cost: 25, requiredLevel: 3 });
+    expect(purchaseAvatarPack({ avatarLevel: 12, coins: 500 }, 'magic-pack', settings)).toEqual({ success: false, reason: 'inactive-pack' });
   });
 });
 
