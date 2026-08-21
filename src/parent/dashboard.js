@@ -530,7 +530,7 @@ function monthlyCalendarHtml(sessions, referenceDate = new Date()) {
 
 export function renderChildrenList(root, { children, pairingRequests = [], onSelectChild, onAddChild, onResolvePairing, onRevokeDevice, onSignOut, onCopyCode, onShareCode, error = null }) {
   root.innerHTML = `
-    <div class="dashboard">
+    <div class="dashboard family-dashboard">
       <header>
         <h1>Mes enfants</h1>
         <button id="sign-out">Se déconnecter</button>
@@ -543,26 +543,32 @@ export function renderChildrenList(root, { children, pairingRequests = [], onSel
                   (c) => `
                 <li class="child-row">
                   <button class="child-select" data-id="${c.id}">${escapeHtml(c.childName)} — Niveau ${c.avatarLevel ?? 1}</button>
-                  <span class="child-code">Code : <strong>${c.pairingCode}</strong></span>
-                  <button class="link-button child-copy" data-code="${c.pairingCode}">Copier</button>
-                  <button class="link-button child-share" data-code="${c.pairingCode}" data-name="${escapeHtml(c.childName)}">Partager</button>
-                  <span class="setup-hint">${c.deviceUid ? 'Tablette autorisée ✅' : 'Aucune tablette autorisée'}</span>
-                  ${c.deviceUid ? `<button class="button-danger device-revoke" data-id="${c.id}" data-name="${escapeHtml(c.childName)}">Révoquer</button>` : ''}
+                  <div class="child-meta">
+                    <span class="child-code">Code : <strong>${c.pairingCode}</strong></span>
+                    <span class="child-device-status">${c.deviceUid ? 'Tablette autorisée ✅' : 'Aucune tablette autorisée'}</span>
+                  </div>
+                  <div class="child-actions">
+                    <button class="link-button child-copy" data-code="${c.pairingCode}">Copier</button>
+                    <button class="link-button child-share" data-code="${c.pairingCode}" data-name="${escapeHtml(c.childName)}">Partager</button>
+                    ${c.deviceUid ? `<button class="button-danger device-revoke" data-id="${c.id}" data-name="${escapeHtml(c.childName)}">Révoquer</button>` : ''}
+                  </div>
                 </li>`
                 )
                 .join('')}</ul>`
             : '<p class="setup-hint">Aucun enfant pour le moment. Ajoutez-en un ci-dessous.</p>'
         }
       </section>
-      <section class="pairing-requests"></section>
-      <section class="add-child">
-        <h2>Ajouter un enfant</h2>
-        <form id="add-child-form">
-          <label>Prénom de l'enfant<input id="child-name" required /></label>
-          ${error ? '<p class="error" id="add-child-error"></p>' : ''}
-          <button type="submit">Créer</button>
-        </form>
-      </section>
+      <aside class="family-sidebar">
+        <section class="pairing-requests"></section>
+        <section class="add-child">
+          <h2>Ajouter un enfant</h2>
+          <form id="add-child-form">
+            <label>Prénom de l'enfant<input id="child-name" required /></label>
+            ${error ? '<p class="error" id="add-child-error"></p>' : ''}
+            <button type="submit">Créer</button>
+          </form>
+        </section>
+      </aside>
     </div>
   `;
   if (error) {
@@ -742,20 +748,26 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
         ${renderBadgeMedallionsHtml(profile.badges)}
       </section>
       ${weeklyWatchHtml(weeklyWatch)}
-      <section class="insights">
-        <h2>En un coup d'œil</h2>
-        ${insightCardsHtml(insights)}
-        ${insights.weakType ? `<div class="recommendation-card">💡 Suggestion : proposer une mission « ${escapeHtml(capitalize(insights.weakType.type))} » (${insights.weakType.percent}% de réussite).</div>` : '<div class="recommendation-card">💡 Continue quelques missions pour obtenir une recommandation personnalisée.</div>'}
-      </section>
-      <section class="breakdown">
-        <h2>Réussite par notion</h2>
-        ${breakdownBarsHtml(breakdown, difficultyLevels)}
-      </section>
-      <section class="daily-activity">
-        <h2>Activité des 7 derniers jours</h2>
-        ${dailyActivityChartSvg(dailyActivity)}
-        <p class="setup-hint chart-legend"><span class="legend-swatch legend-swatch-total"></span> Questions posées <span class="legend-swatch legend-swatch-correct"></span> Bonnes réponses</p>
-      </section>
+      <div class="dashboard-columns">
+        <div class="dashboard-column">
+          <section class="insights">
+            <h2>En un coup d'œil</h2>
+            ${insightCardsHtml(insights)}
+            ${insights.weakType ? `<div class="recommendation-card">💡 Suggestion : proposer une mission « ${escapeHtml(capitalize(insights.weakType.type))} » (${insights.weakType.percent}% de réussite).</div>` : '<div class="recommendation-card">💡 Continue quelques missions pour obtenir une recommandation personnalisée.</div>'}
+          </section>
+          <section class="daily-activity">
+            <h2>Activité des 7 derniers jours</h2>
+            ${dailyActivityChartSvg(dailyActivity)}
+            <p class="setup-hint chart-legend"><span class="legend-swatch legend-swatch-total"></span> Questions posées <span class="legend-swatch legend-swatch-correct"></span> Bonnes réponses</p>
+          </section>
+        </div>
+        <div class="dashboard-column">
+          <section class="breakdown">
+            <h2>Réussite par notion</h2>
+            ${breakdownBarsHtml(breakdown, difficultyLevels)}
+          </section>
+        </div>
+      </div>
       <section class="focus-selector">
         <h2>Missions ciblées &amp; objectif hebdomadaire</h2>
         <label>

@@ -201,6 +201,23 @@ button:active {
   margin: var(--space-2) 0;
 }
 
+.child-meta,
+.child-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.child-device-status {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.family-sidebar section:last-child {
+  margin-bottom: 0;
+}
+
 .child-row {
   display: flex;
   align-items: center;
@@ -535,6 +552,69 @@ button:active {
     grid-column: span 12;
   }
 
+  .dashboard > .dashboard-columns {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  .dashboard-column {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .dashboard-column > section {
+    margin-bottom: 0;
+  }
+
+  .family-dashboard > header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .family-dashboard > .children-section {
+    grid-column: span 8;
+  }
+
+  .family-dashboard > .family-sidebar {
+    grid-column: span 4;
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .family-dashboard .children-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .family-dashboard .child-row {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-soft);
+  }
+
+  .family-dashboard .child-select {
+    width: 100%;
+  }
+
+  .family-dashboard .child-actions {
+    margin-top: auto;
+  }
+
   .weekly-watch-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
@@ -554,6 +634,12 @@ button:active {
 @media (max-width: 919px) {
   .dashboard, .auth-screen, .family-setup {
     width: min(100%, 640px);
+  }
+
+  .dashboard-columns,
+  .dashboard-column,
+  .family-sidebar {
+    display: contents;
   }
 }
 
