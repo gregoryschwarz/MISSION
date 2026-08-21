@@ -206,10 +206,10 @@ describe('emojiForCharacter', () => {
 
 describe('Avatar V2 collections', () => {
   it('offers a generous modular wardrobe and several companions', () => {
-    expect(HAIRSTYLES).toHaveLength(14);
-    expect(OUTFITS).toHaveLength(24);
-    expect(COMPANIONS).toHaveLength(11);
-    expect(COMPANION_ACCESSORIES).toHaveLength(13);
+    expect(HAIRSTYLES).toHaveLength(16);
+    expect(OUTFITS).toHaveLength(28);
+    expect(COMPANIONS).toHaveLength(13);
+    expect(COMPANION_ACCESSORIES).toHaveLength(15);
   });
 
   it('keeps a free compatible default in every new category', () => {
@@ -238,10 +238,17 @@ describe('Avatar V2 collections', () => {
 
 describe('Avatar packs', () => {
   it('defines normal and seasonal packs with unique item ownership', () => {
+    expect(AVATAR_PACKS).toHaveLength(13);
     expect(AVATAR_PACKS.find((pack) => pack.id === 'halloween-pack')).toMatchObject({ seasonal: true, emoji: '🎃' });
     expect(AVATAR_PACKS.find((pack) => pack.id === 'christmas-pack')).toMatchObject({ seasonal: true, emoji: '🎄' });
     const allItemIds = AVATAR_PACKS.flatMap((pack) => pack.itemIds);
     expect(new Set(allItemIds).size).toBe(allItemIds.length);
+  });
+
+  it('provides two clearly original genre variants', () => {
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'cube-adventure-pack')).toMatchObject({ name: 'Aventure cubique', originalVariant: true, requiredLevel: 7 });
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'mystic-idols-pack')).toMatchObject({ name: 'Idoles mystiques', originalVariant: true, requiredLevel: 9 });
+    expect(packIdsForSelectedItems(['cube-builder', 'comet-companion'])).toEqual(['cube-adventure-pack', 'mystic-idols-pack']);
   });
 
   it('separates the required level from permanent ownership', () => {

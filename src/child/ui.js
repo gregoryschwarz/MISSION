@@ -375,8 +375,8 @@ function avatarPackHtml(pack, coins) {
     : !pack.levelUnlocked
       ? `<span class="avatar-pack-status locked">🔒 Niveau ${pack.requiredLevel}</span>`
       : `<button class="avatar-pack-buy" data-pack-id="${pack.id}" ${affordable ? '' : 'disabled'}>${affordable ? `Acheter · ${pack.cost} 🪙` : `Il manque ${pack.cost - coins} 🪙`}</button>`;
-  return `<article class="avatar-pack-card ${pack.owned ? 'owned' : ''} ${pack.seasonal ? 'seasonal' : ''}">
-    ${pack.seasonal ? '<span class="avatar-pack-special">COLLECTION SAISONNIÈRE</span>' : ''}
+  return `<article class="avatar-pack-card ${pack.owned ? 'owned' : ''} ${pack.seasonal ? 'seasonal' : ''} ${pack.originalVariant ? 'original-variant' : ''}">
+    ${pack.seasonal ? '<span class="avatar-pack-special">COLLECTION SAISONNIÈRE</span>' : pack.originalVariant ? '<span class="avatar-pack-special">CRÉATION ORIGINALE</span>' : ''}
     <span class="avatar-pack-emoji">${pack.emoji}</span>
     <h3>${escapeHtml(pack.name)}</h3>
     <p>${escapeHtml(pack.description)}</p>

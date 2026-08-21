@@ -79,6 +79,8 @@ export const HAIRSTYLES = [
   { id: 'rainbow-hair', name: 'Cheveux arc-en-ciel', emoji: '🌈', color: '#ef476f', requiredLevel: 9 },
   { id: 'midnight-waves', name: 'Vagues de minuit', emoji: '🌙', color: '#352b57', requiredLevel: 6 },
   { id: 'snow-braids', name: 'Tresses enneigées', emoji: '❄️', color: '#d9efff', requiredLevel: 6 },
+  { id: 'pixel-spikes', name: 'Pics pixel', emoji: '🟦', color: '#2563a8', requiredLevel: 7 },
+  { id: 'starlight-ponytail', name: 'Queue lumière d’étoile', emoji: '🌟', color: '#7c4dcc', requiredLevel: 9 },
 ];
 
 export const OUTFITS = [
@@ -106,6 +108,10 @@ export const OUTFITS = [
   { id: 'pumpkin', name: 'Citrouille malicieuse', emoji: '🎃', outfit: '#e76f18', accent: '#32213a', requiredLevel: 6 },
   { id: 'winter-elf', name: 'Lutine de Noël', emoji: '🎄', outfit: '#237a4b', accent: '#e63946', requiredLevel: 6 },
   { id: 'snow-queen', name: 'Reine des neiges', emoji: '❄️', outfit: '#9adcf8', accent: '#f7fbff', requiredLevel: 6 },
+  { id: 'cube-builder', name: 'Bâtisseuse cubique', emoji: '🧱', outfit: '#3273b8', accent: '#ffd43b', requiredLevel: 7 },
+  { id: 'neon-block', name: 'Exploratrice néon', emoji: '💠', outfit: '#29284f', accent: '#3ee7c2', requiredLevel: 7 },
+  { id: 'pop-guardian', name: 'Gardienne pop', emoji: '🎤', outfit: '#6d3fc0', accent: '#ff6cae', requiredLevel: 9 },
+  { id: 'moon-dancer', name: 'Danseuse lunaire', emoji: '🌙', outfit: '#253465', accent: '#9ce6ff', requiredLevel: 9 },
 ];
 
 export const COMPANIONS = [
@@ -120,6 +126,8 @@ export const COMPANIONS = [
   { id: 'dragon-companion', name: 'Drago le dragon', emoji: '🐉', requiredLevel: 10 },
   { id: 'bat-companion', name: 'Vampy la chauve-souris', emoji: '🦇', requiredLevel: 6 },
   { id: 'reindeer-companion', name: 'Flocon le renne', emoji: '🦌', requiredLevel: 6 },
+  { id: 'cube-companion', name: 'Cubi le petit bloc', emoji: '🧊', requiredLevel: 7 },
+  { id: 'comet-companion', name: 'Comète la lumière', emoji: '☄️', requiredLevel: 9 },
 ];
 
 export const COMPANION_ACCESSORIES = [
@@ -136,6 +144,8 @@ export const COMPANION_ACCESSORIES = [
   { id: 'pet-magic-hat', name: 'Chapeau magique', emoji: '🧙', requiredLevel: 10 },
   { id: 'pet-pumpkin', name: 'Mini citrouille', emoji: '🎃', requiredLevel: 6 },
   { id: 'pet-santa-hat', name: 'Bonnet de Noël', emoji: '🎅', requiredLevel: 6 },
+  { id: 'pet-brick', name: 'Mini brique', emoji: '🧱', requiredLevel: 7 },
+  { id: 'pet-music', name: 'Note enchantée', emoji: '🎵', requiredLevel: 9 },
 ];
 
 // Catalogue extensible : un pack détermine à la fois le niveau d'accès, le
@@ -196,6 +206,16 @@ export const AVATAR_PACKS = [
     id: 'christmas-pack', name: 'Noël merveilleux', emoji: '🎄', requiredLevel: 6, cost: 150, seasonal: true,
     description: 'Des tresses enneigées et Flocon le renne pour les fêtes.',
     itemIds: ['snow-braids', 'winter-elf', 'snow-queen', 'reindeer-companion', 'pet-santa-hat'],
+  },
+  {
+    id: 'cube-adventure-pack', name: 'Aventure cubique', emoji: '🧊', requiredLevel: 7, cost: 170, originalVariant: true,
+    description: 'Un univers de blocs lumineux avec Cubi, notre compagnon original.',
+    itemIds: ['pixel-spikes', 'cube-builder', 'neon-block', 'cube-companion', 'pet-brick'],
+  },
+  {
+    id: 'mystic-idols-pack', name: 'Idoles mystiques', emoji: '🎤', requiredLevel: 9, cost: 210, originalVariant: true,
+    description: 'Deux héroïnes pop magiques accompagnées de Comète.',
+    itemIds: ['starlight-ponytail', 'pop-guardian', 'moon-dancer', 'comet-companion', 'pet-music'],
   },
 ];
 

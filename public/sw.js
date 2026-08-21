@@ -1,4 +1,4 @@
-const CACHE_NAME = 'missions-de-luna-v39';
+const CACHE_NAME = 'missions-de-luna-v40';
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {

@@ -1574,6 +1574,9 @@ input {
 .hair-rainbow-hair .block-hair { height: 29px; background: linear-gradient(90deg,#ef476f,#ffd166,#06d6a0,#118ab2,#9b5de5); border-radius: 12px 12px 5px 5px; }
 .hair-midnight-waves .block-hair { height:30px; border-radius:14px 14px 4px 4px; background:linear-gradient(90deg,#211a39,#554477,#211a39); box-shadow:0 10px 0 -4px #352b57; }
 .hair-snow-braids .block-hair { height:23px; border-radius:10px; background:linear-gradient(90deg,#eef9ff,#b9dcf2); box-shadow:-8px 15px 0 -2px #d9efff,8px 15px 0 -2px #b9dcf2; }
+.hair-pixel-spikes .block-hair { inset:-8px -3px auto; height:30px; background:linear-gradient(90deg,#1d4f91,#42a5d9); clip-path:polygon(0 100%,0 42%,14% 58%,22% 0,36% 55%,50% 8%,65% 58%,80% 0,88% 55%,100% 38%,100% 100%); }
+.hair-starlight-ponytail .block-hair { height:24px; border-radius:12px 12px 4px 4px; background:linear-gradient(90deg,#552e8b,#a05fe0); }
+.hair-starlight-ponytail .block-hair::after { content:'✦'; position:absolute; width:28px; height:52px; right:-23px; top:3px; border-radius:50% 50% 65% 25%; background:linear-gradient(#a05fe0,#552e8b); color:#ffec8b; display:grid; place-items:center; transform:rotate(-12deg); }
 
 .avatar-companion {
   display: grid !important;
@@ -1634,6 +1637,8 @@ input {
 .avatar-pack-card::after { content:''; position:absolute; width:92px; height:92px; right:-34px; top:-34px; border-radius:50%; background:color-mix(in srgb,var(--color-mint) 18%,transparent); }
 .avatar-pack-card.owned { border-color:var(--color-mint); }
 .avatar-pack-card.seasonal { border-color:#f08b35; background:linear-gradient(145deg,color-mix(in srgb,#f08b35 10%,var(--color-card)),var(--color-card)); }
+.avatar-pack-card.original-variant { border-color:#7765d5; background:linear-gradient(145deg,color-mix(in srgb,#7765d5 12%,var(--color-card)),var(--color-card)); }
+.avatar-pack-card.original-variant .avatar-pack-special { color:#6752c9; }
 .avatar-pack-special { max-width:calc(100% - 45px); color:#d76713; font-size:8px; font-weight:900; letter-spacing:.07em; }
 .avatar-pack-emoji { font-size:35px; line-height:1; }
 .avatar-pack-card h3 { margin:2px 0 0; font-size:var(--text-base); }
@@ -1674,6 +1679,7 @@ input {
   .customize-category h2 small { background:var(--color-surface-raised); }
   .avatar-pack-card { background:var(--color-surface-soft); }
   .avatar-pack-card.seasonal { background:linear-gradient(145deg,#422b20,var(--color-surface-soft)); }
+  .avatar-pack-card.original-variant { background:linear-gradient(145deg,#302954,var(--color-surface-soft)); }
   .avatar-pack-status.owned { background:#153c34; color:#b8f5df; }
 }
 
