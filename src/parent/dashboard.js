@@ -184,6 +184,7 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
   );
 
   const hasEnoughWeeklyData = weeklyAttempts >= 3;
+  const weeklyAttemptsNeeded = Math.max(0, 3 - weeklyAttempts);
 
   let status = 'ok';
   let statusLabel = 'RAS';
@@ -214,6 +215,7 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
     weakType,
     focusType,
     weeklyAttempts,
+    weeklyAttemptsNeeded,
     hasEnoughWeeklyData,
     status,
     statusLabel,
@@ -496,6 +498,10 @@ function weeklyWatchHtml(watch) {
       ? `${watch.weeklyProgress}/${watch.weeklyTarget} missions`
       : 'Aucun objectif fixé';
 
+  const weeklyDataLabel = watch.hasEnoughWeeklyData
+    ? `${watch.weeklyAttempts} r\u00e9ponse${watch.weeklyAttempts > 1 ? 's' : ''} analys\u00e9e${watch.weeklyAttempts > 1 ? 's' : ''} cette semaine`
+    : `Encore ${watch.weeklyAttemptsNeeded} r\u00e9ponse${watch.weeklyAttemptsNeeded > 1 ? 's' : ''} avant de pouvoir analyser la semaine`;
+
   return `
     <section class="weekly-watch weekly-watch-${watch.status}">
       <div class="weekly-watch-header">
@@ -505,6 +511,8 @@ function weeklyWatchHtml(watch) {
         </div>
         <span class="weekly-watch-status">${escapeHtml(watch.statusLabel)}</span>
       </div>
+
+      <p class="weekly-watch-data">${escapeHtml(weeklyDataLabel)}</p>
 
       <div class="weekly-watch-grid">
         <div class="weekly-watch-item">

@@ -294,6 +294,40 @@ describe('computeWeeklyWatch insufficient data', () => {
   });
 });
 
+describe('computeWeeklyWatch weekly data threshold', () => {
+  it('reports how many answers are still needed', () => {
+    const result = computeWeeklyWatch(
+      [{
+        date: '2026-08-21',
+        breakdown: {
+          addition: { correct: 1, total: 1 },
+        },
+      }],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.weeklyAttempts).toBe(1);
+    expect(result.weeklyAttemptsNeeded).toBe(2);
+  });
+
+  it('reports zero answers needed once the threshold is reached', () => {
+    const result = computeWeeklyWatch(
+      [{
+        date: '2026-08-21',
+        breakdown: {
+          addition: { correct: 3, total: 5 },
+        },
+      }],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.weeklyAttempts).toBe(5);
+    expect(result.weeklyAttemptsNeeded).toBe(0);
+  });
+});
+
 describe('dailyActivityLast7Days', () => {
   const referenceDate = new Date('2026-08-11T00:00:00Z');
 
