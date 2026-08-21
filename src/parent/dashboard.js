@@ -166,7 +166,11 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
       ? profile.weeklyGoalProgress ?? 0
       : 0;
 
-  const { weakType } = computeInsights(sessions);
+  const weekSessions = sessions.filter(
+    (session) => session.date && weekStartKey(session.date) === currentWeek
+  );
+
+  const { weakType } = computeInsights(weekSessions);
   const focusType = profile.focusType ?? null;
 
   let status = 'ok';

@@ -225,6 +225,34 @@ describe('computeWeeklyWatch', () => {
   });
 });
 
+describe('computeWeeklyWatch current week filtering', () => {
+  it('uses only the current week to find the weak notion', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-10',
+          breakdown: {
+            monnaie: { correct: 0, total: 10 },
+          },
+        },
+        {
+          date: '2026-08-21',
+          breakdown: {
+            soustraction: { correct: 1, total: 5 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.weakType).toEqual({
+      type: 'soustraction',
+      percent: 20,
+    });
+  });
+});
+
 describe('dailyActivityLast7Days', () => {
   const referenceDate = new Date('2026-08-11T00:00:00Z');
 
