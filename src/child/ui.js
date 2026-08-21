@@ -242,16 +242,21 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
           ${dailyChallengeCardHtml(dailyChallengeProgress ?? 0, dailyChallengeTarget ?? 5, !!dailyChallengeCompleted, 'daily-challenge-start')}
           ${weeklyGoalCardHtml(weeklyGoalProgress ?? 0, weeklyGoalTarget ?? 0, weeklyRewardText, weeklyRewardDays)}
         </div>
-        ${dailyMissionLimit > 0 ? `<p class="daily-limit-banner ${dailyMissionCount >= dailyMissionLimit ? 'limit-reached' : ''}">${dailyMissionCount >= dailyMissionLimit ? '🌙 Bravo, objectif du jour terminé. Reviens demain !' : `⏱️ ${dailyMissionCount}/${dailyMissionLimit} missions aujourd’hui`}</p>` : ''}
-        ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
-        ${renderBadgeMedallionsHtml(badges)}
-        <div class="home-actions">
-          <button id="customize" class="big-button">🎨 Personnaliser</button>
-          <button id="start-mission" class="big-button">✨ Mission du jour</button>
-          <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
-          <button id="start-french-mission" class="big-button">📚 Mission Français</button>
-          <button id="show-rewards" class="big-button">🎁 Récompenses</button>
-          <button id="show-badges" class="big-button">🏅 Mes badges</button>
+        <div class="home-lower">
+          <section class="home-progress-panel">
+            <h2>🏆 Mes progrès</h2>
+            ${dailyMissionLimit > 0 ? `<p class="daily-limit-banner ${dailyMissionCount >= dailyMissionLimit ? 'limit-reached' : ''}">${dailyMissionCount >= dailyMissionLimit ? '🌙 Bravo, objectif du jour terminé. Reviens demain !' : `⏱️ ${dailyMissionCount}/${dailyMissionLimit} missions aujourd’hui`}</p>` : ''}
+            ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
+            <div class="home-badges">${renderBadgeMedallionsHtml(badges)}</div>
+          </section>
+          <div class="home-actions" aria-label="Actions principales">
+            <button id="start-mission" class="big-button home-primary-action">✨ Mission du jour</button>
+            <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
+            <button id="start-french-mission" class="big-button">📚 Mission Français</button>
+            <button id="customize" class="big-button">🎨 Personnaliser</button>
+            <button id="show-rewards" class="big-button">🎁 Récompenses</button>
+            <button id="show-badges" class="big-button">🏅 Mes badges</button>
+          </div>
         </div>
       </main>
     </div>
