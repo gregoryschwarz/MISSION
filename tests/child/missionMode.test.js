@@ -26,20 +26,16 @@ describe('pickMissionMode', () => {
     }
   });
 
-  it('eventually picks both remaining modes when excluding one', () => {
-    const seen = new Set();
-    for (let i = 0; i < 30; i++) {
-      seen.add(pickMissionMode('quiz'));
-    }
-    expect(seen).toEqual(new Set(['qcm', 'pairs']));
+  it('rotates through free input, QCM and pairs in a predictable order', () => {
+    expect(pickMissionMode(null)).toBe('quiz');
+    expect(pickMissionMode('quiz')).toBe('qcm');
+    expect(pickMissionMode('qcm')).toBe('pairs');
+    expect(pickMissionMode('pairs')).toBe('quiz');
   });
 
-  it('allows any of the 3 modes when lastMode is null or unknown', () => {
-    const seen = new Set();
-    for (let i = 0; i < 60; i++) {
-      seen.add(pickMissionMode(null));
-    }
-    expect(seen).toEqual(new Set(ALL_MODES));
+  it('starts with free input when there is no valid history', () => {
+    expect(pickMissionMode(null)).toBe('quiz');
+    expect(pickMissionMode('unknown')).toBe('quiz');
   });
 });
 

@@ -2,8 +2,8 @@ const STORAGE_KEY = 'missionsDeLuna.lastMissionMode';
 const ALL_MODES = ['quiz', 'qcm', 'pairs'];
 
 export function pickMissionMode(lastMode) {
-  const candidates = ALL_MODES.filter((mode) => mode !== lastMode);
-  return candidates[Math.floor(Math.random() * candidates.length)];
+  const currentIndex = ALL_MODES.indexOf(lastMode);
+  return currentIndex === -1 ? ALL_MODES[0] : ALL_MODES[(currentIndex + 1) % ALL_MODES.length];
 }
 
 export function getLastMissionMode(storage = window.localStorage) {
