@@ -506,6 +506,16 @@ function weeklyWatchHtml(watch) {
           <strong>${escapeHtml(focusLabel)}</strong>
         </div>
       </div>
+
+      ${
+        watch.weakType && watch.focusType !== watch.weakType.type
+          ? `<button
+               type="button"
+               class="weekly-watch-focus-button"
+               data-focus-type="${escapeHtml(watch.weakType.type)}"
+             >Cibler ${escapeHtml(capitalize(watch.weakType.type))}</button>`
+          : ''
+      }
     </section>
   `;
 }
@@ -684,6 +694,12 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   root.querySelector('#share-code').addEventListener('click', () => onShareCode(child.pairingCode, profile.childName));
   root.querySelector('#enable-notifications').addEventListener('click', onEnableNotifications);
   root.querySelector('#focus-type').addEventListener('change', (event) => onSetFocus(event.target.value || null));
+
+  root.querySelector('.weekly-watch-focus-button')?.addEventListener('click', (event) => {
+    const type = event.currentTarget.dataset.focusType;
+    if (!type) return;
+    onSetFocus(type);
+  });
   root.querySelector('#weekly-goal-form').addEventListener('submit', (event) => {
     event.preventDefault();
     const target = Number(root.querySelector('#weekly-goal-target').value);

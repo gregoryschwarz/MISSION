@@ -431,3 +431,26 @@ button:active {
     flex-direction: column;
   }
 }
+
+
+.weekly-watch-focus-button {
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.weekly-watch-focus-button:hover {
+  transform: translateY(-1px);
+}
+
+.weekly-watch-focus-button:active {
+  transform: translateY(0);
+}
