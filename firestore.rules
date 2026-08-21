@@ -1,44 +1,157 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Un document "family" représente le compte parent (Google). Un parent peut
-    // avoir plusieurs enfants (collection top-level "children" ci-dessous, liés
-    // par familyId) — support multi-enfants.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsFamily(familyId) {
+      return signedIn()
+        && request.auth.uid ==
+          get(/databases/$(database)/documents/families/$(familyId)).data.parentUid;
+    }
+
+    function ownsChild(childId) {
+      return ownsFamily(
+        get(/databases/$(database)/documents/children/$(childId)).data.familyId
+      );
+    }
+
+    function isChildDevice(childId) {
+      return signedIn()
+        && request.auth.uid ==
+          get(/databases/$(database)/documents/children/$(childId)).data.deviceUid;
+    }
+
     match /families/{familyId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.parentUid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.parentUid;
+      allow create: if signedIn()
+        && request.auth.uid == request.resource.data.parentUid;
+
+      allow read, update, delete: if signedIn()
+        && request.auth.uid == resource.data.parentUid;
 
       match /rewards/{rewardId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid ==
-          get(/databases/$(database)/documents/families/$(familyId)).data.parentUid;
+        allow read: if signedIn();
+        allow write: if ownsFamily(familyId);
       }
     }
 
-    // Chaque enfant a son propre document, sa propre "code d'appairage" (l'id du
-    // document lui-même) et son propre PIN — la tablette d'un enfant n'est
-    // appairée qu'à lui. Le profil (xp, pièces, badges, etc.) vit directement
-    // dans ce document.
+    match /pairingCodes/{pairingCode} {
+      // Le code public ne contient que l'identifiant technique de l'enfant
+      // et celui de sa famille. Aucun profil enfant n'est exposé ici.
+      allow get: if signedIn();
+      allow list: if false;
+
+      allow create: if ownsFamily(request.resource.data.familyId)
+        && request.resource.data.keys().hasOnly([
+          'childId',
+          'familyId'
+        ]);
+
+      allow update, delete: if ownsFamily(resource.data.familyId);
+    }
+
     match /children/{childId} {
-      allow read: if request.auth != null;
-      allow update: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid ==
-        get(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.parentUid;
-      allow delete: if request.auth != null && request.auth.uid ==
-        get(/databases/$(database)/documents/families/$(resource.data.familyId)).data.parentUid;
+      allow create: if ownsFamily(request.resource.data.familyId)
+        && request.resource.data.deviceUid == null
+        && request.resource.data.pairingCode is string;
+
+      allow read: if ownsFamily(resource.data.familyId)
+        || (
+          signedIn()
+          && request.auth.uid == resource.data.deviceUid
+        );
+
+      allow delete: if ownsFamily(resource.data.familyId);
+
+      allow update: if ownsFamily(resource.data.familyId)
+        || (
+          signedIn()
+          && request.auth.uid == resource.data.deviceUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'xp',
+            'avatarLevel',
+            'badges',
+            'badgeDates',
+            'dailyChallengeDate',
+            'dailyChallengeProgress',
+            'dailyChallengeCompleted',
+            'streakDays',
+            'lastSessionDate',
+            'difficultyLevels',
+            'perfectMissionsCount',
+            'totalCorrectCount',
+            'coins',
+            'selectedCharacter',
+            'selectedHat',
+            'selectedCape',
+            'selectedDecor',
+            'ownedCharacterIds',
+            'weeklyGoalProgress',
+            'weeklyGoalWeekStart',
+            'dailyMissionCount',
+            'dailyMissionCountDate'
+          ])
+        );
+
+      match /pairingRequests/{deviceUid} {
+
+        // Première demande de la tablette.
+        allow create: if signedIn()
+          && request.auth.uid == deviceUid
+          && request.resource.data.requesterUid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.keys().hasOnly([
+            'requesterUid',
+            'status',
+            'requestedAt'
+          ]);
+
+        allow get: if signedIn()
+          && (
+            request.auth.uid == deviceUid
+            || ownsChild(childId)
+          );
+
+        allow list: if ownsChild(childId);
+
+        // Le parent accepte ou refuse la demande.
+        allow update: if ownsChild(childId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'resolvedAt'
+          ])
+          && request.resource.data.status in [
+            'approved',
+            'rejected'
+          ];
+
+        // Une tablette déjà connue peut renvoyer une demande.
+        // Utile après un refus, une révocation ou une nouvelle tentative.
+        allow update: if signedIn()
+          && request.auth.uid == deviceUid
+          && request.resource.data.requesterUid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'requesterUid',
+            'status',
+            'requestedAt',
+            'resolvedAt'
+          ]);
+
+        allow delete: if ownsChild(childId);
+      }
 
       match /sessions/{sessionId} {
-        allow create: if request.auth != null;
-        allow read: if request.auth != null && request.auth.uid ==
-          get(/databases/$(database)/documents/families/$(get(/databases/$(database)/documents/children/$(childId)).data.familyId)).data.parentUid;
+        allow create: if isChildDevice(childId);
+        allow read: if ownsChild(childId);
       }
 
       match /rewardRequests/{requestId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && request.auth.uid ==
-          get(/databases/$(database)/documents/families/$(get(/databases/$(database)/documents/children/$(childId)).data.familyId)).data.parentUid;
+        allow create, read: if isChildDevice(childId);
+        allow read, update: if ownsChild(childId);
       }
     }
   }

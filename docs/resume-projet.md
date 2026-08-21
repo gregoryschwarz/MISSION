@@ -37,15 +37,15 @@ Dossier projet : `C:\Users\Gsch6\OneDrive\Bureau\revision-maths-app`
 ## Modèle de données Firestore
 
 - `families/{familyId}` — un document par compte parent (Google), champ `parentUid`. Sous-collection `rewards` (catalogue de récompenses, partagé entre les enfants d'une même famille).
-- `children/{childId}` — un document **top-level** par enfant (pas imbriqué sous `families`). L'id du document **est** le code d'appairage. Contient tout le profil de jeu (xp, avatarLevel, coins, badges, badgeDates, difficultyLevels, selectedCharacter/Hat/Cape/Decor, ownedCharacterIds, focusType, weeklyGoal*, dailyChallenge*, pinHash, familyId en back-reference). Sous-collections `sessions` et `rewardRequests`.
+- `children/{childId}` — un document **top-level** par enfant contenant le profil, `familyId`, un code court et le `deviceUid` autorisé. `pairingCodes/{code}` ne contient que la correspondance entre le code court de 6 caractères et l'identifiant technique. Sous-collections `sessions`, `rewardRequests` et `pairingRequests`.
 
-**Sécurité** : le code d'appairage (= id du doc `children/{childId}`) fait office de secret partagé, comme un mot de passe. Toute personne authentifiée (même anonyme, ce qu'utilise la tablette enfant) qui le connaît peut écrire le profil de cet enfant. Choix volontaire pour éviter des Cloud Functions de validation côté serveur. Le PIN à 4 chiffres est un second facteur, mais ne remplace pas la confidentialité du code. Documenté dans le README.
+**Sécurité** : une tablette connectée anonymement dépose une demande sous `pairingRequests`. Le parent doit l'approuver avant que son UID soit inscrit dans `deviceUid`. Les règles Firestore isolent ensuite le profil entre le parent propriétaire et cette tablette. Cette validation parent remplace l'ancien PIN vérifié dans le navigateur et ne nécessite pas de Cloud Function payante.
 
 ## Fonctionnalités — état
 
 Le backlog complet (30 items priorisés P0/P1/P2, comparé au cahier des charges d'origine) est **entièrement terminé** :
 
-- Multi-enfants (un code + PIN par enfant), connexion Google parent, récompenses réelles échangeables contre des pièces, système de pièces 🪙
+- Multi-enfants (un code + approbation parent par tablette), connexion Google parent par redirection compatible tablette, récompenses réelles échangeables contre des pièces, système de pièces 🪙
 - Avatar enrichi : 9 personnages (déblocables par niveau **ou** par achat en pièces), 4 chapeaux + 4 capes (déblocables par badge), 8 décors de fond nommés (déblocables par niveau)
 - Défi quotidien, objectif hebdomadaire, rappel de série intelligent (bannière colorée), album de badges avec date de déblocage
 - Dashboard parent : missions ciblées, graphique d'activité 7 jours (SVG fait maison), barres de progression par notion colorées, cartes d'insight "Point fort 💪 / À travailler 📚"

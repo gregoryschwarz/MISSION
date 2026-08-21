@@ -54,7 +54,7 @@ La commande affiche à la fin l'URL Hosting (ex. `https://missions-de-luna.web.a
 
 1. Ouvrir l'URL Hosting affichée : l'écran enfant doit se charger, ainsi que `/parent.html`.
 2. Se connecter côté parent avec le compte Google, créer un enfant de test, noter son code d'appairage.
-3. Sur une tablette (ou un autre navigateur), ouvrir l'URL, appairer avec ce code + PIN, jouer une mission complète et vérifier que XP/pièces/badges remontent bien côté parent.
+3. Sur une tablette (ou un autre navigateur), ouvrir l'URL et saisir le code. Dans l'espace parent, autoriser la demande de cette tablette, puis jouer une mission complète et vérifier que XP/pièces/badges remontent bien côté parent.
 4. Sur la tablette, utiliser "Ajouter à l'écran d'accueil" pour installer l'app en PWA.
 
 > Le service worker (`public/sw.js`) garde en cache l'app shell ; sa `CACHE_NAME` est incrémentée à chaque changement significatif du design pour forcer les tablettes déjà installées à récupérer la nouvelle version au prochain lancement. Pensez à l'incrémenter (`v2` → `v3`, etc.) si vous modifiez sensiblement les fichiers statiques (`index.html`, `manifest.json`, icônes).
@@ -67,12 +67,14 @@ Ouvrir l'URL déployée dans Chrome ou Safari sur la tablette, puis utiliser "Aj
 
 ## Appairer la tablette
 
-L'application prend en charge plusieurs enfants par famille : chaque enfant a son propre code d'appairage et son propre PIN, donc sa propre tablette (ou son propre créneau sur une tablette partagée).
+L'application prend en charge plusieurs enfants par famille. Chaque tablette possède une identité Firebase anonyme et ne peut accéder au profil d'un enfant qu'après autorisation explicite du parent.
 
-1. Le parent se connecte sur `/parent.html` avec son compte Google. S'il n'a pas encore d'enfant, l'écran "Mes enfants" propose d'en ajouter un (prénom + code secret à 4 chiffres). Un parent peut ajouter autant d'enfants qu'il le souhaite depuis ce même écran.
-2. Chaque ligne de la liste affiche le "code d'appairage" de l'enfant, avec des boutons **Copier** et **Partager**.
-3. Sur la tablette de cet enfant, au premier lancement, entrer ce code d'appairage et son code secret.
+1. Le parent se connecte sur `/parent.html` avec son compte Google. S'il n'a pas encore d'enfant, l'écran "Mes enfants" propose d'en ajouter un. Un parent peut ajouter autant d'enfants qu'il le souhaite depuis ce même écran.
+2. Chaque ligne de la liste affiche un code d'appairage court de 6 caractères, avec des boutons **Copier** et **Partager**.
+3. Sur la tablette de cet enfant, au premier lancement, entrer ce code d'appairage.
+4. Revenir dans l'espace parent et cliquer sur **Autoriser** dans la section « Tablettes à autoriser ».
+5. Sur la tablette, cliquer sur **Vérifier maintenant**. Elle est alors liée à cet enfant.
 
 ## Sécurité
 
-Le "code d'appairage" (l'identifiant du document `children/{childId}`) doit être traité comme un secret partagé, au même titre qu'un mot de passe : toute personne qui le connaît et qui est authentifiée (même anonymement) peut écrire des données de session et de profil pour cet enfant. C'est un choix de conception volontaire qui évite de dépendre de Cloud Functions pour valider les écritures côté serveur. Le code secret à 4 chiffres (PIN) constitue un second facteur au-dessus de ce mécanisme, mais ne remplace pas la confidentialité du code d'appairage lui-même. Chaque enfant ayant son propre code, le partager avec la mauvaise personne n'expose que les données de cet enfant-là, pas de toute la fratrie. Ne partagez donc ce code qu'avec les personnes autorisées à administrer le profil de l'enfant concerné.
+Le code d'appairage permet uniquement de déposer une demande. Il ne donne pas accès au profil. Les règles Firestore autorisent la lecture et les écritures d'un enfant uniquement au compte Google parent propriétaire ou à l'identité Firebase anonyme de la tablette approuvée. Une demande inattendue doit être refusée. Révoquer une tablette consiste à retirer ou remplacer son champ `deviceUid` depuis un outil d'administration Firebase ; une interface de révocation pourra être ajoutée ultérieurement.

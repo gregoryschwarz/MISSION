@@ -6,6 +6,18 @@ import { shapeSvg } from './shapes.js';
 import { coinSvg } from './money.js';
 import { lengthBarSvg } from './length.js';
 import { clockFaceSvg } from './clock.js';
+import { visualForCharacter, HATS, CAPES } from '../shared/avatarCustomization.js';
+
+function blockAvatarHtml(characterId, hatId = 'none-hat', capeId = 'none-cape', compact = false) {
+  const visual = visualForCharacter(characterId);
+  const safeHat = HATS.some((item) => item.id === hatId) ? hatId : 'none-hat';
+  const safeCape = CAPES.some((item) => item.id === capeId) ? capeId : 'none-cape';
+  return `<div class="block-avatar ${compact ? 'block-avatar-compact' : ''} character-${visual.id} hat-${safeHat} cape-${safeCape}" style="--avatar-skin:${visual.skin};--avatar-hair:${visual.hair};--avatar-outfit:${visual.outfit};--avatar-accent:${visual.accent}" role="img" aria-label="${visual.name}">
+    <span class="block-cape"></span><span class="block-body"></span><span class="block-arm block-arm-left"></span><span class="block-arm block-arm-right"></span>
+    <span class="block-head"><span class="block-hair"></span><span class="block-eye block-eye-left"></span><span class="block-eye block-eye-right"></span><span class="block-smile"></span></span>
+    <span class="block-hat"></span><span class="block-leg block-leg-left"></span><span class="block-leg block-leg-right"></span>
+  </div>`;
+}
 
 // Navigation par onglets persistante, affichée uniquement sur les 4 écrans
 // "hub" (accueil, défis, avatar, récompenses) — absente pendant une mission
@@ -65,12 +77,11 @@ export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
     <div class="screen pairing-screen">
       <h1>🦄 Missions d'Ambre</h1>
-      <p>Un parent doit entrer le code d'appairage et le code secret.</p>
+      <p>Entre le code affiché dans l'espace parent. Ton parent devra ensuite autoriser cette tablette.</p>
       <form id="pairing-form">
-        <label>Code d'appairage<input id="child-id" type="text" autocomplete="off" required /></label>
-        <label>Code secret (4 chiffres)<input id="pin" type="password" inputmode="numeric" maxlength="4" required /></label>
+        <label>Code d'appairage<input id="child-id" type="text" inputmode="text" autocomplete="off" maxlength="6" placeholder="M7K4QP" required /></label>
         ${error ? '<p class="error" id="pairing-error"></p>' : ''}
-        <button type="submit" class="big-button">Valider</button>
+        <button type="submit" class="big-button">Demander l'autorisation</button>
       </form>
     </div>
   `;
@@ -80,9 +91,24 @@ export function renderPairing(root, { onSubmit, error }) {
   root.querySelector('#pairing-form').addEventListener('submit', (event) => {
     event.preventDefault();
     const childId = root.querySelector('#child-id').value.trim();
-    const pin = root.querySelector('#pin').value.trim();
-    onSubmit({ childId, pin });
+    onSubmit({ childId });
   });
+}
+
+export function renderPairingPending(root, { onRetry, onCancel, error = null }) {
+  root.innerHTML = `
+    <div class="screen pairing-screen">
+      <h1>⏳ Autorisation en attente</h1>
+      <p>Demande à ton parent d'ouvrir son espace puis d'autoriser cette tablette.</p>
+      <p class="setup-hint">La vérification est automatique, tu peux laisser cet écran ouvert.</p>
+      ${error ? '<p class="error" id="pairing-error"></p>' : ''}
+      <button id="pairing-retry" class="big-button">Vérifier maintenant</button>
+      <button id="pairing-cancel" class="link-button">Changer de code</button>
+    </div>
+  `;
+  if (error) root.querySelector('#pairing-error').textContent = error;
+  root.querySelector('#pairing-retry').addEventListener('click', onRetry);
+  root.querySelector('#pairing-cancel').addEventListener('click', onCancel);
 }
 
 export function renderNotionPicker(root, { types, difficultyLevels = {}, onSelect, onBack, onNavigate }) {
@@ -164,31 +190,35 @@ function dailyChallengeCardHtml(progress, target, completed, onStartId) {
     </div>`;
 }
 
-function weeklyGoalCardHtml(progress, target) {
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+}
+
+function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
   if (!target) return '';
   const completed = progress >= target;
+  const remaining = Math.max(0, target - progress);
   const percent = Math.min(100, Math.round((progress / target) * 100));
   return `
     <div class="daily-challenge-card weekly-goal-card ${completed ? 'daily-challenge-done' : ''}">
       <p class="daily-challenge-title">🎯 Objectif de la semaine</p>
-      <p class="daily-challenge-subtitle">${completed ? 'Objectif atteint, bravo ! 🎉' : `${target} mission${target > 1 ? 's' : ''} à réussir cette semaine`}</p>
+      <p class="daily-challenge-subtitle">${completed ? 'Objectif atteint, bravo ! 🎉' : `Plus que ${remaining} mission${remaining > 1 ? 's' : ''} pour débloquer ton bonus !`}</p>
       <div class="xp-bar daily-challenge-bar" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="${target}">
         <div class="xp-bar-fill" style="width:${percent}%"></div>
       </div>
       <p class="daily-challenge-progress-label">${Math.min(progress, target)}/${target} missions</p>
+      ${rewardText ? `<div class="weekly-reward-unlocked ${completed ? '' : 'weekly-reward-locked'}"><span>${completed ? '🎁 RÉCOMPENSE DÉBLOQUÉE' : '🔒 TON BONUS DE LA SEMAINE'}</span><strong>${escapeHtml(rewardText)}</strong>${rewardDays.length ? `<em>${escapeHtml(rewardDays.join(' et '))}</em>` : ''}<small>${completed ? 'Gratuite — aucun paiement en pièces' : `Encore ${remaining} mission${remaining > 1 ? 's' : ''} et il est à toi !`}</small></div>` : ''}
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, badges, auraClass, characterEmoji, hatEmoji, capeEmoji, decorGradient, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, decorGradient, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
   root.innerHTML = `
     <div class="screen home-screen with-tabs">
       <div class="home-header" style="background:${decorGradient ?? ''}">
         <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
         <div class="avatar-wrapper">
-          ${capeEmoji ? `<span class="avatar-cape">${capeEmoji}</span>` : ''}
-          <div class="avatar ${auraClass}">${characterEmoji}</div>
-          ${hatEmoji ? `<span class="avatar-hat">${hatEmoji}</span>` : ''}
+          <div class="avatar ${auraClass}">${blockAvatarHtml(characterId, hatId, capeId)}</div>
         </div>
         <h1><span id="child-name"></span><span class="home-level">Niveau ${avatarLevel}</span></h1>
         ${
@@ -208,7 +238,8 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
       </div>
       ${streakBannerHtml(streakStatus, streakDays)}
       ${dailyChallengeCardHtml(dailyChallengeProgress ?? 0, dailyChallengeTarget ?? 5, !!dailyChallengeCompleted, 'daily-challenge-start')}
-      ${weeklyGoalCardHtml(weeklyGoalProgress ?? 0, weeklyGoalTarget ?? 0)}
+      ${weeklyGoalCardHtml(weeklyGoalProgress ?? 0, weeklyGoalTarget ?? 0, weeklyRewardText, weeklyRewardDays)}
+      ${dailyMissionLimit > 0 ? `<p class="daily-limit-banner ${dailyMissionCount >= dailyMissionLimit ? 'limit-reached' : ''}">${dailyMissionCount >= dailyMissionLimit ? '🌙 Bravo, objectif du jour terminé. Reviens demain !' : `⏱️ ${dailyMissionCount}/${dailyMissionLimit} missions aujourd’hui`}</p>` : ''}
       ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
       ${renderBadgeMedallionsHtml(badges)}
       <button id="customize" class="big-button">🎨 Personnaliser</button>
@@ -248,7 +279,8 @@ function customizeMedallionHtml(item, selectedId, coins = null) {
     return `<div class="badge-medallion locked" title="${label}">🔒</div>`;
   }
   const isSelected = item.id === selectedId;
-  return `<button class="badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}">${item.emoji ?? '🚫'}</button>`;
+  const content = item.skin ? blockAvatarHtml(item.id, 'none-hat', 'none-cape', true) : (item.emoji ?? '🚫');
+  return `<button class="badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}">${content}</button>`;
 }
 
 function customizeDecorSwatchHtml(decor, selectedId) {
@@ -465,7 +497,7 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
   draw();
 }
 
-export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, leveledUp, newBadges, justCompletedDailyChallenge, onContinue }) {
+export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, weeklyRewardText, onContinue }) {
   const earnedBadgesData = newBadges.map((id) => BADGES.find((b) => b.id === id)).filter(Boolean);
   root.innerHTML = `
     <div class="screen results-screen">
@@ -485,6 +517,7 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
       </div>
       ${leveledUp ? '<p class="level-up-banner">⭐ Niveau supérieur débloqué !</p>' : ''}
       ${justCompletedDailyChallenge ? '<p class="level-up">🔥 Défi du jour relevé ! Bonus +20 XP et +10 🪙</p>' : ''}
+      ${justCompletedWeeklyGoal ? `<div class="weekly-bonus-celebration"><div>🎊 🎁 🎊</div><h2>SUPER BONUS DÉBLOQUÉ !</h2><strong>${escapeHtml(weeklyRewardText ?? 'Ta récompense de la semaine')}</strong></div>` : ''}
       ${
         earnedBadgesData.length
           ? `<p class="badge-earned">🏅 Nouveau badge !</p>
@@ -518,7 +551,7 @@ export function renderRewards(root, { coins, rewards, pendingRewardIds = [], onR
                 const disabled = pending || !affordable;
                 return `
                   <div class="reward-card">
-                    <span class="reward-card-name">${r.name}</span>
+                    <span class="reward-card-name"><span class="reward-card-emoji">${escapeHtml(r.emoji ?? '🎁')}</span>${escapeHtml(r.name)}</span>
                     <span class="reward-card-cost">${r.cost} 🪙</span>
                     <button class="big-button reward-exchange" data-id="${r.id}" ${disabled ? 'disabled' : ''}>
                       ${pending ? 'Demande envoyée ⏳' : 'Échanger'}

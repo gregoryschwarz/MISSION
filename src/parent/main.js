@@ -4,18 +4,38 @@ import {
   createFamily,
   createChild,
   fetchChildren,
+  ensurePairingCodes,
+  fetchPairingRequests,
+  approvePairingRequest,
+  rejectPairingRequest,
+  revokeChildDevice,
   fetchChildProfile,
   fetchSessions,
   setFocusType,
   setWeeklyGoalTarget,
+  setDailyMissionLimit,
+  ensureDefaultRewards,
   fetchRewards,
   fetchRewardRequests,
   createReward,
+  updateReward,
   resolveRewardRequest,
 } from './family.js';
-import { renderDashboard, renderChildrenList } from './dashboard.js';
+import { renderDashboard, renderChildrenList, renderPairingRequestsSection } from './dashboard.js';
 
 const root = document.getElementById('app');
+let pairingRefreshTimer = null;
+let rewardRefreshTimer = null;
+
+function stopPairingRefresh() {
+  if (pairingRefreshTimer) clearInterval(pairingRefreshTimer);
+  pairingRefreshTimer = null;
+}
+
+function stopRewardRefresh() {
+  if (rewardRefreshTimer) clearInterval(rewardRefreshTimer);
+  rewardRefreshTimer = null;
+}
 
 function renderAuthForm(error = null) {
   root.innerHTML = `
@@ -61,26 +81,57 @@ function shareChildCode(childId, childName) {
 }
 
 async function loadChildrenList(familyId, error = null) {
-  const children = await fetchChildren(familyId);
+  stopPairingRefresh();
+  stopRewardRefresh();
+  const children = await ensurePairingCodes(await fetchChildren(familyId));
+  const pairingRequests = await fetchPairingRequests(children);
+  const resolvePairing = async (childId, deviceUid, decision) => {
+    if (decision === 'approved') {
+      await approvePairingRequest(childId, deviceUid);
+    } else {
+      await rejectPairingRequest(childId, deviceUid);
+    }
+    await loadChildrenList(familyId);
+  };
   renderChildrenList(root, {
     children,
+    pairingRequests,
     error,
     onSignOut: logOut,
     onSelectChild: (childId) => loadDashboard(familyId, childId),
     onCopyCode: copyChildCode,
     onShareCode: shareChildCode,
-    onAddChild: async ({ childName, pin }) => {
+    onEnableNotifications: async () => {
+      if ('Notification' in window) await Notification.requestPermission();
+    },
+    onAddChild: async ({ childName }) => {
       try {
-        const childId = await createChild(familyId, { childName, pin });
+        const childId = await createChild(familyId, { childName });
         await loadDashboard(familyId, childId);
       } catch (err) {
         await loadChildrenList(familyId, 'Connexion impossible. Vérifie ta connexion et réessaie.');
       }
     },
+    onResolvePairing: resolvePairing,
+    onRevokeDevice: async (childId) => {
+      await revokeChildDevice(childId);
+      await loadChildrenList(familyId);
+    },
   });
+  pairingRefreshTimer = setInterval(async () => {
+    try {
+      const refreshed = await fetchPairingRequests(children);
+      renderPairingRequestsSection(root, refreshed, resolvePairing);
+    } catch (err) {
+      // La prochaine actualisation retentera silencieusement.
+    }
+  }, 4000);
 }
 
 async function loadDashboard(familyId, childId) {
+  stopPairingRefresh();
+  stopRewardRefresh();
+  await ensureDefaultRewards(familyId);
   const [profile, sessions, rewards, rewardRequests] = await Promise.all([
     fetchChildProfile(childId),
     fetchSessions(childId),
@@ -92,7 +143,7 @@ async function loadDashboard(familyId, childId) {
     return;
   }
   renderDashboard(root, {
-    child: { id: childId },
+    child: { id: childId, pairingCode: profile.pairingCode },
     profile,
     sessions,
     rewards,
@@ -105,12 +156,20 @@ async function loadDashboard(familyId, childId) {
       await setFocusType(childId, focusType);
       await loadDashboard(familyId, childId);
     },
-    onSetWeeklyGoal: async (target) => {
-      await setWeeklyGoalTarget(childId, target);
+    onSetWeeklyGoal: async ({ target, rewardText, rewardDays }) => {
+      await setWeeklyGoalTarget(childId, target, rewardText, rewardDays);
       await loadDashboard(familyId, childId);
     },
-    onCreateReward: async ({ name, cost }) => {
-      await createReward(familyId, { name, cost });
+    onSetDailyLimit: async (limit) => {
+      await setDailyMissionLimit(childId, limit);
+      await loadDashboard(familyId, childId);
+    },
+    onCreateReward: async ({ name, cost, emoji }) => {
+      await createReward(familyId, { name, cost, emoji });
+      await loadDashboard(familyId, childId);
+    },
+    onUpdateReward: async (rewardId, changes) => {
+      await updateReward(familyId, rewardId, changes);
       await loadDashboard(familyId, childId);
     },
     onResolveRequest: async (requestId, decision) => {
@@ -120,6 +179,20 @@ async function loadDashboard(familyId, childId) {
       await loadDashboard(familyId, childId);
     },
   });
+  let knownPendingCount = rewardRequests.filter((request) => request.status === 'pending').length;
+  rewardRefreshTimer = setInterval(async () => {
+    try {
+      const refreshed = await fetchRewardRequests(childId);
+      const pendingCount = refreshed.filter((request) => request.status === 'pending').length;
+      if (pendingCount > knownPendingCount && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('Nouvelle demande de ' + profile.childName, { body: 'Une récompense attend ta validation.' });
+      }
+      if (pendingCount !== knownPendingCount) await loadDashboard(familyId, childId);
+      knownPendingCount = pendingCount;
+    } catch (err) {
+      // Une coupure réseau sera retentée au prochain passage.
+    }
+  }, 10000);
 }
 
 watchAuthState(async (user) => {

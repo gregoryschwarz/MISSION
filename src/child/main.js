@@ -1,13 +1,13 @@
 import { signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../shared/firebaseConfig.js';
-import { getStoredChildId, storeChildId, pairWithChild } from './pairing.js';
+import { getStoredChildId, storeChildId, clearStoredChildId, resolvePairingCode, requestPairing, pairingStatus } from './pairing.js';
 import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
 import { generateFrenchMission } from './frenchQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression, applyDailyChallenge, applyWeeklyGoal, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderConnectionError } from './ui.js';
+import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward } from '../parent/family.js';
 import { BADGES } from '../shared/badges.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
@@ -21,9 +21,6 @@ import {
   hatMedallionData,
   capeMedallionData,
   decorMedallionData,
-  emojiForCharacter,
-  emojiForHat,
-  emojiForCape,
   decorGradientCss,
   DEFAULT_CHARACTER,
   DEFAULT_HAT,
@@ -39,6 +36,8 @@ const PAUSE_REMINDER_MS = 15 * 60 * 1000;
 // multi-enfants). familyId (le compte parent) est retrouvé via le profil une
 // fois chargé, et gardé en mémoire pour l'accès au catalogue de récompenses.
 let childId = getStoredChildId();
+let pendingChildId = null;
+let pairingPollTimer = null;
 let childFamilyId = null;
 let session = null;
 let missionMode = 'quiz';
@@ -77,8 +76,13 @@ async function loadProfile(targetChildId) {
         dailyChallengeProgress: 0,
         dailyChallengeCompleted: false,
         weeklyGoalTarget: 0,
+        weeklyRewardText: 'Vendredi et samedi soir : tu peux rester debout plus tard !',
+        weeklyRewardDays: ['vendredi', 'samedi'],
         weeklyGoalProgress: 0,
         weeklyGoalWeekStart: null,
+        dailyMissionLimit: 3,
+        dailyMissionCount: 0,
+        dailyMissionCountDate: null,
         streakDays: 0,
         lastSessionDate: null,
         difficultyLevels: DEFAULT_DIFFICULTY_LEVELS,
@@ -115,11 +119,15 @@ function renderHomeScreen(profile) {
     dailyChallengeTarget: DAILY_CHALLENGE_TARGET,
     weeklyGoalTarget: profile.weeklyGoalTarget ?? 0,
     weeklyGoalProgress: weeklyGoalIsThisWeek ? profile.weeklyGoalProgress ?? 0 : 0,
+    weeklyRewardText: profile.weeklyRewardText ?? 'Vendredi et samedi soir : tu peux rester debout plus tard !',
+    weeklyRewardDays: profile.weeklyRewardDays ?? ['vendredi', 'samedi'],
+    dailyMissionLimit: profile.dailyMissionLimit ?? 3,
+    dailyMissionCount: profile.dailyMissionCountDate === today ? profile.dailyMissionCount ?? 0 : 0,
     badges: profile.badges,
     auraClass: auraClassForLevel(profile.avatarLevel),
-    characterEmoji: emojiForCharacter(profile.selectedCharacter ?? DEFAULT_CHARACTER),
-    hatEmoji: emojiForHat(profile.selectedHat ?? DEFAULT_HAT),
-    capeEmoji: emojiForCape(profile.selectedCape ?? DEFAULT_CAPE),
+    characterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
+    hatId: profile.selectedHat ?? DEFAULT_HAT,
+    capeId: profile.selectedCape ?? DEFAULT_CAPE,
     decorGradient: decorGradientCss(profile.selectedDecor ?? DEFAULT_DECOR),
     soundEnabled,
     focusType: profile.focusType ?? null,
@@ -155,7 +163,8 @@ function showBadgeAlbum() {
 
 async function showRewards() {
   try {
-    const [rewards, requests] = await Promise.all([fetchRewards(childFamilyId), fetchRewardRequests(childId)]);
+    const [allRewards, requests] = await Promise.all([fetchRewards(childFamilyId), fetchRewardRequests(childId)]);
+    const rewards = allRewards.filter((reward) => reward.active !== false && reward.archived !== true);
     const pendingRewardIds = requests.filter((r) => r.status === 'pending').map((r) => r.rewardId);
     renderRewards(root, {
       coins: lastProfile?.coins ?? 0,
@@ -219,8 +228,8 @@ function showCustomize() {
   const profile = lastProfile;
   renderCustomize(root, {
     characters: characterMedallionData(profile.avatarLevel, profile.ownedCharacterIds ?? []),
-    hats: hatMedallionData(profile.badges),
-    capes: capeMedallionData(profile.badges),
+    hats: hatMedallionData(profile.badges, profile.avatarLevel),
+    capes: capeMedallionData(profile.badges, profile.avatarLevel),
     decors: decorMedallionData(profile.avatarLevel),
     coins: profile.coins ?? 0,
     selectedCharacterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
@@ -283,6 +292,8 @@ async function handleSelectDecor(decorId) {
 }
 
 async function showHome() {
+  if (pairingPollTimer) clearTimeout(pairingPollTimer);
+  pairingPollTimer = null;
   try {
     await ensureAuth();
     const profile = await loadProfile(childId);
@@ -291,6 +302,15 @@ async function showHome() {
     renderHomeScreen(profile);
     flushQueue((summary) => writeSession(childId, summary)).catch(() => {});
   } catch (err) {
+    if (err?.code === 'permission-denied') {
+      clearStoredChildId();
+      childId = null;
+      renderPairing(root, {
+        onSubmit: handlePairing,
+        error: "Cette tablette doit être autorisée à nouveau par le parent.",
+      });
+      return;
+    }
     renderConnectionError(root, { onRetry: showHome });
   }
 }
@@ -311,6 +331,7 @@ function startMissionWithQuestions(questions) {
 }
 
 function startMission(notionType = null) {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const questions = notionType
     ? generateSingleTypeMission(MISSION_LENGTH, notionType, difficultyLevels[notionType] ?? 1)
@@ -319,8 +340,17 @@ function startMission(notionType = null) {
 }
 
 function startFrenchMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   startMissionWithQuestions(generateFrenchMission(MISSION_LENGTH, difficultyLevels));
+}
+
+function dailyMissionLimitReached() {
+  const limit = lastProfile?.dailyMissionLimit ?? 3;
+  if (!limit) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  const count = lastProfile?.dailyMissionCountDate === today ? lastProfile.dailyMissionCount ?? 0 : 0;
+  return count >= limit;
 }
 
 function choicesForCurrentQuestion(question) {
@@ -414,6 +444,9 @@ async function finishMission() {
   const progressionResult = applyProgression(profileBefore, summary, nextDifficultyLevels);
   const dailyChallenge = applyDailyChallenge(profileBefore, summary);
   const weeklyGoal = applyWeeklyGoal(profileBefore, summary);
+  const previousWeeklyProgress = profileBefore.weeklyGoalWeekStart === weeklyGoal.weeklyGoalWeekStart ? profileBefore.weeklyGoalProgress ?? 0 : 0;
+  const justCompletedWeeklyGoal = weeklyGoal.weeklyGoalTarget > 0 && previousWeeklyProgress < weeklyGoal.weeklyGoalTarget && weeklyGoal.weeklyGoalProgress >= weeklyGoal.weeklyGoalTarget;
+  const previousDailyMissionCount = profileBefore.dailyMissionCountDate === summary.date ? profileBefore.dailyMissionCount ?? 0 : 0;
   const finalXp = progressionResult.xp + dailyChallenge.bonusXp;
   const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins;
   const finalAvatarLevel = levelForXp(finalXp);
@@ -434,6 +467,8 @@ async function finishMission() {
     weeklyGoalWeekStart: weeklyGoal.weeklyGoalWeekStart,
     weeklyGoalProgress: weeklyGoal.weeklyGoalProgress,
     weeklyGoalTarget: weeklyGoal.weeklyGoalTarget,
+    dailyMissionCountDate: summary.date,
+    dailyMissionCount: previousDailyMissionCount + 1,
     lastSessionDate: progressionResult.lastSessionDate,
     difficultyLevels: nextDifficultyLevels,
   };
@@ -458,29 +493,82 @@ async function finishMission() {
     leveledUp: finalLeveledUp,
     newBadges: progressionResult.newBadges,
     justCompletedDailyChallenge: dailyChallenge.justCompletedDailyChallenge,
+    justCompletedWeeklyGoal,
+    weeklyRewardText: profileBefore.weeklyRewardText,
     onContinue: showHome,
   });
 }
 
-async function handlePairing({ childId: candidateId, pin }) {
+async function checkPairingApproval() {
+  if (!pendingChildId || !auth.currentUser) return;
+  if (pairingPollTimer) clearTimeout(pairingPollTimer);
+  pairingPollTimer = null;
+  try {
+    const status = await pairingStatus(db, pendingChildId, auth.currentUser.uid);
+    if (status === 'approved') {
+      storeChildId(pendingChildId);
+      childId = pendingChildId;
+      pendingChildId = null;
+      await showHome();
+      return;
+    }
+    renderPairingPending(root, {
+      onRetry: checkPairingApproval,
+      onCancel: () => {
+        if (pairingPollTimer) clearTimeout(pairingPollTimer);
+        pairingPollTimer = null;
+        pendingChildId = null;
+        renderPairing(root, { onSubmit: handlePairing });
+      },
+      error: status === 'rejected'
+        ? "Le parent a refusé cette demande."
+        : status === 'missing'
+          ? "Demande introuvable. Reviens en arrière et renvoie-la."
+          : null,
+    });
+    if (status === 'pending') {
+      pairingPollTimer = setTimeout(checkPairingApproval, 3000);
+    }
+  } catch (err) {
+    renderPairingPending(root, {
+      onRetry: checkPairingApproval,
+      onCancel: () => renderPairing(root, { onSubmit: handlePairing }),
+      error: 'Connexion impossible. Vérifie le Wi-Fi et réessaie.',
+    });
+  }
+}
+
+async function handlePairing({ childId: candidateId }) {
+  if (pairingPollTimer) clearTimeout(pairingPollTimer);
+  pairingPollTimer = null;
   let result;
   try {
     await ensureAuth();
-    result = await pairWithChild(db, candidateId, pin);
+    const resolvedChildId = await resolvePairingCode(db, candidateId);
+    if (!resolvedChildId) {
+      renderPairing(root, { onSubmit: handlePairing, error: "Code d'appairage inconnu." });
+      return;
+    }
+    candidateId = resolvedChildId;
+    result = await requestPairing(db, candidateId, auth.currentUser.uid);
   } catch (err) {
+    const code = err?.code ?? 'erreur-inconnue';
+    const message = code === 'auth/operation-not-allowed'
+      ? "La connexion anonyme doit être activée dans Firebase Authentication."
+      : code === 'permission-denied'
+        ? "Cette demande est refusée par les règles de sécurité. Actualise l'application puis réessaie."
+        : `Connexion Firebase impossible (${code}). Actualise l'application et réessaie.`;
     renderPairing(root, {
       onSubmit: handlePairing,
-      error: 'Connexion impossible. Vérifie le Wi-Fi et réessaie.',
+      error: message,
     });
     return;
   }
   if (result.success) {
-    storeChildId(candidateId);
-    childId = candidateId;
-    showHome();
+    pendingChildId = candidateId;
+    await checkPairingApproval();
   } else {
-    const message = result.reason === 'wrong-pin' ? 'Code secret incorrect.' : "Code d'appairage inconnu.";
-    renderPairing(root, { onSubmit: handlePairing, error: message });
+    renderPairing(root, { onSubmit: handlePairing, error: "Code d'appairage inconnu." });
   }
 }
 

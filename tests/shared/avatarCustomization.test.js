@@ -19,6 +19,7 @@ import {
   emojiForCharacter,
   emojiForHat,
   emojiForCape,
+  visualForCharacter,
   decorGradientCss,
 } from '../../src/shared/avatarCustomization.js';
 
@@ -41,13 +42,13 @@ describe('CHARACTERS', () => {
 
 describe('HATS and CAPES', () => {
   it('defines 4 hats including a free "none" option', () => {
-    expect(HATS).toHaveLength(4);
+    expect(HATS).toHaveLength(12);
     expect(HATS.find((h) => h.id === 'none-hat').requiresAnyOf).toEqual([]);
     expect(HATS.find((h) => h.id === 'crown').requiresAnyOf).toEqual(['streak-30']);
   });
 
   it('defines 4 capes including a free "none" option', () => {
-    expect(CAPES).toHaveLength(4);
+    expect(CAPES).toHaveLength(12);
     expect(CAPES.find((c) => c.id === 'none-cape').requiresAnyOf).toEqual([]);
     expect(CAPES.find((c) => c.id === 'star-cape').requiresAnyOf).toEqual(['streak-7']);
   });
@@ -179,6 +180,20 @@ describe('emojiForCharacter', () => {
 
   it('falls back to the default character for an unknown id', () => {
     expect(emojiForCharacter('unknown')).toBe('🦄');
+  });
+});
+
+describe('visualForCharacter', () => {
+  it('returns a complete block-avatar palette and falls back safely', () => {
+    expect(visualForCharacter('panda')).toMatchObject({ id: 'panda', name: 'Aya magicienne' });
+    expect(visualForCharacter('panda').skin).toMatch(/^#/);
+    expect(visualForCharacter('unknown').id).toBe(DEFAULT_CHARACTER);
+  });
+
+  it('unlocks level accessories progressively', () => {
+    expect(unlockedHats([], 2).map((h) => h.id)).toContain('round-glasses');
+    expect(unlockedHats([], 1).map((h) => h.id)).not.toContain('round-glasses');
+    expect(unlockedCapes([], 2).map((c) => c.id)).toContain('backpack');
   });
 });
 

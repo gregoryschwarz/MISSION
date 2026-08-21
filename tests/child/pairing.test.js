@@ -1,47 +1,46 @@
 import { describe, it, expect, vi } from 'vitest';
-import { hashPin } from '../../src/shared/pin.js';
-
 vi.mock('firebase/firestore', () => ({
   doc: (...args) => args,
   getDoc: vi.fn(),
+  setDoc: vi.fn(),
+  serverTimestamp: () => 'SERVER_TIMESTAMP',
 }));
 
-import { getDoc } from 'firebase/firestore';
-import { pairWithChild, getStoredChildId, storeChildId } from '../../src/child/pairing.js';
+import { getDoc, setDoc } from 'firebase/firestore';
+import { resolvePairingCode, requestPairing, pairingStatus, getStoredChildId, storeChildId, clearStoredChildId } from '../../src/child/pairing.js';
 
 function createFakeStorage() {
   const store = new Map();
   return {
     getItem: (key) => (store.has(key) ? store.get(key) : null),
     setItem: (key, value) => store.set(key, value),
+    removeItem: (key) => store.delete(key),
   };
 }
 
-describe('pairWithChild', () => {
-  it('succeeds when the child exists and the pin matches', async () => {
-    const pinHash = await hashPin('1234');
-    getDoc.mockResolvedValueOnce({
-      exists: () => true,
-      data: () => ({ pinHash, childName: 'Luna' }),
-    });
-    const result = await pairWithChild({}, 'child-abc', '1234');
-    expect(result).toEqual({ success: true, childName: 'Luna' });
+describe('secure pairing request', () => {
+  it('resolves a short code without reading the child profile', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => true, data: () => ({ childId: 'child-abc' }) });
+    expect(await resolvePairingCode({}, ' m7k4qp ')).toBe('child-abc');
   });
 
-  it('fails when the pin does not match', async () => {
-    const pinHash = await hashPin('1234');
-    getDoc.mockResolvedValueOnce({
-      exists: () => true,
-      data: () => ({ pinHash, childName: 'Luna' }),
-    });
-    const result = await pairWithChild({}, 'child-abc', '0000');
-    expect(result).toEqual({ success: false, reason: 'wrong-pin' });
+  it('creates a pending request owned by the anonymous device', async () => {
+    const result = await requestPairing({}, 'child-abc', 'device-1');
+    expect(result).toEqual({ success: true, status: 'pending' });
+    expect(setDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      { requesterUid: 'device-1', status: 'pending', requestedAt: 'SERVER_TIMESTAMP' }
+    );
   });
 
-  it('fails when the child does not exist', async () => {
-    getDoc.mockResolvedValueOnce({ exists: () => false });
-    const result = await pairWithChild({}, 'unknown', '1234');
-    expect(result).toEqual({ success: false, reason: 'unknown-child' });
+  it('does not disclose whether a protected child exists on permission denial', async () => {
+    setDoc.mockRejectedValueOnce({ code: 'permission-denied' });
+    expect(await requestPairing({}, 'unknown', 'device-1')).toEqual({ success: false, reason: 'unknown-child' });
+  });
+
+  it('reads only the device own approval status', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => true, data: () => ({ status: 'approved' }) });
+    expect(await pairingStatus({}, 'child-abc', 'device-1')).toBe('approved');
   });
 });
 
@@ -50,5 +49,7 @@ describe('childId storage', () => {
     const storage = createFakeStorage();
     storeChildId('child-abc', storage);
     expect(getStoredChildId(storage)).toBe('child-abc');
+    clearStoredChildId(storage);
+    expect(getStoredChildId(storage)).toBe(null);
   });
 });

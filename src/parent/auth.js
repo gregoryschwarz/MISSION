@@ -1,10 +1,10 @@
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../shared/firebaseConfig.js';
 
 const googleProvider = new GoogleAuthProvider();
 
 export function signInWithGoogle() {
-  return signInWithPopup(auth, googleProvider);
+  return signInWithRedirect(auth, googleProvider);
 }
 
 export function logOut() {

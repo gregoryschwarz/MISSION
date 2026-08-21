@@ -26,16 +26,24 @@ vi.mock('firebase/firestore', () => ({
   query: (...args) => args,
   where: (...args) => args,
   serverTimestamp: () => 'SERVER_TIMESTAMP',
+  writeBatch: vi.fn(() => ({ set: vi.fn(), update: vi.fn(), commit: vi.fn() })),
 }));
 
-import { setDoc, getDoc, getDocs, addDoc, updateDoc } from 'firebase/firestore';
+import { setDoc, getDoc, getDocs, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import {
+  DEFAULT_REWARDS,
   createFamily,
   createChild,
   fetchChildren,
   fetchChildProfile,
+  fetchPairingRequests,
+  ensurePairingCodes,
+  ensureDefaultRewards,
+  revokeChildDevice,
+  approvePairingRequest,
   setFocusType,
   createReward,
+  updateReward,
   fetchRewards,
   requestReward,
   fetchRewardRequests,
@@ -48,6 +56,7 @@ beforeEach(() => {
   getDocs.mockReset();
   addDoc.mockReset();
   updateDoc.mockReset();
+  writeBatch.mockClear();
 });
 
 describe('createFamily', () => {
@@ -62,10 +71,12 @@ describe('createFamily', () => {
 });
 
 describe('createChild', () => {
-  it('creates a child document with default profile fields and a hashed pin', async () => {
-    const id = await createChild('family-abc', { childName: 'Ambre', pin: '1234' });
+  it('creates an unpaired child document with default profile fields', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => false });
+    const id = await createChild('family-abc', { childName: 'Ambre' });
     expect(typeof id).toBe('string');
-    const [, payload] = setDoc.mock.calls[0];
+    const batch = writeBatch.mock.results[0].value;
+    const [, payload] = batch.set.mock.calls[0];
     expect(payload).toMatchObject({
       familyId: 'family-abc',
       childName: 'Ambre',
@@ -73,9 +84,66 @@ describe('createChild', () => {
       avatarLevel: 1,
       coins: 0,
       totalCorrectCount: 0,
+      deviceUid: null,
     });
-    expect(payload.pinHash).toBeDefined();
-    expect(payload.pinHash).not.toBe('1234');
+    expect(payload.pairingCode).toMatch(/^[A-Z2-9]{6}$/);
+    expect(batch.set).toHaveBeenCalledTimes(2);
+    expect(batch.commit).toHaveBeenCalledOnce();
+  });
+});
+
+describe('DEFAULT_REWARDS', () => {
+  it('provides a varied starter catalogue including the pajama party', () => {
+    expect(DEFAULT_REWARDS).toHaveLength(12);
+    expect(DEFAULT_REWARDS.find((reward) => reward.id === 'pajama-party')).toMatchObject({ cost: 100 });
+  });
+});
+
+describe('ensureDefaultRewards', () => {
+  it('adds missing icons and active state to an existing catalogue', async () => {
+    const batch = { set: vi.fn(), update: vi.fn(), commit: vi.fn() };
+    writeBatch.mockReturnValueOnce(batch);
+    getDocs.mockResolvedValueOnce({
+      empty: false,
+      docs: [{ id: 'pajama-party', data: () => ({ name: 'Une soirée pyjama', cost: 100 }) }],
+    });
+    expect(await ensureDefaultRewards('family-abc')).toBe(true);
+    expect(batch.update).toHaveBeenCalledWith(expect.anything(), { emoji: '🌙', active: true });
+    expect(batch.commit).toHaveBeenCalledOnce();
+  });
+});
+
+describe('pairing approval', () => {
+  it('revokes a child device without changing the rest of the profile', async () => {
+    await revokeChildDevice('c1');
+    expect(setDoc).toHaveBeenCalledWith(expect.anything(), { deviceUid: null }, { merge: true });
+  });
+
+  it('repairs a missing short-code mapping for an existing child', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => false });
+    const child = { id: 'c1', familyId: 'family-abc', childName: 'Ambre', pairingCode: '56WZU6' };
+    expect(await ensurePairingCodes([child])).toEqual([child]);
+    expect(setDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      { childId: 'c1', familyId: 'family-abc' }
+    );
+  });
+
+  it('lists pending requests with their child identity', async () => {
+    getDocs.mockResolvedValueOnce({
+      docs: [{ id: 'device-1', data: () => ({ requesterUid: 'device-1', status: 'pending' }) }],
+    });
+    expect(await fetchPairingRequests([{ id: 'c1', childName: 'Ambre', deviceUid: 'old-device' }])).toEqual([
+      { id: 'device-1', childId: 'c1', childName: 'Ambre', replacesDevice: true, requesterUid: 'device-1', status: 'pending' },
+    ]);
+  });
+
+  it('atomically links the device and approves its request', async () => {
+    await approvePairingRequest('c1', 'device-1');
+    const batch = writeBatch.mock.results[0].value;
+    expect(batch.update).toHaveBeenCalledTimes(2);
+    expect(batch.update).toHaveBeenNthCalledWith(1, expect.anything(), { deviceUid: 'device-1' });
+    expect(batch.commit).toHaveBeenCalledOnce();
   });
 });
 
@@ -174,11 +242,16 @@ describe('createReward / fetchRewards (family-level catalog, unchanged by multi-
     expect(id).toBe('reward-1');
   });
 
+  it('updates the name and coin cost of an existing reward', async () => {
+    await updateReward('family-abc', 'r1', { name: 'Sortie vélo', cost: 35 });
+    expect(updateDoc).toHaveBeenCalledWith(expect.anything(), { name: 'Sortie vélo', cost: 35 });
+  });
+
   it('maps reward documents to plain objects with id', async () => {
     getDocs.mockResolvedValueOnce({
       docs: [{ id: 'r1', data: () => ({ name: 'Bonbon', cost: 5 }) }],
     });
     const rewards = await fetchRewards('family-abc');
-    expect(rewards).toEqual([{ id: 'r1', name: 'Bonbon', cost: 5 }]);
+    expect(rewards).toEqual([{ id: 'r1', name: 'Bonbon', cost: 5, emoji: '🎁', active: true }]);
   });
 });

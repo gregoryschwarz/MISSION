@@ -73,9 +73,59 @@ h1, h2, h3 {
 }
 
 .avatar {
-  font-size: 96px;
   display: inline-block;
 }
+
+.block-avatar { position: relative; width: 106px; height: 132px; margin: 0 auto; filter: drop-shadow(0 8px 5px rgba(20, 18, 32, .2)); }
+.block-avatar span { position: absolute; display: block; box-sizing: border-box; }
+.block-head { width: 58px; height: 55px; left: 24px; top: 12px; background: var(--avatar-skin); border-radius: 7px; border: 3px solid rgba(30,25,40,.16); z-index: 5; }
+.block-hair { inset: -3px -3px auto; height: 18px; background: var(--avatar-hair); border-radius: 7px 7px 3px 3px; }
+.block-eye { width: 6px; height: 8px; top: 25px; background: #292333; border-radius: 2px; }
+.block-eye-left { left: 13px; }.block-eye-right { right: 13px; }
+.block-smile { width: 17px; height: 8px; left: 18px; top: 38px; border-bottom: 3px solid #9f5260; border-radius: 50%; }
+.block-body { width: 52px; height: 46px; left: 27px; top: 65px; background: var(--avatar-outfit); border-radius: 5px; border: 3px solid rgba(30,25,40,.13); z-index: 3; }
+.block-body::after { content: ''; position: absolute; width: 20px; height: 20px; left: 13px; top: 8px; background: var(--avatar-accent); transform: rotate(45deg); border-radius: 4px; opacity: .9; }
+.block-arm { width: 20px; height: 50px; top: 68px; background: linear-gradient(var(--avatar-outfit) 0 60%, var(--avatar-skin) 60%); border: 3px solid rgba(30,25,40,.13); border-radius: 5px; z-index: 2; }
+.block-arm-left { left: 8px; transform: rotate(5deg); }.block-arm-right { right: 8px; transform: rotate(-5deg); }
+.block-leg { width: 24px; height: 30px; top: 105px; background: var(--avatar-hair); border: 3px solid rgba(30,25,40,.14); border-radius: 3px; z-index: 1; }
+.block-leg-left { left: 28px; }.block-leg-right { right: 28px; }
+.block-cape { display: none !important; width: 76px; height: 67px; left: 15px; top: 61px; background: #5747b9; clip-path: polygon(20% 0,80% 0,100% 100%,0 100%); z-index: 0; }
+.cape-star-cape .block-cape { display: block !important; background: #392f80 radial-gradient(circle at 30% 30%,#ffe066 0 4px,transparent 5px); }
+.cape-rainbow-cape .block-cape { display: block !important; background: linear-gradient(90deg,#ff5f6d,#ffd166,#20c997,#5b8def,#a55eea); }
+.cape-diamond-cape .block-cape { display: block !important; background: linear-gradient(135deg,#dff9fb,#48dbfb,#5f27cd); }
+.block-hat { display: none !important; z-index: 8; }
+.hat-crown .block-hat { display: block !important; width: 54px; height: 26px; left: 26px; top: -7px; background: #ffd43b; clip-path: polygon(0 20%,22% 58%,40% 0,60% 58%,82% 0,100% 58%,92% 100%,8% 100%); }
+.hat-top-hat .block-hat { display: block !important; width: 48px; height: 31px; left: 29px; top: -13px; background: linear-gradient(#25202e 0 75%,var(--avatar-accent) 75%); border-radius: 4px 4px 1px 1px; box-shadow: -8px 27px 0 -4px #25202e,8px 27px 0 -4px #25202e; }
+.hat-flower-crown .block-hat { display: block !important; width: 58px; height: 14px; left: 24px; top: 7px; background: radial-gradient(circle,#fff 0 3px,#ff75a0 4px 7px,transparent 8px) 0 0/18px 14px; }
+.hat-round-glasses .block-hat { display:block !important; width:18px;height:15px;left:34px;top:35px;border:3px solid #443d55;border-radius:50%;box-shadow:24px 0 0 -3px transparent,24px 0 0 0 #443d55; }
+.hat-cat-ears .block-hat { display:block !important;width:62px;height:28px;left:22px;top:-2px;background:var(--avatar-hair);clip-path:polygon(0 100%,12% 0,35% 62%,65% 62%,88% 0,100% 100%); }
+.hat-headphones .block-hat { display:block !important;width:72px;height:51px;left:17px;top:7px;border:7px solid var(--avatar-accent);border-bottom:0;border-radius:38px 38px 0 0;box-shadow:inset 0 0 0 3px rgba(255,255,255,.35); }
+.hat-sports-cap .block-hat { display:block !important;width:59px;height:20px;left:23px;top:2px;background:var(--avatar-accent);border-radius:25px 25px 5px 5px;box-shadow:17px 13px 0 -6px var(--avatar-accent); }
+.hat-star-glasses .block-hat { display:block !important;width:62px;height:22px;left:22px;top:32px;background:#ffd43b;clip-path:polygon(0 35%,20% 30%,28% 0,38% 28%,50% 35%,62% 28%,72% 0,80% 30%,100% 35%,83% 55%,76% 100%,63% 65%,50% 55%,37% 65%,24% 100%,17% 55%); }
+.hat-wizard-hat .block-hat { display:block !important;width:68px;height:45px;left:19px;top:-31px;background:#6c4ccf;clip-path:polygon(50% 0,76% 76%,100% 84%,96% 100%,4% 100%,0 84%,28% 76%); }
+.hat-pirate-hat .block-hat { display:block !important;width:72px;height:35px;left:17px;top:-12px;background:#282331;clip-path:polygon(0 75%,22% 48%,31% 0,69% 0,78% 48%,100% 75%,78% 100%,22% 100%); }
+.hat-tiara .block-hat { display:block !important;width:54px;height:24px;left:26px;top:-3px;background:linear-gradient(135deg,#81ecec,#a29bfe);clip-path:polygon(0 100%,12% 35%,34% 70%,50% 0,66% 70%,88% 35%,100% 100%); }
+.cape-backpack .block-cape { display:block !important;width:64px;height:58px;left:21px;top:65px;background:#e98c3a;border-radius:10px; }
+.cape-fairy-wings .block-cape,.cape-angel-wings .block-cape,.cape-dragon-wings .block-cape { display:block !important;width:102px;height:76px;left:2px;top:55px;background:#f8b4e5;clip-path:polygon(50% 45%,15% 0,0 30%,25% 70%,7% 100%,45% 80%,50% 60%,55% 80%,93% 100%,75% 70%,100% 30%,85% 0); }
+.cape-angel-wings .block-cape { background:#f7fbff; }.cape-dragon-wings .block-cape { background:#7b4ab2; }
+.cape-jetpack .block-cape { display:block !important;width:70px;height:62px;left:18px;top:63px;background:linear-gradient(90deg,#657786 0 42%,#ff6b35 43% 57%,#657786 58%);border-radius:9px; }
+.cape-magic-shield .block-cape { display:block !important;width:72px;height:76px;left:17px;top:58px;background:linear-gradient(135deg,#6c5ce7,#00cec9);clip-path:polygon(50% 0,100% 18%,88% 72%,50% 100%,12% 72%,0 18%); }
+.cape-cloud-friend .block-cape,.cape-star-friend .block-cape { display:block !important;width:34px;height:34px;left:-10px;top:45px;background:#fff;border-radius:50%;box-shadow:-12px 8px 0 -4px #fff,12px 9px 0 -4px #fff; }
+.cape-star-friend .block-cape { background:#ffd43b;box-shadow:none;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 94%,50% 72%,21% 94%,32% 57%,2% 35%,39% 35%); }
+.character-butterfly .block-head { box-shadow: inset 0 0 0 4px #e7eaf6; }.character-cat .block-hair { height: 24px; clip-path: polygon(0 30%,15% 0,28% 30%,72% 30%,85% 0,100% 30%,100% 100%,0 100%); }
+.character-dog .block-body::after { border-radius: 50%; }.character-fox .block-hair { transform: skew(-8deg); }.character-panda .block-body::after { clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.character-lion .block-body { box-shadow: inset 0 0 0 4px #aab4c0; }.character-koala .block-head { box-shadow: inset 0 -8px 0 #eef7fa; }.character-dragon .block-head { border-top-color: var(--avatar-accent); }
+.badge-medallion.selectable { position: relative; overflow: hidden; }
+.block-avatar-compact {
+  width: 106px;
+  height: 132px;
+  transform: scale(.38);
+  transform-origin: top left;
+  margin: 0;
+  filter: none;
+  pointer-events: none;
+}
+.badge-medallion .block-avatar-compact { position: absolute; left: 4px; top: 0; }
 
 .home-header {
   background: linear-gradient(160deg, var(--color-mint), #04b98b);
@@ -725,6 +775,18 @@ input {
 .weekly-goal-card {
   border-color: var(--color-pink);
 }
+
+.weekly-reward-unlocked { margin-top: var(--space-3); padding: var(--space-3); display:flex; flex-direction:column; gap:4px; border-radius:var(--radius-md); background:linear-gradient(135deg,#fff1a8,#ffc6e5); color:var(--color-text); box-shadow:var(--shadow-card); animation:badgePop .5s ease both; }
+.weekly-reward-unlocked span { font-size:var(--text-xs); font-weight:700; letter-spacing:.04em; }
+.weekly-reward-unlocked strong { font-family:var(--font-display); font-size:var(--text-base); }
+.weekly-reward-unlocked small { color:var(--color-text-muted); }
+.weekly-reward-locked { background:linear-gradient(135deg,#f4f1f7,#e8e1ef); border:2px dashed #b7a8c4; box-shadow:none; animation:none; }
+.weekly-reward-locked strong { opacity:.78; }
+.weekly-reward-unlocked em { font-style:normal; text-transform:capitalize; font-size:var(--text-xs); }
+.daily-limit-banner { padding:var(--space-2); border-radius:var(--radius-md); background:#e8f5ff; font-weight:600; }
+.daily-limit-banner.limit-reached { background:#efe8ff; }
+.weekly-bonus-celebration { margin:var(--space-4) 0; padding:var(--space-5); border-radius:var(--radius-lg); background:linear-gradient(135deg,#fff0a8,#ffb8e6,#bde0fe); animation:badgePop .65s ease both; box-shadow:var(--shadow-raised); }
+.weekly-bonus-celebration h2 { margin:var(--space-2) 0; }
 
 .daily-challenge-title {
   font-family: var(--font-display);

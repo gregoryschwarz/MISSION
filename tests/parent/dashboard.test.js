@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   aggregateBreakdown,
   weeklyBreakdownByType,
+  dailyBreakdownByType,
   colorForPercent,
   computeInsights,
   dailyActivityLast7Days,
@@ -22,6 +23,28 @@ describe('aggregateBreakdown', () => {
 
   it('returns an empty object for no sessions', () => {
     expect(aggregateBreakdown([])).toEqual({});
+  });
+});
+
+describe('dailyBreakdownByType', () => {
+  const referenceDate = new Date('2026-08-16T12:00:00Z');
+
+  it('builds a seven-day window with a column for each day', () => {
+    const result = dailyBreakdownByType([
+      { date: '2026-08-16', breakdown: { addition: { correct: 3, total: 4 } } },
+    ], { referenceDate });
+    expect(result.addition.map((day) => day.dayLabel)).toEqual([
+      'lun 10/08', 'mar 11/08', 'mer 12/08', 'jeu 13/08', 'ven 14/08', 'sam 15/08', 'dim 16/08',
+    ]);
+    expect(result.addition.at(-1).percent).toBe(75);
+  });
+
+  it('combines several sessions completed on the same day', () => {
+    const result = dailyBreakdownByType([
+      { date: '2026-08-15', breakdown: { addition: { correct: 2, total: 5 } } },
+      { date: '2026-08-15', breakdown: { addition: { correct: 4, total: 5 } } },
+    ], { referenceDate });
+    expect(result.addition.find((day) => day.dayLabel === 'sam 15/08').percent).toBe(60);
   });
 });
 
