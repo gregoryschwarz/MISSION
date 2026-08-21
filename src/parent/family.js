@@ -10,6 +10,7 @@ import {
   DEFAULT_OUTFIT,
   DEFAULT_COMPANION,
   DEFAULT_COMPANION_ACCESSORY,
+  DEFAULT_OWNED_PACK_IDS,
 } from '../shared/avatarCustomization.js';
 import { spendCoins, refundCoins } from '../shared/progression.js';
 
@@ -102,6 +103,7 @@ export async function createChild(familyId, { childName }) {
     selectedOutfit: DEFAULT_OUTFIT,
     selectedCompanion: DEFAULT_COMPANION,
     selectedCompanionAccessory: DEFAULT_COMPANION_ACCESSORY,
+    ownedPackIds: DEFAULT_OWNED_PACK_IDS,
     ownedCharacterIds: [],
     focusType: null,
     weeklyGoalTarget: 0,

@@ -1572,6 +1572,8 @@ input {
 .hair-mohawk .block-hair { inset: -13px 12px auto; height: 31px; clip-path: polygon(0 100%,12% 18%,28% 75%,43% 0,58% 72%,76% 12%,100% 100%); }
 .hair-space-buns .block-hair { height: 23px; background: linear-gradient(90deg,#3846a8,#8b5cf6); box-shadow: -13px -7px 0 7px #3846a8, 13px -7px 0 7px #8b5cf6; }
 .hair-rainbow-hair .block-hair { height: 29px; background: linear-gradient(90deg,#ef476f,#ffd166,#06d6a0,#118ab2,#9b5de5); border-radius: 12px 12px 5px 5px; }
+.hair-midnight-waves .block-hair { height:30px; border-radius:14px 14px 4px 4px; background:linear-gradient(90deg,#211a39,#554477,#211a39); box-shadow:0 10px 0 -4px #352b57; }
+.hair-snow-braids .block-hair { height:23px; border-radius:10px; background:linear-gradient(90deg,#eef9ff,#b9dcf2); box-shadow:-8px 15px 0 -2px #d9efff,8px 15px 0 -2px #b9dcf2; }
 
 .avatar-companion {
   display: grid !important;
@@ -1622,6 +1624,27 @@ input {
 .decor-options { grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); }
 .decor-options .decor-swatch { width:100%; height:70px; border-radius:var(--radius-md); }
 .customize-back { max-width:520px; margin:var(--space-5) auto 0; display:block; }
+.avatar-pack-shop { background:linear-gradient(135deg,color-mix(in srgb,var(--color-mint) 12%,var(--color-card)),var(--color-card)); }
+.avatar-pack-heading { display:flex; align-items:end; justify-content:space-between; gap:var(--space-4); margin-bottom:var(--space-3); }
+.avatar-pack-heading h2 { margin:2px 0 0; }
+.avatar-pack-heading span { color:var(--color-pink); font-size:10px; font-weight:900; letter-spacing:.1em; }
+.avatar-pack-heading p { max-width:430px; margin:0; color:var(--color-text-muted); font-size:var(--text-xs); text-align:right; }
+.avatar-pack-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--space-3); }
+.avatar-pack-card { position:relative; min-height:205px; padding:var(--space-4); border:2px solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-card); display:flex; flex-direction:column; align-items:flex-start; gap:6px; overflow:hidden; }
+.avatar-pack-card::after { content:''; position:absolute; width:92px; height:92px; right:-34px; top:-34px; border-radius:50%; background:color-mix(in srgb,var(--color-mint) 18%,transparent); }
+.avatar-pack-card.owned { border-color:var(--color-mint); }
+.avatar-pack-card.seasonal { border-color:#f08b35; background:linear-gradient(145deg,color-mix(in srgb,#f08b35 10%,var(--color-card)),var(--color-card)); }
+.avatar-pack-special { max-width:calc(100% - 45px); color:#d76713; font-size:8px; font-weight:900; letter-spacing:.07em; }
+.avatar-pack-emoji { font-size:35px; line-height:1; }
+.avatar-pack-card h3 { margin:2px 0 0; font-size:var(--text-base); }
+.avatar-pack-card p { flex:1; margin:0; color:var(--color-text-muted); font-size:11px; line-height:1.35; }
+.avatar-pack-card > small { color:var(--color-text-muted); font-weight:700; }
+.avatar-pack-status,.avatar-pack-buy { width:100%; min-height:35px; display:grid; place-items:center; border-radius:999px; font-family:var(--font-body); font-size:11px; font-weight:850; }
+.avatar-pack-status.owned { background:#dff8ed; color:#096b4f; }
+.avatar-pack-status.locked { background:var(--color-surface-soft); color:var(--color-text-muted); }
+.avatar-pack-buy { border:0; background:var(--color-yellow); color:#231d16; cursor:pointer; box-shadow:0 3px 0 #d9a928; }
+.avatar-pack-buy:hover:not(:disabled) { transform:translateY(-1px); }
+.avatar-pack-buy:disabled { cursor:not-allowed; opacity:.6; box-shadow:none; }
 
 @media (max-width: 800px) {
   .customize-heading { align-items:flex-start; }
@@ -1629,6 +1652,8 @@ input {
   .customize-preview { position:relative; top:auto; min-height:340px; }
   .customize-preview-stage { min-height:190px; transform:scale(1.3); }
   .customize-options { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .avatar-pack-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .avatar-pack-heading { align-items:flex-start; }
 }
 
 @media (max-width: 430px) {
@@ -1636,6 +1661,9 @@ input {
   .customize-heading .coins-balance { display:inline-block; }
   .customize-category { padding:var(--space-3); }
   .customize-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .avatar-pack-grid { grid-template-columns:1fr; }
+  .avatar-pack-heading { display:block; }
+  .avatar-pack-heading p { margin-top:6px; text-align:left; }
   .avatar-companion { right:-34px; }
 }
 
@@ -1644,6 +1672,9 @@ input {
   .customize-option.badge-medallion { background:var(--color-surface-soft); color:var(--color-text); }
   .customize-option.badge-medallion.selected { background:#3c2742; }
   .customize-category h2 small { background:var(--color-surface-raised); }
+  .avatar-pack-card { background:var(--color-surface-soft); }
+  .avatar-pack-card.seasonal { background:linear-gradient(145deg,#422b20,var(--color-surface-soft)); }
+  .avatar-pack-status.owned { background:#153c34; color:#b8f5df; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -345,7 +345,7 @@ function customizeMedallionHtml(item, selectedId, coins = null) {
         <span class="medallion-cost">${item.cost}🪙</span><span class="customize-option-label">${label}</span>
       </button>`;
     }
-    return `<div class="customize-option badge-medallion locked" title="${label}"><span>🔒</span><span class="customize-option-label">${label}</span><small>Niveau ${item.requiredLevel ?? '?'}</small></div>`;
+    return `<div class="customize-option badge-medallion locked" title="${label}"><span>🔒</span><span class="customize-option-label">${label}</span><small>${item.packId ? 'Dans un pack' : `Niveau ${item.requiredLevel ?? '?'}`}</small></div>`;
   }
   const isSelected = item.id === selectedId;
   const content = item.skin ? blockAvatarHtml(item.id, 'none-hat', 'none-cape', true) : (item.emoji ?? '🚫');
@@ -368,7 +368,24 @@ function customizeSectionHtml(id, title, emoji, items, selectedId, coins = null)
   </section>`;
 }
 
-export function renderCustomize(root, { characters, hats, capes, hairstyles, outfits, companions, companionAccessories, decors, coins = 0, selectedCharacterId, selectedHatId, selectedCapeId, selectedHairstyleId, selectedOutfitId, selectedCompanionId, selectedCompanionAccessoryId, selectedDecorId, onSelectCharacter, onSelectHat, onSelectCape, onSelectHairstyle, onSelectOutfit, onSelectCompanion, onSelectCompanionAccessory, onSelectDecor, onPurchaseCharacter, onBack, onNavigate }) {
+function avatarPackHtml(pack, coins) {
+  const affordable = coins >= pack.cost;
+  const status = pack.owned
+    ? '<span class="avatar-pack-status owned">✅ Acquis</span>'
+    : !pack.levelUnlocked
+      ? `<span class="avatar-pack-status locked">🔒 Niveau ${pack.requiredLevel}</span>`
+      : `<button class="avatar-pack-buy" data-pack-id="${pack.id}" ${affordable ? '' : 'disabled'}>${affordable ? `Acheter · ${pack.cost} 🪙` : `Il manque ${pack.cost - coins} 🪙`}</button>`;
+  return `<article class="avatar-pack-card ${pack.owned ? 'owned' : ''} ${pack.seasonal ? 'seasonal' : ''}">
+    ${pack.seasonal ? '<span class="avatar-pack-special">COLLECTION SAISONNIÈRE</span>' : ''}
+    <span class="avatar-pack-emoji">${pack.emoji}</span>
+    <h3>${escapeHtml(pack.name)}</h3>
+    <p>${escapeHtml(pack.description)}</p>
+    <small>${pack.itemIds.length} éléments</small>
+    ${status}
+  </article>`;
+}
+
+export function renderCustomize(root, { characters, hats, capes, hairstyles, outfits, companions, companionAccessories, packs, decors, coins = 0, selectedCharacterId, selectedHatId, selectedCapeId, selectedHairstyleId, selectedOutfitId, selectedCompanionId, selectedCompanionAccessoryId, selectedDecorId, onSelectCharacter, onSelectHat, onSelectCape, onSelectHairstyle, onSelectOutfit, onSelectCompanion, onSelectCompanionAccessory, onSelectDecor, onPurchaseCharacter, onPurchasePack, onBack, onNavigate }) {
   const selectedCompanion = companions.find((item) => item.id === selectedCompanionId);
   const selectedDecor = decors.find((item) => item.id === selectedDecorId) ?? decors[0];
   const previewGradient = `linear-gradient(160deg, ${selectedDecor.gradient.join(', ')})`;
@@ -386,6 +403,10 @@ export function renderCustomize(root, { characters, hats, capes, hairstyles, out
           <small>Choisis chaque élément pour créer ton style.</small>
         </aside>
         <div class="customize-catalog">
+          <section class="customize-category avatar-pack-shop">
+            <div class="avatar-pack-heading"><div><span>NOUVEAU</span><h2>🛍️ Boutique de packs</h2></div><p>Monte de niveau, puis utilise tes pièces pour garder un pack pour toujours.</p></div>
+            <div class="avatar-pack-grid">${packs.map((pack) => avatarPackHtml(pack, coins)).join('')}</div>
+          </section>
           ${customizeSectionHtml('character-options', 'Personnages', '🙂', characters, selectedCharacterId, coins)}
           ${customizeSectionHtml('hairstyle-options', 'Coiffures', '💇', hairstyles, selectedHairstyleId)}
           ${customizeSectionHtml('outfit-options', 'Tenues', '👗', outfits, selectedOutfitId)}
@@ -408,6 +429,9 @@ export function renderCustomize(root, { characters, hats, capes, hairstyles, out
   );
   root.querySelectorAll('#character-options .badge-medallion.buyable:not(.unaffordable)').forEach((btn) =>
     btn.addEventListener('click', () => onPurchaseCharacter(btn.dataset.id, Number(btn.dataset.cost)))
+  );
+  root.querySelectorAll('.avatar-pack-buy:not([disabled])').forEach((btn) =>
+    btn.addEventListener('click', () => onPurchasePack(btn.dataset.packId))
   );
   root.querySelectorAll('#hat-options .badge-medallion.selectable').forEach((btn) =>
     btn.addEventListener('click', () => onSelectHat(btn.dataset.id))

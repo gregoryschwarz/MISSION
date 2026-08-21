@@ -8,6 +8,7 @@ import {
   OUTFITS,
   COMPANIONS,
   COMPANION_ACCESSORIES,
+  AVATAR_PACKS,
   DEFAULT_CHARACTER,
   DEFAULT_HAT,
   DEFAULT_CAPE,
@@ -16,6 +17,7 @@ import {
   DEFAULT_OUTFIT,
   DEFAULT_COMPANION,
   DEFAULT_COMPANION_ACCESSORY,
+  DEFAULT_OWNED_PACK_IDS,
   unlockedCharacters,
   unlockedHats,
   unlockedCapes,
@@ -28,6 +30,9 @@ import {
   outfitMedallionData,
   companionMedallionData,
   companionAccessoryMedallionData,
+  avatarPackData,
+  packIdsForSelectedItems,
+  purchaseAvatarPack,
   emojiForCharacter,
   emojiForHat,
   emojiForCape,
@@ -201,10 +206,10 @@ describe('emojiForCharacter', () => {
 
 describe('Avatar V2 collections', () => {
   it('offers a generous modular wardrobe and several companions', () => {
-    expect(HAIRSTYLES).toHaveLength(12);
-    expect(OUTFITS).toHaveLength(20);
-    expect(COMPANIONS).toHaveLength(9);
-    expect(COMPANION_ACCESSORIES).toHaveLength(11);
+    expect(HAIRSTYLES).toHaveLength(14);
+    expect(OUTFITS).toHaveLength(24);
+    expect(COMPANIONS).toHaveLength(11);
+    expect(COMPANION_ACCESSORIES).toHaveLength(13);
   });
 
   it('keeps a free compatible default in every new category', () => {
@@ -212,13 +217,15 @@ describe('Avatar V2 collections', () => {
     expect(DEFAULT_OUTFIT).toBe('original-outfit');
     expect(DEFAULT_COMPANION).toBe('none-companion');
     expect(DEFAULT_COMPANION_ACCESSORY).toBe('none-pet-accessory');
+    expect(DEFAULT_OWNED_PACK_IDS).toEqual(['starter-pack']);
   });
 
-  it('unlocks wardrobe and companions progressively by level', () => {
-    expect(hairstyleMedallionData(1).filter((item) => item.unlocked).map((item) => item.id)).toEqual(['original-hair', 'soft-bob']);
-    expect(outfitMedallionData(12).every((item) => item.unlocked)).toBe(true);
-    expect(companionMedallionData(1).filter((item) => item.unlocked).map((item) => item.id)).toEqual(['none-companion', 'cat-companion']);
-    expect(companionAccessoryMedallionData(1).filter((item) => item.unlocked).map((item) => item.id)).toEqual(['none-pet-accessory', 'pet-bow']);
+  it('only unlocks items from packs that are permanently owned', () => {
+    expect(hairstyleMedallionData().filter((item) => item.unlocked).map((item) => item.id)).toEqual(['original-hair', 'soft-bob']);
+    expect(outfitMedallionData().filter((item) => item.unlocked).map((item) => item.id)).toEqual(['original-outfit', 'school', 'sport']);
+    expect(companionMedallionData().filter((item) => item.unlocked).map((item) => item.id)).toEqual(['none-companion', 'cat-companion']);
+    expect(companionAccessoryMedallionData().filter((item) => item.unlocked).map((item) => item.id)).toEqual(['none-pet-accessory', 'pet-bow']);
+    expect(outfitMedallionData(['starter-pack', 'creative-pack']).find((item) => item.id === 'artist').unlocked).toBe(true);
   });
 
   it('returns safe visual fallbacks for unknown selections', () => {
@@ -226,6 +233,40 @@ describe('Avatar V2 collections', () => {
     expect(visualForOutfit('unknown').id).toBe(DEFAULT_OUTFIT);
     expect(companionForId('unknown').id).toBe(DEFAULT_COMPANION);
     expect(companionAccessoryForId('unknown').id).toBe(DEFAULT_COMPANION_ACCESSORY);
+  });
+});
+
+describe('Avatar packs', () => {
+  it('defines normal and seasonal packs with unique item ownership', () => {
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'halloween-pack')).toMatchObject({ seasonal: true, emoji: '🎃' });
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'christmas-pack')).toMatchObject({ seasonal: true, emoji: '🎄' });
+    const allItemIds = AVATAR_PACKS.flatMap((pack) => pack.itemIds);
+    expect(new Set(allItemIds).size).toBe(allItemIds.length);
+  });
+
+  it('separates the required level from permanent ownership', () => {
+    const packs = avatarPackData(12, ['starter-pack']);
+    expect(packs.find((pack) => pack.id === 'royal-pack')).toMatchObject({ levelUnlocked: true, owned: false });
+    expect(packs.find((pack) => pack.id === 'legendary-pack')).toMatchObject({ levelUnlocked: false, owned: false });
+    expect(avatarPackData(3, ['starter-pack', 'creative-pack']).find((pack) => pack.id === 'creative-pack').owned).toBe(true);
+  });
+
+  it('finds packs containing selections so existing choices can be preserved', () => {
+    expect(packIdsForSelectedItems(['witch', 'bat-companion', 'school'])).toEqual(['halloween-pack', 'starter-pack']);
+  });
+
+  it('purchases an available pack once and deducts its exact price', () => {
+    expect(purchaseAvatarPack({ avatarLevel: 6, coins: 200, ownedPackIds: ['starter-pack'] }, 'halloween-pack')).toEqual({
+      success: true,
+      coins: 50,
+      ownedPackIds: ['starter-pack', 'halloween-pack'],
+    });
+    expect(purchaseAvatarPack({ avatarLevel: 6, coins: 200, ownedPackIds: ['starter-pack', 'halloween-pack'] }, 'halloween-pack')).toEqual({ success: false, reason: 'already-owned' });
+  });
+
+  it('rejects packs that are too expensive or above the current level', () => {
+    expect(purchaseAvatarPack({ avatarLevel: 5, coins: 500 }, 'halloween-pack')).toEqual({ success: false, reason: 'level-locked' });
+    expect(purchaseAvatarPack({ avatarLevel: 6, coins: 149 }, 'halloween-pack')).toEqual({ success: false, reason: 'insufficient-coins' });
   });
 });
 

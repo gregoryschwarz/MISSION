@@ -92,6 +92,7 @@ service cloud.firestore {
             'selectedOutfit',
             'selectedCompanion',
             'selectedCompanionAccessory',
+            'ownedPackIds',
             'ownedCharacterIds',
             'weeklyGoalProgress',
             'weeklyGoalWeekStart',

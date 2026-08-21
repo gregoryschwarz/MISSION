@@ -77,6 +77,8 @@ export const HAIRSTYLES = [
   { id: 'mohawk', name: 'Crête colorée', emoji: '⚡', color: '#00a6a6', requiredLevel: 6 },
   { id: 'space-buns', name: 'Macarons cosmiques', emoji: '🪐', color: '#3846a8', requiredLevel: 7 },
   { id: 'rainbow-hair', name: 'Cheveux arc-en-ciel', emoji: '🌈', color: '#ef476f', requiredLevel: 9 },
+  { id: 'midnight-waves', name: 'Vagues de minuit', emoji: '🌙', color: '#352b57', requiredLevel: 6 },
+  { id: 'snow-braids', name: 'Tresses enneigées', emoji: '❄️', color: '#d9efff', requiredLevel: 6 },
 ];
 
 export const OUTFITS = [
@@ -100,6 +102,10 @@ export const OUTFITS = [
   { id: 'dragon-rider', name: 'Dresseuse de dragon', emoji: '🐲', outfit: '#315f49', accent: '#ff7b54', requiredLevel: 9 },
   { id: 'galaxy', name: 'Galaxie', emoji: '🌌', outfit: '#27265b', accent: '#8be9fd', requiredLevel: 10 },
   { id: 'rainbow', name: 'Arc-en-ciel', emoji: '🌈', outfit: '#ef476f', accent: '#ffd166', requiredLevel: 12 },
+  { id: 'witch', name: 'Petite sorcière', emoji: '🧹', outfit: '#3d2c5f', accent: '#ff9f1c', requiredLevel: 6 },
+  { id: 'pumpkin', name: 'Citrouille malicieuse', emoji: '🎃', outfit: '#e76f18', accent: '#32213a', requiredLevel: 6 },
+  { id: 'winter-elf', name: 'Lutine de Noël', emoji: '🎄', outfit: '#237a4b', accent: '#e63946', requiredLevel: 6 },
+  { id: 'snow-queen', name: 'Reine des neiges', emoji: '❄️', outfit: '#9adcf8', accent: '#f7fbff', requiredLevel: 6 },
 ];
 
 export const COMPANIONS = [
@@ -112,6 +118,8 @@ export const COMPANIONS = [
   { id: 'axolotl-companion', name: 'Bulle l’axolotl', emoji: '🦎', requiredLevel: 6 },
   { id: 'unicorn-companion', name: 'Étoile la licorne', emoji: '🦄', requiredLevel: 8 },
   { id: 'dragon-companion', name: 'Drago le dragon', emoji: '🐉', requiredLevel: 10 },
+  { id: 'bat-companion', name: 'Vampy la chauve-souris', emoji: '🦇', requiredLevel: 6 },
+  { id: 'reindeer-companion', name: 'Flocon le renne', emoji: '🦌', requiredLevel: 6 },
 ];
 
 export const COMPANION_ACCESSORIES = [
@@ -126,6 +134,69 @@ export const COMPANION_ACCESSORIES = [
   { id: 'pet-crown', name: 'Petite couronne', emoji: '👑', requiredLevel: 8 },
   { id: 'pet-wings', name: 'Petites ailes', emoji: '🪽', requiredLevel: 9 },
   { id: 'pet-magic-hat', name: 'Chapeau magique', emoji: '🧙', requiredLevel: 10 },
+  { id: 'pet-pumpkin', name: 'Mini citrouille', emoji: '🎃', requiredLevel: 6 },
+  { id: 'pet-santa-hat', name: 'Bonnet de Noël', emoji: '🎅', requiredLevel: 6 },
+];
+
+// Catalogue extensible : un pack détermine à la fois le niveau d'accès, le
+// prix et les objets acquis définitivement. Ajouter un pack revient à ajouter
+// une entrée ici puis les objets correspondants dans les collections ci-dessus.
+export const AVATAR_PACKS = [
+  {
+    id: 'starter-pack', name: 'Premiers styles', emoji: '🎒', requiredLevel: 1, cost: 0,
+    description: 'Les indispensables pour commencer à créer ton style.',
+    itemIds: ['original-hair', 'soft-bob', 'original-outfit', 'school', 'sport', 'none-companion', 'cat-companion', 'none-pet-accessory', 'pet-bow'],
+  },
+  {
+    id: 'creative-pack', name: 'Studio créatif', emoji: '🎨', requiredLevel: 3, cost: 60,
+    description: 'Couleurs, danse et imagination avec Bambou.',
+    itemIds: ['curly', 'artist', 'dancer', 'panda-companion', 'pet-flower'],
+  },
+  {
+    id: 'ninja-pack', name: 'Équipe secrète', emoji: '🥷', requiredLevel: 4, cost: 85,
+    description: 'Un style rapide et courageux avec Pixel.',
+    itemIds: ['pixie', 'ninja', 'superhero', 'dog-companion', 'pet-glasses'],
+  },
+  {
+    id: 'adventure-pack', name: 'Grande aventure', emoji: '🧭', requiredLevel: 5, cost: 110,
+    description: 'Pars explorer avec Flamme et Plume.',
+    itemIds: ['high-ponytail', 'side-braids', 'long-waves', 'explorer', 'gardener', 'fox-companion', 'owl-companion', 'pet-scarf', 'pet-cap'],
+  },
+  {
+    id: 'science-pack', name: 'Labo rigolo', emoji: '🔬', requiredLevel: 6, cost: 140,
+    description: 'Des expériences et un compagnon aquatique étonnant.',
+    itemIds: ['afro', 'scientist', 'chef', 'axolotl-companion', 'pet-headphones'],
+  },
+  {
+    id: 'magic-pack', name: 'Monde magique', emoji: '🔮', requiredLevel: 8, cost: 180,
+    description: 'Magie, sirène et licorne pour rêver en grand.',
+    itemIds: ['double-buns', 'magician', 'mermaid', 'unicorn-companion', 'pet-star', 'pet-crown'],
+  },
+  {
+    id: 'space-pack', name: 'Mission espace', emoji: '🚀', requiredLevel: 10, cost: 220,
+    description: 'Deux coiffures cosmiques et des tenues de galaxie.',
+    itemIds: ['mohawk', 'space-buns', 'astronaut', 'galaxy'],
+  },
+  {
+    id: 'royal-pack', name: 'Palais royal', emoji: '👑', requiredLevel: 12, cost: 280,
+    description: 'Des styles rares pour chevalières, pirates et reines.',
+    itemIds: ['rainbow-hair', 'knight', 'pirate', 'royal'],
+  },
+  {
+    id: 'legendary-pack', name: 'Dragon légendaire', emoji: '🐉', requiredLevel: 15, cost: 400,
+    description: 'Le pack ultime avec Drago et les objets arc-en-ciel.',
+    itemIds: ['dragon-rider', 'rainbow', 'dragon-companion', 'pet-wings', 'pet-magic-hat'],
+  },
+  {
+    id: 'halloween-pack', name: 'Halloween enchanté', emoji: '🎃', requiredLevel: 6, cost: 150, seasonal: true,
+    description: 'Sorcière, citrouille et Vampy pour une fête pleine de malice.',
+    itemIds: ['midnight-waves', 'witch', 'pumpkin', 'bat-companion', 'pet-pumpkin'],
+  },
+  {
+    id: 'christmas-pack', name: 'Noël merveilleux', emoji: '🎄', requiredLevel: 6, cost: 150, seasonal: true,
+    description: 'Des tresses enneigées et Flocon le renne pour les fêtes.',
+    itemIds: ['snow-braids', 'winter-elf', 'snow-queen', 'reindeer-companion', 'pet-santa-hat'],
+  },
 ];
 
 // 8 décors en fond dégradé (noms fixés par le cahier des charges), déverrouillés
@@ -149,6 +220,7 @@ export const DEFAULT_HAIRSTYLE = 'original-hair';
 export const DEFAULT_OUTFIT = 'original-outfit';
 export const DEFAULT_COMPANION = 'none-companion';
 export const DEFAULT_COMPANION_ACCESSORY = 'none-pet-accessory';
+export const DEFAULT_OWNED_PACK_IDS = ['starter-pack'];
 
 // Un accessoire sans condition (requiresAnyOf vide, ex. "aucun") est toujours
 // débloqué ; sinon il faut au moins un des badges listés.
@@ -201,24 +273,58 @@ export function emojiForCharacter(characterId) {
   return found ? found.emoji : CHARACTERS.find((c) => c.id === DEFAULT_CHARACTER).emoji;
 }
 
-function levelMedallionData(items, avatarLevel) {
-  return items.map((item) => ({ ...item, unlocked: avatarLevel >= item.requiredLevel }));
+function packIdForItem(itemId) {
+  return AVATAR_PACKS.find((pack) => pack.itemIds.includes(itemId))?.id ?? null;
 }
 
-export function hairstyleMedallionData(avatarLevel) {
-  return levelMedallionData(HAIRSTYLES, avatarLevel);
+function packMedallions(items, ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
+  return items.map((item) => ({
+    ...item,
+    packId: packIdForItem(item.id),
+    unlocked: ownedPackIds.includes(packIdForItem(item.id)),
+  }));
 }
 
-export function outfitMedallionData(avatarLevel) {
-  return levelMedallionData(OUTFITS, avatarLevel);
+export function hairstyleMedallionData(ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
+  return packMedallions(HAIRSTYLES, ownedPackIds);
 }
 
-export function companionMedallionData(avatarLevel) {
-  return levelMedallionData(COMPANIONS, avatarLevel);
+export function outfitMedallionData(ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
+  return packMedallions(OUTFITS, ownedPackIds);
 }
 
-export function companionAccessoryMedallionData(avatarLevel) {
-  return levelMedallionData(COMPANION_ACCESSORIES, avatarLevel);
+export function companionMedallionData(ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
+  return packMedallions(COMPANIONS, ownedPackIds);
+}
+
+export function companionAccessoryMedallionData(ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
+  return packMedallions(COMPANION_ACCESSORIES, ownedPackIds);
+}
+
+export function avatarPackData(avatarLevel, ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
+  return AVATAR_PACKS.map((pack) => ({
+    ...pack,
+    owned: ownedPackIds.includes(pack.id),
+    levelUnlocked: avatarLevel >= pack.requiredLevel,
+  }));
+}
+
+export function packIdsForSelectedItems(selectedItemIds = []) {
+  return [...new Set(selectedItemIds.map(packIdForItem).filter(Boolean))];
+}
+
+export function purchaseAvatarPack(profile, packId) {
+  const pack = AVATAR_PACKS.find((item) => item.id === packId);
+  if (!pack) return { success: false, reason: 'unknown-pack' };
+  const ownedPackIds = [...new Set([...DEFAULT_OWNED_PACK_IDS, ...(profile.ownedPackIds ?? [])])];
+  if (ownedPackIds.includes(pack.id)) return { success: false, reason: 'already-owned' };
+  if ((profile.avatarLevel ?? 1) < pack.requiredLevel) return { success: false, reason: 'level-locked' };
+  if ((profile.coins ?? 0) < pack.cost) return { success: false, reason: 'insufficient-coins' };
+  return {
+    success: true,
+    coins: (profile.coins ?? 0) - pack.cost,
+    ownedPackIds: [...ownedPackIds, pack.id],
+  };
 }
 
 export function visualForCharacter(characterId) {

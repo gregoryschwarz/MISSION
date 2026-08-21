@@ -88,6 +88,7 @@ describe('createChild', () => {
       coins: 0,
       totalCorrectCount: 0,
       deviceUid: null,
+      ownedPackIds: ['starter-pack'],
     });
     expect(payload.pairingCode).toMatch(/^[A-Z2-9]{6}$/);
     expect(batch.set).toHaveBeenCalledTimes(2);

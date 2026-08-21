@@ -25,6 +25,9 @@ import {
   outfitMedallionData,
   companionMedallionData,
   companionAccessoryMedallionData,
+  avatarPackData,
+  packIdsForSelectedItems,
+  purchaseAvatarPack,
   decorGradientCss,
   DEFAULT_CHARACTER,
   DEFAULT_HAT,
@@ -34,6 +37,7 @@ import {
   DEFAULT_OUTFIT,
   DEFAULT_COMPANION,
   DEFAULT_COMPANION_ACCESSORY,
+  DEFAULT_OWNED_PACK_IDS,
 } from '../shared/avatarCustomization.js';
 
 const root = document.getElementById('app');
@@ -104,6 +108,7 @@ async function loadProfile(targetChildId) {
         selectedOutfit: DEFAULT_OUTFIT,
         selectedCompanion: DEFAULT_COMPANION,
         selectedCompanionAccessory: DEFAULT_COMPANION_ACCESSORY,
+        ownedPackIds: DEFAULT_OWNED_PACK_IDS,
         ownedCharacterIds: [],
       };
 }
@@ -240,15 +245,33 @@ function closeHelp() {
 }
 
 function showCustomize() {
-  const profile = lastProfile;
+  let profile = lastProfile;
+  const selectedPackIds = packIdsForSelectedItems([
+    profile.selectedHairstyle ?? DEFAULT_HAIRSTYLE,
+    profile.selectedOutfit ?? DEFAULT_OUTFIT,
+    profile.selectedCompanion ?? DEFAULT_COMPANION,
+    profile.selectedCompanionAccessory ?? DEFAULT_COMPANION_ACCESSORY,
+  ]);
+  const ownedPackIds = [...new Set([
+    ...DEFAULT_OWNED_PACK_IDS,
+    ...(profile.ownedPackIds ?? []),
+    ...selectedPackIds,
+  ])];
+  const storedPackIds = profile.ownedPackIds ?? [];
+  if (ownedPackIds.some((id) => !storedPackIds.includes(id)) || storedPackIds.some((id) => !ownedPackIds.includes(id))) {
+    profile = { ...profile, ownedPackIds };
+    lastProfile = profile;
+    saveProfile(childId, profile).catch(() => {});
+  }
   renderCustomize(root, {
     characters: characterMedallionData(profile.avatarLevel, profile.ownedCharacterIds ?? []),
     hats: hatMedallionData(profile.badges, profile.avatarLevel),
     capes: capeMedallionData(profile.badges, profile.avatarLevel),
-    hairstyles: hairstyleMedallionData(profile.avatarLevel),
-    outfits: outfitMedallionData(profile.avatarLevel),
-    companions: companionMedallionData(profile.avatarLevel),
-    companionAccessories: companionAccessoryMedallionData(profile.avatarLevel),
+    hairstyles: hairstyleMedallionData(ownedPackIds),
+    outfits: outfitMedallionData(ownedPackIds),
+    companions: companionMedallionData(ownedPackIds),
+    companionAccessories: companionAccessoryMedallionData(ownedPackIds),
+    packs: avatarPackData(profile.avatarLevel, ownedPackIds),
     decors: decorMedallionData(profile.avatarLevel),
     coins: profile.coins ?? 0,
     selectedCharacterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
@@ -268,6 +291,7 @@ function showCustomize() {
     onSelectCompanion: handleSelectCompanion,
     onSelectCompanionAccessory: handleSelectCompanionAccessory,
     onPurchaseCharacter: handlePurchaseCharacter,
+    onPurchasePack: handlePurchasePack,
     onBack: () => renderHomeScreen(lastProfile),
     onNavigate: navigateTo,
   });
@@ -313,6 +337,20 @@ async function handleSelectCape(capeId) {
 
 async function handleSelectDecor(decorId) {
   const nextProfile = { ...lastProfile, selectedDecor: decorId };
+  lastProfile = nextProfile;
+  await saveProfile(childId, nextProfile).catch(() => {});
+  showCustomize();
+}
+
+async function handlePurchasePack(packId) {
+  if (!lastProfile) return;
+  const purchase = purchaseAvatarPack(lastProfile, packId);
+  if (!purchase.success) return;
+  const nextProfile = {
+    ...lastProfile,
+    coins: purchase.coins,
+    ownedPackIds: purchase.ownedPackIds,
+  };
   lastProfile = nextProfile;
   await saveProfile(childId, nextProfile).catch(() => {});
   showCustomize();
