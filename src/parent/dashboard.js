@@ -173,22 +173,37 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
   const { weakType } = computeInsights(weekSessions);
   const focusType = profile.focusType ?? null;
 
+  const weeklyAttempts = weekSessions.reduce(
+    (sum, session) =>
+      sum +
+      Object.values(session.breakdown ?? {}).reduce(
+        (sessionSum, entry) => sessionSum + (entry.total ?? 0),
+        0
+      ),
+    0
+  );
+
+  const hasEnoughWeeklyData = weeklyAttempts >= 3;
+
   let status = 'ok';
   let statusLabel = 'RAS';
 
-  if (
+  if (!hasEnoughWeeklyData) {
+    status = 'insufficient';
+    statusLabel = 'Pas assez de donn\u00e9es';
+  } else if (
     daysSinceLastActivity === null ||
     daysSinceLastActivity >= 3 ||
     (weakType && weakType.percent < 50)
   ) {
     status = 'attention';
-    statusLabel = 'À travailler';
+    statusLabel = '\u00c0 travailler';
   } else if (
     (weeklyTarget > 0 && weeklyProgress < weeklyTarget) ||
     (weakType && weakType.percent < 75)
   ) {
     status = 'encourage';
-    statusLabel = 'À encourager';
+    statusLabel = '\u00c0 encourager';
   }
 
   return {
@@ -198,6 +213,8 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
     weeklyTarget,
     weakType,
     focusType,
+    weeklyAttempts,
+    hasEnoughWeeklyData,
     status,
     statusLabel,
   };

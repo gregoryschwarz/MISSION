@@ -253,6 +253,47 @@ describe('computeWeeklyWatch current week filtering', () => {
   });
 });
 
+describe('computeWeeklyWatch insufficient data', () => {
+  it('reports insufficient data when the week has fewer than 3 attempts', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 1, total: 2 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.weeklyAttempts).toBe(2);
+    expect(result.hasEnoughWeeklyData).toBe(false);
+    expect(result.status).toBe('insufficient');
+    expect(result.statusLabel).toBe('Pas assez de donn\u00e9es');
+  });
+
+  it('uses a normal status once enough answers exist', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 3, total: 4 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.weeklyAttempts).toBe(4);
+    expect(result.hasEnoughWeeklyData).toBe(true);
+    expect(result.status).not.toBe('insufficient');
+  });
+});
+
 describe('dailyActivityLast7Days', () => {
   const referenceDate = new Date('2026-08-11T00:00:00Z');
 

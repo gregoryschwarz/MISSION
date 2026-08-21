@@ -454,3 +454,8 @@ button:active {
 .weekly-watch-focus-button:active {
   transform: translateY(0);
 }
+
+
+.weekly-watch-insufficient {
+  background: #f3f0fb;
+}
