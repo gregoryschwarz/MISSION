@@ -125,6 +125,80 @@ function formatDayLabel(date) {
 
 // Activité des 7 derniers jours (aujourd'hui inclus), pour le graphique en
 // barres du dashboard parent — questions répondues / bonnes réponses par jour.
+
+export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date() } = {}) {
+  const ref = new Date(referenceDate);
+  ref.setUTCHours(0, 0, 0, 0);
+
+  const sessionDates = sessions
+    .map((session) => session.date)
+    .filter(Boolean)
+    .sort();
+
+  const latestDate =
+    sessionDates.length > 0
+      ? sessionDates[sessionDates.length - 1]
+      : profile.lastSessionDate ?? null;
+
+  let daysSinceLastActivity = null;
+  let lastActivityLabel = 'Aucune activit? enregistr?e';
+
+  if (latestDate) {
+    const latest = new Date(`${latestDate}T00:00:00Z`);
+    daysSinceLastActivity = Math.max(
+      0,
+      Math.round((ref.getTime() - latest.getTime()) / DAY_MS)
+    );
+
+    if (daysSinceLastActivity === 0) {
+      lastActivityLabel = "Aujourd'hui";
+    } else if (daysSinceLastActivity === 1) {
+      lastActivityLabel = 'Hier';
+    } else {
+      lastActivityLabel = `Il y a ${daysSinceLastActivity} jours`;
+    }
+  }
+
+  const currentWeek = weekStartKey(ref.toISOString().slice(0, 10));
+  const weeklyTarget = profile.weeklyGoalTarget ?? 0;
+  const weeklyProgress =
+    profile.weeklyGoalWeekStart === currentWeek
+      ? profile.weeklyGoalProgress ?? 0
+      : 0;
+
+  const { weakType } = computeInsights(sessions);
+  const focusType = profile.focusType ?? null;
+
+  let status = 'ok';
+  let statusLabel = 'RAS';
+
+  if (
+    daysSinceLastActivity === null ||
+    daysSinceLastActivity >= 3 ||
+    (weakType && weakType.percent < 50)
+  ) {
+    status = 'attention';
+    statusLabel = '? travailler';
+  } else if (
+    (weeklyTarget > 0 && weeklyProgress < weeklyTarget) ||
+    (weakType && weakType.percent < 75)
+  ) {
+    status = 'encourage';
+    statusLabel = '? encourager';
+  }
+
+  return {
+    lastActivityLabel,
+    daysSinceLastActivity,
+    weeklyProgress,
+    weeklyTarget,
+    weakType,
+    focusType,
+    status,
+    statusLabel,
+  };
+}
+
 export function dailyActivityLast7Days(sessions, { referenceDate = new Date() } = {}) {
   const ref = new Date(referenceDate);
   ref.setUTCHours(0, 0, 0, 0);
@@ -386,6 +460,56 @@ export function renderChildrenList(root, { children, pairingRequests = [], onSel
   });
 }
 
+
+function weeklyWatchHtml(watch) {
+  const weakLabel = watch.weakType
+    ? `${emojiForType(watch.weakType.type)} ${capitalize(watch.weakType.type)} ? ${watch.weakType.percent}%`
+    : 'Pas assez de donn?es';
+
+  const focusLabel = watch.focusType
+    ? `${emojiForType(watch.focusType)} ${capitalize(watch.focusType)}`
+    : 'Aucune priorit?';
+
+  const goalLabel =
+    watch.weeklyTarget > 0
+      ? `${watch.weeklyProgress}/${watch.weeklyTarget} missions`
+      : 'Aucun objectif fix?';
+
+  return `
+    <section class="weekly-watch weekly-watch-${watch.status}">
+      <div class="weekly-watch-header">
+        <div>
+          <h2>?? ? surveiller cette semaine</h2>
+          <p class="setup-hint">Synth?se automatique des derni?res missions.</p>
+        </div>
+        <span class="weekly-watch-status">${escapeHtml(watch.statusLabel)}</span>
+      </div>
+
+      <div class="weekly-watch-grid">
+        <div class="weekly-watch-item">
+          <span>Derni?re activit?</span>
+          <strong>${escapeHtml(watch.lastActivityLabel)}</strong>
+        </div>
+
+        <div class="weekly-watch-item">
+          <span>Objectif semaine</span>
+          <strong>${escapeHtml(goalLabel)}</strong>
+        </div>
+
+        <div class="weekly-watch-item">
+          <span>Notion ? surveiller</span>
+          <strong>${escapeHtml(weakLabel)}</strong>
+        </div>
+
+        <div class="weekly-watch-item">
+          <span>Priorit? parent</span>
+          <strong>${escapeHtml(focusLabel)}</strong>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function insightCardsHtml({ strongType, weakType }) {
   if (!strongType && !weakType) {
     return '<p class="setup-hint">Pas encore assez de missions pour dégager une tendance.</p>';
@@ -441,6 +565,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   const dayLabels = Object.values(dailyBreakdown)[0]?.map((day) => day.dayLabel) ?? [];
   const insights = computeInsights(sessions);
   const dailyActivity = dailyActivityLast7Days(sessions);
+  const weeklyWatch = computeWeeklyWatch(sessions, profile);
   root.innerHTML = `
     <div class="dashboard">
       <header>
@@ -458,6 +583,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
         <p>Série actuelle : ${profile.streakDays} jour${profile.streakDays > 1 ? 's' : ''}</p>
         ${renderBadgeMedallionsHtml(profile.badges)}
       </section>
+      ${weeklyWatchHtml(weeklyWatch)}
       <section class="insights">
         <h2>En un coup d'œil</h2>
         ${insightCardsHtml(insights)}

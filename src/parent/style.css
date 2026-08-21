@@ -361,3 +361,73 @@ button:active {
 .legend-swatch-correct {
   background: var(--color-mint);
 }
+
+
+.weekly-watch {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid #e7dfd2;
+}
+
+.weekly-watch-ok {
+  background: #e3f7ee;
+}
+
+.weekly-watch-encourage {
+  background: #fff4cf;
+}
+
+.weekly-watch-attention {
+  background: #ffe1d8;
+}
+
+.weekly-watch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.weekly-watch-header h2,
+.weekly-watch-header p {
+  margin-top: 0;
+}
+
+.weekly-watch-status {
+  white-space: nowrap;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+}
+
+.weekly-watch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.weekly-watch-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.weekly-watch-item span {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 600px) {
+  .weekly-watch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-watch-header {
+    flex-direction: column;
+  }
+}

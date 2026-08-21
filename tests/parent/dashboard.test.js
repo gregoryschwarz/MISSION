@@ -5,6 +5,7 @@ import {
   dailyBreakdownByType,
   colorForPercent,
   computeInsights,
+  computeWeeklyWatch,
   dailyActivityLast7Days,
   dailyActivityChartSvg,
 } from '../../src/parent/dashboard.js';
@@ -163,6 +164,64 @@ describe('computeInsights', () => {
     const result = computeInsights(sessions);
     expect(result.strongType.type).toBe('addition');
     expect(result.strongType.percent).toBe(100);
+  });
+});
+
+
+describe('computeWeeklyWatch', () => {
+  const referenceDate = new Date('2026-08-21T12:00:00Z');
+
+  it('detects activity today', () => {
+    const result = computeWeeklyWatch(
+      [{ date: '2026-08-21', breakdown: {} }],
+      {},
+      { referenceDate }
+    );
+
+    expect(result.lastActivityLabel).toBe("Aujourd'hui");
+    expect(result.daysSinceLastActivity).toBe(0);
+  });
+
+  it('returns the current weekly goal', () => {
+    const result = computeWeeklyWatch(
+      [],
+      {
+        weeklyGoalTarget: 5,
+        weeklyGoalProgress: 3,
+        weeklyGoalWeekStart: '2026-08-17',
+      },
+      { referenceDate }
+    );
+
+    expect(result.weeklyProgress).toBe(3);
+    expect(result.weeklyTarget).toBe(5);
+  });
+
+  it('flags a weak notion below 50 percent', () => {
+    const result = computeWeeklyWatch(
+      [{
+        date: '2026-08-21',
+        breakdown: {
+          monnaie: { correct: 2, total: 5 },
+        },
+      }],
+      {},
+      { referenceDate }
+    );
+
+    expect(result.weakType.type).toBe('monnaie');
+    expect(result.weakType.percent).toBe(40);
+    expect(result.status).toBe('attention');
+  });
+
+  it('returns the focus selected by the parent', () => {
+    const result = computeWeeklyWatch(
+      [{ date: '2026-08-21', breakdown: {} }],
+      { focusType: 'division' },
+      { referenceDate }
+    );
+
+    expect(result.focusType).toBe('division');
   });
 });
 
