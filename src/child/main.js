@@ -1,6 +1,6 @@
-import { signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../shared/firebaseConfig.js';
+import { ensureDeviceAuth } from './authSession.js';
 import { getStoredChildId, storeChildId, clearStoredChildId, resolvePairingCode, requestPairing, pairingStatus } from './pairing.js';
 import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
 import { generateFrenchMission } from './frenchQuestions.js';
@@ -50,9 +50,7 @@ let cachedChoices = null;
 let cachedChoicesIndex = -1;
 
 async function ensureAuth() {
-  if (!auth.currentUser) {
-    await signInAnonymously(auth);
-  }
+  await ensureDeviceAuth(auth);
 }
 
 async function writeSession(targetChildId, summary) {

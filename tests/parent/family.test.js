@@ -20,6 +20,7 @@ vi.mock('firebase/firestore', () => ({
   setDoc: vi.fn(),
   getDoc: vi.fn(),
   getDocs: vi.fn(),
+  getDocsFromServer: vi.fn(),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   collection: (...args) => ({ __ref: 'collection', args }),
@@ -29,7 +30,7 @@ vi.mock('firebase/firestore', () => ({
   writeBatch: vi.fn(() => ({ set: vi.fn(), update: vi.fn(), commit: vi.fn() })),
 }));
 
-import { setDoc, getDoc, getDocs, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { setDoc, getDoc, getDocs, getDocsFromServer, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import {
   DEFAULT_REWARDS,
   createFamily,
@@ -54,6 +55,8 @@ beforeEach(() => {
   setDoc.mockReset();
   getDoc.mockReset();
   getDocs.mockReset();
+  getDocsFromServer.mockReset();
+  getDocsFromServer.mockImplementation((reference) => getDocs(reference));
   addDoc.mockReset();
   updateDoc.mockReset();
   writeBatch.mockClear();
@@ -156,6 +159,7 @@ describe('fetchChildren', () => {
       ],
     });
     const children = await fetchChildren('family-abc');
+    expect(getDocsFromServer).toHaveBeenCalledOnce();
     expect(children).toEqual([
       { id: 'c1', familyId: 'family-abc', childName: 'Ambre' },
       { id: 'c2', familyId: 'family-abc', childName: 'Luna' },

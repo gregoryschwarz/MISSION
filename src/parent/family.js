@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, getDocsFromServer, addDoc, updateDoc, collection, query, where, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db } from '../shared/firebaseConfig.js';
 import { DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { DEFAULT_CHARACTER, DEFAULT_HAT, DEFAULT_CAPE, DEFAULT_DECOR } from '../shared/avatarCustomization.js';
@@ -6,9 +6,18 @@ import { spendCoins, refundCoins } from '../shared/progression.js';
 
 // --- Compte parent (une famille = un parent Google, peut avoir plusieurs enfants) ---
 
+async function getDocsFresh(reference) {
+  try {
+    return await getDocsFromServer(reference);
+  } catch (err) {
+    // L'application reste utilisable hors ligne si le serveur est inaccessible.
+    return getDocs(reference);
+  }
+}
+
 export async function findFamilyByParent(parentUid) {
   const q = query(collection(db, 'families'), where('parentUid', '==', parentUid));
-  const snapshot = await getDocs(q);
+  const snapshot = await getDocsFresh(q);
   if (snapshot.empty) return null;
   const familyDoc = snapshot.docs[0];
   return { id: familyDoc.id, ...familyDoc.data() };
@@ -138,7 +147,7 @@ export async function revokeChildDevice(childId) {
 
 export async function fetchChildren(familyId) {
   const q = query(collection(db, 'children'), where('familyId', '==', familyId));
-  const snapshot = await getDocs(q);
+  const snapshot = await getDocsFresh(q);
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
