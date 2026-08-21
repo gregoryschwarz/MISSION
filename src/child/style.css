@@ -903,8 +903,17 @@ input {
 }
 
 .money-display svg {
-  width: 48px;
-  height: 48px;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .28));
+}
+
+.money-display .euro-coin {
+  width: 72px;
+  height: 72px;
+}
+
+.money-display .euro-note {
+  width: 132px;
+  height: 72px;
 }
 
 .length-display {
@@ -1141,8 +1150,12 @@ input {
 }
 
 .pairs-tile .money-display svg {
-  width: 28px;
-  height: 28px;
+  width: 38px;
+  height: 38px;
+}
+
+.pairs-tile .money-display .euro-note {
+  width: 64px;
 }
 
 .pairs-tile .length-display {

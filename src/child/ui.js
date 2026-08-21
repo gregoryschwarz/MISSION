@@ -3,7 +3,7 @@ import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { DIFFICULTY_LABELS } from '../shared/difficulty.js';
 import { dynamicHintSteps } from './hints.js';
 import { shapeSvg } from './shapes.js';
-import { coinSvg } from './money.js';
+import { coinSvg, formatEuroCents, parseEuroInput } from './money.js';
 import { lengthBarSvg } from './length.js';
 import { clockFaceSvg } from './clock.js';
 import { visualForCharacter, HATS, CAPES } from '../shared/avatarCustomization.js';
@@ -71,6 +71,13 @@ function visualDisplayHtml(q) {
   if (q.type === 'longueur') return lengthDisplayHtml(q.a, q.b);
   if (q.type === 'temps') return clockDisplayHtml(q.hour12, q.minute);
   return '';
+}
+
+function answerLabel(question, choice) {
+  if (question.type === 'monnaie') return formatEuroCents(choice);
+  if (choice === '>') return 'supérieur &gt;';
+  if (choice === '<') return 'inférieur &lt;';
+  return choice;
 }
 
 export function renderPairing(root, { onSubmit, error }) {
@@ -392,13 +399,13 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
         ? `<div class="options">
             ${question.options
               .map((choice) => {
-                const label = choice === '>' ? 'supérieur &gt;' : choice === '<' ? 'inférieur &lt;' : choice;
+                const label = answerLabel(question, choice);
                 return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
               })
               .join('')}
           </div>`
         : `<form id="answer-form">
-            <input id="answer-input" type="number" inputmode="numeric" required />
+            <input id="answer-input" type="${question.type === 'monnaie' ? 'text' : 'number'}" inputmode="${question.type === 'monnaie' ? 'decimal' : 'numeric'}" ${question.type === 'monnaie' ? 'placeholder="0,00 €" aria-label="Réponse en euros"' : ''} required />
             <button type="submit" class="big-button">Valider</button>
           </form>`}
       ${showHelp ? helpOverlayHtml(question.type, question) : ''}
@@ -411,7 +418,9 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
   } else {
     root.querySelector('#answer-form').addEventListener('submit', (event) => {
       event.preventDefault();
-      const value = Number(root.querySelector('#answer-input').value);
+      const raw = root.querySelector('#answer-input').value;
+      const value = question.type === 'monnaie' ? parseEuroInput(raw) : Number(raw);
+      if (value === null) return;
       onAnswer(value);
     });
   }
@@ -434,7 +443,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
       <div class="options">
         ${choices
           .map((choice) => {
-            const label = choice === '>' ? 'supérieur &gt;' : choice === '<' ? 'inférieur &lt;' : choice;
+            const label = answerLabel(question, choice);
             return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
           })
           .join('')}
@@ -478,7 +487,11 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
           </div>
           <div class="pairs-column">
             ${remainingResult
-              .map((t) => `<button class="pairs-tile result-tile" data-id="${t.id}">${t.answer}</button>`)
+              .map((t) => {
+                const matchingCalc = round.calcTiles.find((calc) => calc.pairKey === t.pairKey);
+                const label = matchingCalc?.type === 'monnaie' ? formatEuroCents(t.answer) : t.answer;
+                return `<button class="pairs-tile result-tile" data-id="${t.id}">${label}</button>`;
+              })
               .join('')}
           </div>
         </div>

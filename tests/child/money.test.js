@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { COINS, coinSvg } from '../../src/child/money.js';
+import { COINS, coinSvg, formatEuroCents, parseEuroInput } from '../../src/child/money.js';
 
 describe('COINS', () => {
   it('defines the 10 denominations from 1 centime to 10 euros', () => {
@@ -29,5 +29,26 @@ describe('coinSvg', () => {
 
   it('returns an empty string for an unknown id', () => {
     expect(coinSvg('unknown')).toBe('');
+  });
+
+  it('renders coins and banknotes with accessible euro artwork', () => {
+    expect(coinSvg('2e')).toContain('euro-coin');
+    expect(coinSvg('5e')).toContain('euro-note');
+    expect(coinSvg('10e')).toContain('Billet de 10 euros');
+  });
+});
+
+describe('euro formatting', () => {
+  it('formats internal cent values as French euro amounts', () => {
+    expect(formatEuroCents(2)).toBe('0,02 €');
+    expect(formatEuroCents(700)).toBe('7,00 €');
+    expect(formatEuroCents(1250)).toBe('12,50 €');
+  });
+
+  it('parses natural euro input without changing internal cent storage', () => {
+    expect(parseEuroInput('7')).toBe(700);
+    expect(parseEuroInput('7,00 €')).toBe(700);
+    expect(parseEuroInput('12.50')).toBe(1250);
+    expect(parseEuroInput('sept euros')).toBe(null);
   });
 });
