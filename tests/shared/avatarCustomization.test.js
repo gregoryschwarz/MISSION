@@ -77,7 +77,7 @@ describe('HATS and CAPES', () => {
 
 describe('DECORS', () => {
   it('defines the 8 named décors from the cahier des charges, unlocked by level', () => {
-    expect(DECORS.map((d) => d.name)).toEqual([
+    expect(DECORS.slice(0, 8).map((d) => d.name)).toEqual([
       'Menthe',
       'Crème',
       'Soleil',
@@ -87,7 +87,8 @@ describe('DECORS', () => {
       'Arc-en-ciel',
       'Nuit étoilée',
     ]);
-    expect(DECORS.map((d) => d.requiredLevel)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(DECORS.slice(0, 8).map((d) => d.requiredLevel)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(DECORS).toHaveLength(22);
   });
 });
 
@@ -212,6 +213,13 @@ describe('Avatar V2 collections', () => {
     expect(COMPANION_ACCESSORIES).toHaveLength(15);
   });
 
+  it('keeps premium décors locked until their pack is owned', () => {
+    const locked = decorMedallionData(12);
+    expect(locked.find((d) => d.id === 'block-city')).toMatchObject({ unlocked: false, packId: 'cube-adventure-pack' });
+    const owned = decorMedallionData(12, ['starter-pack', 'cube-adventure-pack']);
+    expect(owned.find((d) => d.id === 'block-city').unlocked).toBe(true);
+  });
+
   it('keeps a free compatible default in every new category', () => {
     expect(DEFAULT_HAIRSTYLE).toBe('original-hair');
     expect(DEFAULT_OUTFIT).toBe('original-outfit');
@@ -238,7 +246,7 @@ describe('Avatar V2 collections', () => {
 
 describe('Avatar packs', () => {
   it('defines normal and seasonal packs with unique item ownership', () => {
-    expect(AVATAR_PACKS).toHaveLength(13);
+    expect(AVATAR_PACKS).toHaveLength(15);
     expect(AVATAR_PACKS.find((pack) => pack.id === 'halloween-pack')).toMatchObject({ seasonal: true, emoji: '🎃' });
     expect(AVATAR_PACKS.find((pack) => pack.id === 'christmas-pack')).toMatchObject({ seasonal: true, emoji: '🎄' });
     const allItemIds = AVATAR_PACKS.flatMap((pack) => pack.itemIds);
@@ -249,6 +257,12 @@ describe('Avatar packs', () => {
     expect(AVATAR_PACKS.find((pack) => pack.id === 'cube-adventure-pack')).toMatchObject({ name: 'Aventure cubique', originalVariant: true, requiredLevel: 7 });
     expect(AVATAR_PACKS.find((pack) => pack.id === 'mystic-idols-pack')).toMatchObject({ name: 'Idoles mystiques', originalVariant: true, requiredLevel: 9 });
     expect(packIdsForSelectedItems(['cube-builder', 'comet-companion'])).toEqual(['cube-adventure-pack', 'mystic-idols-pack']);
+  });
+
+  it('offers dedicated decor packs and themed backgrounds in other packs', () => {
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'fantasy-decor-pack')).toMatchObject({ decorPack: true, cost: 90 });
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'escape-decor-pack')).toMatchObject({ decorPack: true, cost: 100 });
+    expect(packIdsForSelectedItems(['enchanted-grove', 'snow-village', 'mystic-stage'])).toEqual(['fantasy-decor-pack', 'christmas-pack', 'mystic-idols-pack']);
   });
 
   it('separates the required level from permanent ownership', () => {

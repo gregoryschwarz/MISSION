@@ -200,22 +200,32 @@ export const AVATAR_PACKS = [
   {
     id: 'halloween-pack', name: 'Halloween enchanté', emoji: '🎃', requiredLevel: 6, cost: 150, seasonal: true,
     description: 'Sorcière, citrouille et Vampy pour une fête pleine de malice.',
-    itemIds: ['midnight-waves', 'witch', 'pumpkin', 'bat-companion', 'pet-pumpkin'],
+    itemIds: ['midnight-waves', 'witch', 'pumpkin', 'bat-companion', 'pet-pumpkin', 'haunted-manor', 'pumpkin-night'],
   },
   {
     id: 'christmas-pack', name: 'Noël merveilleux', emoji: '🎄', requiredLevel: 6, cost: 150, seasonal: true,
     description: 'Des tresses enneigées et Flocon le renne pour les fêtes.',
-    itemIds: ['snow-braids', 'winter-elf', 'snow-queen', 'reindeer-companion', 'pet-santa-hat'],
+    itemIds: ['snow-braids', 'winter-elf', 'snow-queen', 'reindeer-companion', 'pet-santa-hat', 'snow-village', 'aurora-sky'],
   },
   {
     id: 'cube-adventure-pack', name: 'Aventure cubique', emoji: '🧊', requiredLevel: 7, cost: 170, originalVariant: true,
     description: 'Un univers de blocs lumineux avec Cubi, notre compagnon original.',
-    itemIds: ['pixel-spikes', 'cube-builder', 'neon-block', 'cube-companion', 'pet-brick'],
+    itemIds: ['pixel-spikes', 'cube-builder', 'neon-block', 'cube-companion', 'pet-brick', 'block-city', 'neon-arcade'],
   },
   {
     id: 'mystic-idols-pack', name: 'Idoles mystiques', emoji: '🎤', requiredLevel: 9, cost: 210, originalVariant: true,
     description: 'Deux héroïnes pop magiques accompagnées de Comète.',
-    itemIds: ['starlight-ponytail', 'pop-guardian', 'moon-dancer', 'comet-companion', 'pet-music'],
+    itemIds: ['starlight-ponytail', 'pop-guardian', 'moon-dancer', 'comet-companion', 'pet-music', 'mystic-stage', 'moon-concert'],
+  },
+  {
+    id: 'fantasy-decor-pack', name: 'Mondes fantastiques', emoji: '🏰', requiredLevel: 4, cost: 90, decorPack: true,
+    description: 'Trois univers merveilleux pour transformer complètement ton atelier.',
+    itemIds: ['enchanted-grove', 'candy-clouds', 'crystal-cave'],
+  },
+  {
+    id: 'escape-decor-pack', name: 'Escapades détente', emoji: '🏝️', requiredLevel: 5, cost: 100, decorPack: true,
+    description: 'Lagon, jardin zen et coucher de soleil pour voyager.',
+    itemIds: ['ocean-lagoon', 'zen-garden', 'sunset-beach'],
   },
 ];
 
@@ -230,6 +240,20 @@ export const DECORS = [
   { id: 'bonbon', name: 'Bonbon', gradient: ['#ef476f', '#ffb8e6'], requiredLevel: 6 },
   { id: 'arc-en-ciel', name: 'Arc-en-ciel', gradient: ['#ef476f', '#ffd166', '#06d6a0', '#118ab2'], requiredLevel: 7 },
   { id: 'nuit-etoilee', name: 'Nuit étoilée', gradient: ['#1d1e2c', '#3a3d5c'], requiredLevel: 8 },
+  { id: 'haunted-manor', name: 'Manoir hanté', gradient: ['#120f25', '#4b276b', '#db6b22'], requiredLevel: 6 },
+  { id: 'pumpkin-night', name: 'Nuit des citrouilles', gradient: ['#24111f', '#8b3518', '#f59e0b'], requiredLevel: 6 },
+  { id: 'snow-village', name: 'Village enneigé', gradient: ['#17375e', '#6ab4d8', '#f8fcff'], requiredLevel: 6 },
+  { id: 'aurora-sky', name: 'Ciel boréal', gradient: ['#101a3a', '#216e72', '#65e6b4', '#c97ee8'], requiredLevel: 6 },
+  { id: 'block-city', name: 'Ville cubique', gradient: ['#18345c', '#227fb5', '#48d6c7'], requiredLevel: 7 },
+  { id: 'neon-arcade', name: 'Arcade néon', gradient: ['#191431', '#7136a8', '#ed3ea6', '#23d9c4'], requiredLevel: 7 },
+  { id: 'mystic-stage', name: 'Scène mystique', gradient: ['#251440', '#6c3bb6', '#ff6cae'], requiredLevel: 9 },
+  { id: 'moon-concert', name: 'Concert lunaire', gradient: ['#101936', '#344a87', '#8fd8ff'], requiredLevel: 9 },
+  { id: 'enchanted-grove', name: 'Bosquet enchanté', gradient: ['#123c35', '#2e8b66', '#b7e47a'], requiredLevel: 4 },
+  { id: 'candy-clouds', name: 'Nuages bonbon', gradient: ['#8c66c7', '#f390c0', '#ffd6a5'], requiredLevel: 4 },
+  { id: 'crystal-cave', name: 'Grotte de cristal', gradient: ['#171b46', '#5146a6', '#5ce1e6'], requiredLevel: 4 },
+  { id: 'ocean-lagoon', name: 'Lagon turquoise', gradient: ['#086788', '#07a0c3', '#8ee3cf'], requiredLevel: 5 },
+  { id: 'zen-garden', name: 'Jardin zen', gradient: ['#384d48', '#6a8d73', '#d6cfa8'], requiredLevel: 5 },
+  { id: 'sunset-beach', name: 'Plage au soleil couchant', gradient: ['#6441a5', '#e65c8a', '#ffb35c'], requiredLevel: 5 },
 ];
 
 export const DEFAULT_CHARACTER = 'unicorn';
@@ -265,7 +289,7 @@ export function unlockedCapes(badges, avatarLevel = 1) {
 }
 
 export function unlockedDecors(avatarLevel) {
-  return DECORS.filter((d) => avatarLevel >= d.requiredLevel);
+  return DECORS.filter((d) => !packIdForItem(d.id) && avatarLevel >= d.requiredLevel);
 }
 
 export function characterMedallionData(avatarLevel, ownedCharacterIds = []) {
@@ -283,9 +307,12 @@ export function capeMedallionData(badges, avatarLevel = 1) {
   return CAPES.map((c) => ({ ...c, unlocked: unlockedIds.includes(c.id) }));
 }
 
-export function decorMedallionData(avatarLevel) {
+export function decorMedallionData(avatarLevel, ownedPackIds = DEFAULT_OWNED_PACK_IDS) {
   const unlockedIds = unlockedDecors(avatarLevel).map((d) => d.id);
-  return DECORS.map((d) => ({ ...d, unlocked: unlockedIds.includes(d.id) }));
+  return DECORS.map((d) => {
+    const packId = packIdForItem(d.id);
+    return { ...d, packId, unlocked: packId ? ownedPackIds.includes(packId) : unlockedIds.includes(d.id) };
+  });
 }
 
 export function emojiForCharacter(characterId) {

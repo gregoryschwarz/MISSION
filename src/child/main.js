@@ -251,6 +251,7 @@ function showCustomize() {
     profile.selectedOutfit ?? DEFAULT_OUTFIT,
     profile.selectedCompanion ?? DEFAULT_COMPANION,
     profile.selectedCompanionAccessory ?? DEFAULT_COMPANION_ACCESSORY,
+    profile.selectedDecor ?? DEFAULT_DECOR,
   ]);
   const ownedPackIds = [...new Set([
     ...DEFAULT_OWNED_PACK_IDS,
@@ -272,7 +273,7 @@ function showCustomize() {
     companions: companionMedallionData(ownedPackIds),
     companionAccessories: companionAccessoryMedallionData(ownedPackIds),
     packs: avatarPackData(profile.avatarLevel, ownedPackIds),
-    decors: decorMedallionData(profile.avatarLevel),
+    decors: decorMedallionData(profile.avatarLevel, ownedPackIds),
     coins: profile.coins ?? 0,
     selectedCharacterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
     selectedHatId: profile.selectedHat ?? DEFAULT_HAT,

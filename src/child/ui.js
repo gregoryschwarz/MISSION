@@ -353,12 +353,12 @@ function customizeMedallionHtml(item, selectedId, coins = null) {
 }
 
 function customizeDecorSwatchHtml(decor, selectedId) {
+  const gradient = `linear-gradient(160deg, ${decor.gradient.join(', ')})`;
   if (!decor.unlocked) {
-    return `<div class="decor-swatch locked" title="${decor.name}">🔒</div>`;
+    return `<div class="decor-swatch locked" title="${decor.name}" style="background:${gradient}"><span class="decor-lock">🔒</span><strong>${escapeHtml(decor.name)}</strong><small>${decor.packId ? 'Dans un pack' : `Niveau ${decor.requiredLevel}`}</small></div>`;
   }
   const isSelected = decor.id === selectedId;
-  const gradient = `linear-gradient(160deg, ${decor.gradient.join(', ')})`;
-  return `<button class="decor-swatch selectable ${isSelected ? 'selected' : ''}" data-id="${decor.id}" title="${decor.name}" style="background:${gradient}"></button>`;
+  return `<button class="decor-swatch selectable ${isSelected ? 'selected' : ''}" data-id="${decor.id}" title="${decor.name}" style="background:${gradient}"><strong>${escapeHtml(decor.name)}</strong>${isSelected ? '<small>Équipé</small>' : ''}</button>`;
 }
 
 function customizeSectionHtml(id, title, emoji, items, selectedId, coins = null) {
@@ -375,8 +375,9 @@ function avatarPackHtml(pack, coins) {
     : !pack.levelUnlocked
       ? `<span class="avatar-pack-status locked">🔒 Niveau ${pack.requiredLevel}</span>`
       : `<button class="avatar-pack-buy" data-pack-id="${pack.id}" ${affordable ? '' : 'disabled'}>${affordable ? `Acheter · ${pack.cost} 🪙` : `Il manque ${pack.cost - coins} 🪙`}</button>`;
-  return `<article class="avatar-pack-card ${pack.owned ? 'owned' : ''} ${pack.seasonal ? 'seasonal' : ''} ${pack.originalVariant ? 'original-variant' : ''}">
-    ${pack.seasonal ? '<span class="avatar-pack-special">COLLECTION SAISONNIÈRE</span>' : pack.originalVariant ? '<span class="avatar-pack-special">CRÉATION ORIGINALE</span>' : ''}
+  const specialLabel = pack.seasonal ? 'COLLECTION SAISONNIÈRE' : pack.originalVariant ? 'CRÉATION ORIGINALE' : pack.decorPack ? 'PACK DE DÉCORS' : '';
+  return `<article class="avatar-pack-card ${pack.owned ? 'owned' : ''} ${pack.seasonal ? 'seasonal' : ''} ${pack.originalVariant ? 'original-variant' : ''} ${pack.decorPack ? 'decor-pack' : ''}">
+    ${specialLabel ? `<span class="avatar-pack-special">${specialLabel}</span>` : ''}
     <span class="avatar-pack-emoji">${pack.emoji}</span>
     <h3>${escapeHtml(pack.name)}</h3>
     <p>${escapeHtml(pack.description)}</p>
