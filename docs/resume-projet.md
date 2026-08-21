@@ -15,7 +15,7 @@ Usage : familial (tablette(s) à la maison), pas de diffusion App Store / Play S
 - **Frontend** : Vite + JavaScript vanilla (pas de framework), deux pages (`index.html` enfant / `parent.html` parent)
 - **Backend** : Firebase (Firestore + Authentication), pas de serveur applicatif dédié
 - **Hébergement** : Firebase Hosting
-- **Tests** : Vitest, 331 tests
+- **Tests** : Vitest, 338 tests
 
 **Décision actée le 11/08** : on reste sur cette stack (PWA + Firebase), pas de migration vers l'app mobile native (React Native/Expo + FastAPI + MongoDB) qui figurait dans le cahier des charges d'origine. Raison : usage familial uniquement, pas besoin de notifications push natives ni de présence sur les stores. Décision réversible si l'objectif change plus tard.
 
@@ -28,7 +28,7 @@ Dossier projet : `C:\Users\Gsch6\OneDrive\Bureau\revision-maths-app`
 - `src/child/` — logique et UI de l'espace enfant (`main.js` orchestrateur, `ui.js` rendu, `questions.js` génération, `session.js`, `pairing.js`, `avatar.js`, etc.)
 - `src/parent/` — espace parent (`main.js`, `auth.js` connexion Google, `family.js` accès Firestore, `dashboard.js` rendu du tableau de bord)
 - `src/shared/` — logique partagée pure (`progression.js` XP/pièces/streaks/défis, `badges.js`, `avatarCustomization.js`, `difficulty.js`, `tokens.css` design system)
-- `tests/` — miroir de `src/`, 331 tests Vitest
+- `tests/` — miroir de `src/`, 338 tests Vitest
 - `docs/cahier-des-charges.md` — spec fonctionnelle + design d'origine (référence)
 - `docs/backlog-cahier-des-charges.md` — comparatif détaillé spec vs implémentation, **30/30 tâches terminées**
 - `firestore.rules`, `firebase.json`, `.firebaserc` — config déploiement
