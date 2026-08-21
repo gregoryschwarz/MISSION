@@ -511,6 +511,66 @@ input {
   margin-top: 0;
 }
 
+.mission-options .answer-btn:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.mission-options .answer-correct {
+  background: var(--color-mint);
+  color: #10251f;
+  box-shadow: 0 0 0 3px rgba(54, 220, 177, .28);
+}
+
+.mission-options .answer-incorrect {
+  background: var(--color-coral);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(242, 95, 92, .25);
+}
+
+.mission-options .answer-muted {
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  box-shadow: none;
+  opacity: .62 !important;
+}
+
+.answer-review {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+}
+
+.answer-review strong {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.answer-review-correct {
+  background: #d7f7ec;
+  color: #075b49;
+}
+
+.answer-review-incorrect {
+  background: #fde3e2;
+  color: #8a1f1c;
+}
+
+.answer-review .big-button {
+  width: min(100%, 420px);
+  margin-top: var(--space-2);
+}
+
+.answer-form input:disabled {
+  border-color: var(--color-border);
+  background: var(--color-surface-soft);
+  opacity: 1;
+}
+
 @media (max-width: 700px) {
   .mission-screen {
     width: min(94vw, 560px);
@@ -1247,6 +1307,16 @@ input {
   .focus-banner {
     background: #153c34;
     color: #b8f5df;
+  }
+
+  .answer-review-correct {
+    background: #153c34;
+    color: #b8f5df;
+  }
+
+  .answer-review-incorrect {
+    background: #482421;
+    color: #ffc0bc;
   }
 
   .daily-challenge-bar,

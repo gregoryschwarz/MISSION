@@ -43,6 +43,7 @@ let session = null;
 let missionMode = 'quiz';
 let pairsRound = null;
 let lastFeedback = null;
+let answerReview = null;
 let soundEnabled = isSoundEnabled();
 let lastProfile = null;
 let helpVisible = false;
@@ -318,6 +319,7 @@ function startMissionWithQuestions(questions) {
   storeLastMissionMode(missionMode);
   session = createSession(questions);
   lastFeedback = null;
+  answerReview = null;
   helpVisible = false;
   cachedChoicesIndex = -1;
   if (missionMode === 'pairs') {
@@ -360,18 +362,21 @@ function choicesForCurrentQuestion(question) {
 }
 
 function showQuestion() {
-  const question = currentQuestion(session);
+  const question = answerReview?.question ?? currentQuestion(session);
+  const questionIndex = answerReview?.index ?? session.index;
   const elapsedMs = Date.now() - session.startedAt;
   const showPauseReminder = elapsedMs >= PAUSE_REMINDER_MS;
   if (missionMode === 'qcm') {
     renderQuestionQcm(root, {
       question,
-      choices: choicesForCurrentQuestion(question),
-      index: session.index,
+      choices: answerReview?.choices ?? choicesForCurrentQuestion(question),
+      index: questionIndex,
       total: session.questions.length,
-      feedback: lastFeedback,
+      feedback: answerReview?.isCorrect ? 'correct' : answerReview ? 'incorrect' : null,
+      selectedAnswer: answerReview?.answer,
       showPauseReminder,
       onAnswer: handleAnswer,
+      onContinue: continueAfterAnswer,
       showHelp: helpVisible,
       onOpenHelp: openHelp,
       onCloseHelp: closeHelp,
@@ -379,11 +384,13 @@ function showQuestion() {
   } else {
     renderQuestion(root, {
       question,
-      index: session.index,
+      index: questionIndex,
       total: session.questions.length,
-      feedback: lastFeedback,
+      feedback: answerReview?.isCorrect ? 'correct' : answerReview ? 'incorrect' : null,
+      selectedAnswer: answerReview?.answer,
       showPauseReminder,
       onAnswer: handleAnswer,
+      onContinue: continueAfterAnswer,
       showHelp: helpVisible,
       onOpenHelp: openHelp,
       onCloseHelp: closeHelp,
@@ -405,16 +412,37 @@ function showPairsRound() {
 }
 
 async function handleAnswer(answer) {
+  if (answerReview) return;
+  const question = currentQuestion(session);
+  const questionIndex = session.index;
+  const displayedChoices = missionMode === 'qcm'
+    ? [...choicesForCurrentQuestion(question)]
+    : question.options
+      ? [...question.options]
+      : null;
   const isCorrect = submitAnswer(session, answer);
-  lastFeedback = isCorrect ? 'correct' : 'incorrect';
+  answerReview = {
+    question,
+    index: questionIndex,
+    answer,
+    isCorrect,
+    choices: displayedChoices,
+  };
   if (soundEnabled) {
     isCorrect ? playCorrectSound() : playIncorrectSound();
   }
+  showQuestion();
+}
+
+async function continueAfterAnswer() {
+  if (!answerReview) return;
+  answerReview = null;
+  lastFeedback = null;
   if (isSessionComplete(session)) {
     await finishMission();
-  } else {
-    showQuestion();
+    return;
   }
+  showQuestion();
 }
 
 async function handlePairsMatch(calcTileId, resultTileId) {

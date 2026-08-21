@@ -90,6 +90,27 @@ function missionProgressHtml(index, total) {
     </div>`;
 }
 
+function answerChoiceClass(question, choice, selectedAnswer, feedback) {
+  if (!feedback) return '';
+  if (choice === question.answer) return 'answer-correct';
+  if (choice === selectedAnswer) return 'answer-incorrect';
+  return 'answer-muted';
+}
+
+function answerReviewHtml(question, feedback, index, total) {
+  if (!feedback) return '';
+  const isCorrect = feedback === 'correct';
+  const correctLabel = answerLabel(question, question.answer);
+  return `
+    <div class="answer-review answer-review-${feedback}" role="status" aria-live="polite">
+      <strong>${isCorrect ? '🌟 Bravo, bonne réponse !' : '🤔 Presque !'}</strong>
+      ${isCorrect ? '' : `<span>La bonne réponse était <b>${correctLabel}</b>.</span>`}
+      <button id="next-question" type="button" class="big-button">
+        ${index + 1 >= total ? 'Voir mes résultats' : 'Question suivante'} →
+      </button>
+    </div>`;
+}
+
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
     <div class="screen pairing-screen">
@@ -395,8 +416,9 @@ function helpOverlayHtml(type, question) {
     </div>`;
 }
 
-export function renderQuestion(root, { question, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
+export function renderQuestion(root, { question, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
   const hasOptions = Array.isArray(question.options);
+  const reviewing = !!feedback;
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
@@ -405,27 +427,30 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
       <section class="mission-card">
         <h2>${question.prompt}</h2>
         ${visualDisplayHtml(question)}
-        ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
         ${hasOptions
           ? `<div class="options mission-options">
               ${question.options
                 .map((choice) => {
                   const label = answerLabel(question, choice);
-                  return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
+                  const stateClass = answerChoiceClass(question, choice, selectedAnswer, feedback);
+                  return `<button class="big-button answer-btn ${stateClass}" data-value="${choice}" ${reviewing ? 'disabled' : ''}>${label}</button>`;
                 })
                 .join('')}
             </div>`
           : `<form id="answer-form" class="answer-form">
               <label class="answer-label" for="answer-input">Ta réponse</label>
-              <input id="answer-input" type="${question.type === 'monnaie' ? 'text' : 'number'}" inputmode="${question.type === 'monnaie' ? 'decimal' : 'numeric'}" placeholder="${question.type === 'monnaie' ? '0,00 €' : 'Écris ta réponse'}" ${question.type === 'monnaie' ? 'aria-describedby="money-answer-hint"' : ''} required />
+              <input id="answer-input" type="${question.type === 'monnaie' ? 'text' : 'number'}" inputmode="${question.type === 'monnaie' ? 'decimal' : 'numeric'}" placeholder="${question.type === 'monnaie' ? '0,00 €' : 'Écris ta réponse'}" ${question.type === 'monnaie' ? 'aria-describedby="money-answer-hint"' : ''} ${reviewing ? `value="${escapeHtml(question.type === 'monnaie' ? formatEuroCents(selectedAnswer) : selectedAnswer)}" disabled` : ''} required />
               ${question.type === 'monnaie' ? '<small id="money-answer-hint" class="answer-hint">Tu peux écrire 7 ou 7,00 €</small>' : ''}
-              <button type="submit" class="big-button">Valider ma réponse</button>
+              ${reviewing ? '' : '<button type="submit" class="big-button">Valider ma réponse</button>'}
             </form>`}
+        ${answerReviewHtml(question, feedback, index, total)}
       </section>
       ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
-  if (hasOptions) {
+  if (reviewing) {
+    root.querySelector('#next-question').addEventListener('click', onContinue);
+  } else if (hasOptions) {
     root.querySelectorAll('.answer-btn').forEach((btn) =>
       btn.addEventListener('click', () => onAnswer(btn.dataset.value))
     );
@@ -444,8 +469,9 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
   }
 }
 
-export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, feedback, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
+export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
   const hasOptions = Array.isArray(question.options);
+  const reviewing = !!feedback;
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
@@ -454,26 +480,31 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
       <section class="mission-card">
         <h2>${question.prompt}</h2>
         ${visualDisplayHtml(question)}
-        ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
         <div class="options mission-options">
           ${choices
             .map((choice) => {
               const label = answerLabel(question, choice);
-              return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
+              const stateClass = answerChoiceClass(question, choice, selectedAnswer, feedback);
+              return `<button class="big-button answer-btn ${stateClass}" data-value="${choice}" ${reviewing ? 'disabled' : ''}>${label}</button>`;
             })
             .join('')}
         </div>
+        ${answerReviewHtml(question, feedback, index, total)}
       </section>
       ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
-  root.querySelectorAll('.answer-btn').forEach((btn) =>
-    btn.addEventListener('click', () => {
-      const raw = btn.dataset.value;
-      const value = hasOptions ? raw : Number(raw);
-      onAnswer(value);
-    })
-  );
+  if (reviewing) {
+    root.querySelector('#next-question').addEventListener('click', onContinue);
+  } else {
+    root.querySelectorAll('.answer-btn').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const raw = btn.dataset.value;
+        const value = hasOptions ? raw : Number(raw);
+        onAnswer(value);
+      })
+    );
+  }
   root.querySelector('#help-button').addEventListener('click', onOpenHelp);
   if (showHelp) {
     root.querySelector('#help-close').addEventListener('click', onCloseHelp);
