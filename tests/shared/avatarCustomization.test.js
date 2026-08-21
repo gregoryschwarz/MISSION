@@ -4,10 +4,18 @@ import {
   HATS,
   CAPES,
   DECORS,
+  HAIRSTYLES,
+  OUTFITS,
+  COMPANIONS,
+  COMPANION_ACCESSORIES,
   DEFAULT_CHARACTER,
   DEFAULT_HAT,
   DEFAULT_CAPE,
   DEFAULT_DECOR,
+  DEFAULT_HAIRSTYLE,
+  DEFAULT_OUTFIT,
+  DEFAULT_COMPANION,
+  DEFAULT_COMPANION_ACCESSORY,
   unlockedCharacters,
   unlockedHats,
   unlockedCapes,
@@ -16,10 +24,18 @@ import {
   hatMedallionData,
   capeMedallionData,
   decorMedallionData,
+  hairstyleMedallionData,
+  outfitMedallionData,
+  companionMedallionData,
+  companionAccessoryMedallionData,
   emojiForCharacter,
   emojiForHat,
   emojiForCape,
   visualForCharacter,
+  visualForHairstyle,
+  visualForOutfit,
+  companionForId,
+  companionAccessoryForId,
   decorGradientCss,
 } from '../../src/shared/avatarCustomization.js';
 
@@ -180,6 +196,36 @@ describe('emojiForCharacter', () => {
 
   it('falls back to the default character for an unknown id', () => {
     expect(emojiForCharacter('unknown')).toBe('🦄');
+  });
+});
+
+describe('Avatar V2 collections', () => {
+  it('offers a generous modular wardrobe and several companions', () => {
+    expect(HAIRSTYLES).toHaveLength(12);
+    expect(OUTFITS).toHaveLength(20);
+    expect(COMPANIONS).toHaveLength(9);
+    expect(COMPANION_ACCESSORIES).toHaveLength(11);
+  });
+
+  it('keeps a free compatible default in every new category', () => {
+    expect(DEFAULT_HAIRSTYLE).toBe('original-hair');
+    expect(DEFAULT_OUTFIT).toBe('original-outfit');
+    expect(DEFAULT_COMPANION).toBe('none-companion');
+    expect(DEFAULT_COMPANION_ACCESSORY).toBe('none-pet-accessory');
+  });
+
+  it('unlocks wardrobe and companions progressively by level', () => {
+    expect(hairstyleMedallionData(1).filter((item) => item.unlocked).map((item) => item.id)).toEqual(['original-hair', 'soft-bob']);
+    expect(outfitMedallionData(12).every((item) => item.unlocked)).toBe(true);
+    expect(companionMedallionData(1).filter((item) => item.unlocked).map((item) => item.id)).toEqual(['none-companion', 'cat-companion']);
+    expect(companionAccessoryMedallionData(1).filter((item) => item.unlocked).map((item) => item.id)).toEqual(['none-pet-accessory', 'pet-bow']);
+  });
+
+  it('returns safe visual fallbacks for unknown selections', () => {
+    expect(visualForHairstyle('unknown').id).toBe(DEFAULT_HAIRSTYLE);
+    expect(visualForOutfit('unknown').id).toBe(DEFAULT_OUTFIT);
+    expect(companionForId('unknown').id).toBe(DEFAULT_COMPANION);
+    expect(companionAccessoryForId('unknown').id).toBe(DEFAULT_COMPANION_ACCESSORY);
   });
 });
 

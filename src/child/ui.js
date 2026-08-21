@@ -6,16 +6,36 @@ import { shapeSvg } from './shapes.js';
 import { coinSvg, formatEuroCents, parseEuroInput } from './money.js';
 import { lengthBarSvg } from './length.js';
 import { clockFaceSvg } from './clock.js';
-import { visualForCharacter, HATS, CAPES } from '../shared/avatarCustomization.js';
+import {
+  visualForCharacter,
+  visualForHairstyle,
+  visualForOutfit,
+  companionForId,
+  companionAccessoryForId,
+  HATS,
+  CAPES,
+} from '../shared/avatarCustomization.js';
 
-function blockAvatarHtml(characterId, hatId = 'none-hat', capeId = 'none-cape', compact = false) {
+function blockAvatarHtml(characterId, hatId = 'none-hat', capeId = 'none-cape', compact = false, hairstyleId = 'original-hair', outfitId = 'original-outfit', companionId = 'none-companion', companionAccessoryId = 'none-pet-accessory') {
   const visual = visualForCharacter(characterId);
+  const hairstyle = visualForHairstyle(hairstyleId);
+  const outfit = visualForOutfit(outfitId);
+  const companion = companionForId(companionId);
+  const companionAccessory = companionAccessoryForId(companionAccessoryId);
   const safeHat = HATS.some((item) => item.id === hatId) ? hatId : 'none-hat';
   const safeCape = CAPES.some((item) => item.id === capeId) ? capeId : 'none-cape';
-  return `<div class="block-avatar ${compact ? 'block-avatar-compact' : ''} character-${visual.id} hat-${safeHat} cape-${safeCape}" style="--avatar-skin:${visual.skin};--avatar-hair:${visual.hair};--avatar-outfit:${visual.outfit};--avatar-accent:${visual.accent}" role="img" aria-label="${visual.name}">
-    <span class="block-cape"></span><span class="block-body"></span><span class="block-arm block-arm-left"></span><span class="block-arm block-arm-right"></span>
+  const hairColor = hairstyle.color ?? visual.hair;
+  const outfitColor = outfit.outfit ?? visual.outfit;
+  const accentColor = outfit.accent ?? visual.accent;
+  const outfitEmblem = outfit.id === 'original-outfit' ? '' : outfit.emoji;
+  const companionHtml = !compact && companion.emoji
+    ? `<span class="avatar-companion companion-${companion.id}" aria-label="${companion.name}"><span class="companion-emoji">${companion.emoji}</span>${companionAccessory.emoji ? `<span class="companion-accessory accessory-${companionAccessory.id}">${companionAccessory.emoji}</span>` : ''}</span>`
+    : '';
+  return `<div class="block-avatar ${compact ? 'block-avatar-compact' : ''} character-${visual.id} hair-${hairstyle.id} outfit-${outfit.id} hat-${safeHat} cape-${safeCape}" style="--avatar-skin:${visual.skin};--avatar-hair:${hairColor};--avatar-outfit:${outfitColor};--avatar-accent:${accentColor}" role="img" aria-label="${visual.name}">
+    <span class="block-cape"></span><span class="block-body"><span class="block-outfit-emblem">${outfitEmblem}</span></span><span class="block-arm block-arm-left"></span><span class="block-arm block-arm-right"></span>
     <span class="block-head"><span class="block-hair"></span><span class="block-eye block-eye-left"></span><span class="block-eye block-eye-right"></span><span class="block-smile"></span></span>
     <span class="block-hat"></span><span class="block-leg block-leg-left"></span><span class="block-leg block-leg-right"></span>
+    ${companionHtml}
   </div>`;
 }
 
@@ -249,14 +269,14 @@ function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, decorGradient, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
   root.innerHTML = `
     <div class="screen home-screen with-tabs">
       <div class="home-header" style="background:${decorGradient ?? ''}">
         <button id="sound-toggle" class="sound-toggle" aria-label="Activer ou couper le son">${soundEnabled ? '🔊' : '🔇'}</button>
         <div class="avatar-wrapper">
-          <div class="avatar ${auraClass}">${blockAvatarHtml(characterId, hatId, capeId)}</div>
+          <div class="avatar ${auraClass}">${blockAvatarHtml(characterId, hatId, capeId, false, hairstyleId, outfitId, companionId, companionAccessoryId)}</div>
         </div>
         <h1><span id="child-name"></span><span class="home-level">Niveau ${avatarLevel}</span></h1>
         ${
@@ -320,16 +340,16 @@ function customizeMedallionHtml(item, selectedId, coins = null) {
   if (!item.unlocked) {
     if (coins !== null && item.cost > 0) {
       const affordable = coins >= item.cost;
-      return `<button class="badge-medallion buyable ${affordable ? '' : 'unaffordable'}" data-id="${item.id}" data-cost="${item.cost}" title="${label} — ${item.cost} 🪙">
+      return `<button class="customize-option badge-medallion buyable ${affordable ? '' : 'unaffordable'}" data-id="${item.id}" data-cost="${item.cost}" title="${label} — ${item.cost} 🪙">
         <span class="medallion-lock">🔒</span>
-        <span class="medallion-cost">${item.cost}🪙</span>
+        <span class="medallion-cost">${item.cost}🪙</span><span class="customize-option-label">${label}</span>
       </button>`;
     }
-    return `<div class="badge-medallion locked" title="${label}">🔒</div>`;
+    return `<div class="customize-option badge-medallion locked" title="${label}"><span>🔒</span><span class="customize-option-label">${label}</span><small>Niveau ${item.requiredLevel ?? '?'}</small></div>`;
   }
   const isSelected = item.id === selectedId;
   const content = item.skin ? blockAvatarHtml(item.id, 'none-hat', 'none-cape', true) : (item.emoji ?? '🚫');
-  return `<button class="badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}">${content}</button>`;
+  return `<button class="customize-option badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}"><span class="customize-option-visual">${content}</span><span class="customize-option-label">${label}</span>${isSelected ? '<small>Équipé</small>' : ''}</button>`;
 }
 
 function customizeDecorSwatchHtml(decor, selectedId) {
@@ -341,28 +361,45 @@ function customizeDecorSwatchHtml(decor, selectedId) {
   return `<button class="decor-swatch selectable ${isSelected ? 'selected' : ''}" data-id="${decor.id}" title="${decor.name}" style="background:${gradient}"></button>`;
 }
 
-export function renderCustomize(root, { characters, hats, capes, decors, coins = 0, selectedCharacterId, selectedHatId, selectedCapeId, selectedDecorId, onSelectCharacter, onSelectHat, onSelectCape, onSelectDecor, onPurchaseCharacter, onBack, onNavigate }) {
+function customizeSectionHtml(id, title, emoji, items, selectedId, coins = null) {
+  return `<section class="customize-category">
+    <h2>${emoji} ${title}<small>${items.filter((item) => item.unlocked).length}/${items.length}</small></h2>
+    <div class="customize-options" id="${id}">${items.map((item) => customizeMedallionHtml(item, selectedId, coins)).join('')}</div>
+  </section>`;
+}
+
+export function renderCustomize(root, { characters, hats, capes, hairstyles, outfits, companions, companionAccessories, decors, coins = 0, selectedCharacterId, selectedHatId, selectedCapeId, selectedHairstyleId, selectedOutfitId, selectedCompanionId, selectedCompanionAccessoryId, selectedDecorId, onSelectCharacter, onSelectHat, onSelectCape, onSelectHairstyle, onSelectOutfit, onSelectCompanion, onSelectCompanionAccessory, onSelectDecor, onPurchaseCharacter, onBack, onNavigate }) {
+  const selectedCompanion = companions.find((item) => item.id === selectedCompanionId);
+  const selectedDecor = decors.find((item) => item.id === selectedDecorId) ?? decors[0];
+  const previewGradient = `linear-gradient(160deg, ${selectedDecor.gradient.join(', ')})`;
   root.innerHTML = `
     <div class="screen customize-screen with-tabs">
-      <h1>🎨 Personnaliser</h1>
-      <p class="coins-balance">🪙 ${coins} pièces disponibles</p>
-      <p class="customize-section-title">Personnage</p>
-      <div class="badges-row" id="character-options">
-        ${characters.map((c) => customizeMedallionHtml(c, selectedCharacterId, coins)).join('')}
+      <header class="customize-heading">
+        <div><p class="customize-kicker">Mon univers</p><h1>🎨 Atelier d’Ambre</h1></div>
+        <p class="coins-balance">🪙 ${coins} pièces</p>
+      </header>
+      <div class="customize-layout">
+        <aside class="customize-preview" style="background:${previewGradient}">
+          <span class="customize-preview-label">APERÇU</span>
+          <div class="customize-preview-stage">${blockAvatarHtml(selectedCharacterId, selectedHatId, selectedCapeId, false, selectedHairstyleId, selectedOutfitId, selectedCompanionId, selectedCompanionAccessoryId)}</div>
+          <strong>${selectedCompanion?.emoji ? `${selectedCompanion.emoji} ${selectedCompanion.name}` : 'Ton avatar est prêt !'}</strong>
+          <small>Choisis chaque élément pour créer ton style.</small>
+        </aside>
+        <div class="customize-catalog">
+          ${customizeSectionHtml('character-options', 'Personnages', '🙂', characters, selectedCharacterId, coins)}
+          ${customizeSectionHtml('hairstyle-options', 'Coiffures', '💇', hairstyles, selectedHairstyleId)}
+          ${customizeSectionHtml('outfit-options', 'Tenues', '👗', outfits, selectedOutfitId)}
+          ${customizeSectionHtml('hat-options', 'Chapeaux et lunettes', '👑', hats, selectedHatId)}
+          ${customizeSectionHtml('cape-options', 'Dos, ailes et capes', '🪽', capes, selectedCapeId)}
+          ${customizeSectionHtml('companion-options', 'Compagnons', '🐾', companions, selectedCompanionId)}
+          ${customizeSectionHtml('companion-accessory-options', 'Accessoires du compagnon', '🎀', companionAccessories, selectedCompanionAccessoryId)}
+          <section class="customize-category">
+            <h2>🌄 Décors <small>${decors.filter((item) => item.unlocked).length}/${decors.length}</small></h2>
+            <div class="customize-options decor-options" id="decor-options">${decors.map((d) => customizeDecorSwatchHtml(d, selectedDecorId)).join('')}</div>
+          </section>
+        </div>
       </div>
-      <p class="customize-section-title">Chapeau</p>
-      <div class="badges-row" id="hat-options">
-        ${hats.map((h) => customizeMedallionHtml(h, selectedHatId)).join('')}
-      </div>
-      <p class="customize-section-title">Cape</p>
-      <div class="badges-row" id="cape-options">
-        ${capes.map((c) => customizeMedallionHtml(c, selectedCapeId)).join('')}
-      </div>
-      <p class="customize-section-title">Décor</p>
-      <div class="badges-row" id="decor-options">
-        ${decors.map((d) => customizeDecorSwatchHtml(d, selectedDecorId)).join('')}
-      </div>
-      <button id="customize-back" class="big-button">Retour</button>
+      <button id="customize-back" class="big-button customize-back">Retour aux missions</button>
     </div>
     ${bottomTabsHtml('avatar')}
   `;
@@ -377,6 +414,18 @@ export function renderCustomize(root, { characters, hats, capes, decors, coins =
   );
   root.querySelectorAll('#cape-options .badge-medallion.selectable').forEach((btn) =>
     btn.addEventListener('click', () => onSelectCape(btn.dataset.id))
+  );
+  root.querySelectorAll('#hairstyle-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectHairstyle(btn.dataset.id))
+  );
+  root.querySelectorAll('#outfit-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectOutfit(btn.dataset.id))
+  );
+  root.querySelectorAll('#companion-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectCompanion(btn.dataset.id))
+  );
+  root.querySelectorAll('#companion-accessory-options .badge-medallion.selectable').forEach((btn) =>
+    btn.addEventListener('click', () => onSelectCompanionAccessory(btn.dataset.id))
   );
   root.querySelectorAll('#decor-options .decor-swatch.selectable').forEach((btn) =>
     btn.addEventListener('click', () => onSelectDecor(btn.dataset.id))

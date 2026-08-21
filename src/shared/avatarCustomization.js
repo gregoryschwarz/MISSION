@@ -64,6 +64,70 @@ export const CAPES = [
   { id: 'star-friend', name: 'Étoile amie', emoji: '🌟', requiresAnyOf: [], requiredLevel: 9 },
 ];
 
+export const HAIRSTYLES = [
+  { id: 'original-hair', name: 'Coiffure du personnage', emoji: '✨', color: null, requiredLevel: 1 },
+  { id: 'soft-bob', name: 'Carré doux', emoji: '💇', color: '#5b2d90', requiredLevel: 1 },
+  { id: 'high-ponytail', name: 'Queue haute', emoji: '🎀', color: '#6b3e26', requiredLevel: 2 },
+  { id: 'curly', name: 'Boucles', emoji: '➰', color: '#3b2417', requiredLevel: 2 },
+  { id: 'side-braids', name: 'Tresses', emoji: '🪢', color: '#2b1b16', requiredLevel: 3 },
+  { id: 'pixie', name: 'Coupe courte', emoji: '⭐', color: '#c85a34', requiredLevel: 3 },
+  { id: 'afro', name: 'Nuage bouclé', emoji: '☁️', color: '#271914', requiredLevel: 4 },
+  { id: 'double-buns', name: 'Deux macarons', emoji: '🍡', color: '#7d3c98', requiredLevel: 4 },
+  { id: 'long-waves', name: 'Longues vagues', emoji: '🌊', color: '#c47a32', requiredLevel: 5 },
+  { id: 'mohawk', name: 'Crête colorée', emoji: '⚡', color: '#00a6a6', requiredLevel: 6 },
+  { id: 'space-buns', name: 'Macarons cosmiques', emoji: '🪐', color: '#3846a8', requiredLevel: 7 },
+  { id: 'rainbow-hair', name: 'Cheveux arc-en-ciel', emoji: '🌈', color: '#ef476f', requiredLevel: 9 },
+];
+
+export const OUTFITS = [
+  { id: 'original-outfit', name: 'Tenue du personnage', emoji: '✨', outfit: null, accent: null, requiredLevel: 1 },
+  { id: 'school', name: 'École', emoji: '📚', outfit: '#315f8c', accent: '#f7d154', requiredLevel: 1 },
+  { id: 'sport', name: 'Sport', emoji: '🏅', outfit: '#20b486', accent: '#ffffff', requiredLevel: 1 },
+  { id: 'artist', name: 'Artiste', emoji: '🎨', outfit: '#f5eee4', accent: '#ef476f', requiredLevel: 2 },
+  { id: 'scientist', name: 'Scientifique', emoji: '🔬', outfit: '#e8f5ff', accent: '#00a6a6', requiredLevel: 2 },
+  { id: 'explorer', name: 'Exploratrice', emoji: '🧭', outfit: '#d98b3a', accent: '#315f49', requiredLevel: 3 },
+  { id: 'ninja', name: 'Ninja', emoji: '🥷', outfit: '#343047', accent: '#ff4d6d', requiredLevel: 3 },
+  { id: 'dancer', name: 'Danseuse', emoji: '🩰', outfit: '#f6a6c1', accent: '#fff0f5', requiredLevel: 4 },
+  { id: 'chef', name: 'Cheffe', emoji: '🧁', outfit: '#fff7e8', accent: '#e85d75', requiredLevel: 4 },
+  { id: 'gardener', name: 'Jardinière', emoji: '🌱', outfit: '#6aa84f', accent: '#ffe599', requiredLevel: 5 },
+  { id: 'superhero', name: 'Super-héroïne', emoji: '⚡', outfit: '#3157a4', accent: '#ffd43b', requiredLevel: 5 },
+  { id: 'astronaut', name: 'Astronaute', emoji: '🚀', outfit: '#f5f7ff', accent: '#6c63ff', requiredLevel: 6 },
+  { id: 'magician', name: 'Magicienne', emoji: '🔮', outfit: '#7656c8', accent: '#ffd166', requiredLevel: 6 },
+  { id: 'knight', name: 'Chevalière', emoji: '🛡️', outfit: '#718096', accent: '#3c91e6', requiredLevel: 7 },
+  { id: 'pirate', name: 'Pirate', emoji: '⚓', outfit: '#b23a48', accent: '#f4d35e', requiredLevel: 7 },
+  { id: 'mermaid', name: 'Sirène', emoji: '🧜‍♀️', outfit: '#20bfc1', accent: '#d8b4fe', requiredLevel: 8 },
+  { id: 'royal', name: 'Royale', emoji: '👑', outfit: '#a855f7', accent: '#fde68a', requiredLevel: 8 },
+  { id: 'dragon-rider', name: 'Dresseuse de dragon', emoji: '🐲', outfit: '#315f49', accent: '#ff7b54', requiredLevel: 9 },
+  { id: 'galaxy', name: 'Galaxie', emoji: '🌌', outfit: '#27265b', accent: '#8be9fd', requiredLevel: 10 },
+  { id: 'rainbow', name: 'Arc-en-ciel', emoji: '🌈', outfit: '#ef476f', accent: '#ffd166', requiredLevel: 12 },
+];
+
+export const COMPANIONS = [
+  { id: 'none-companion', name: 'Sans compagnon', emoji: null, requiredLevel: 1 },
+  { id: 'cat-companion', name: 'Mimi le chat', emoji: '🐱', requiredLevel: 1 },
+  { id: 'dog-companion', name: 'Pixel le chien', emoji: '🐶', requiredLevel: 2 },
+  { id: 'fox-companion', name: 'Flamme le renard', emoji: '🦊', requiredLevel: 3 },
+  { id: 'panda-companion', name: 'Bambou le panda', emoji: '🐼', requiredLevel: 4 },
+  { id: 'owl-companion', name: 'Plume le hibou', emoji: '🦉', requiredLevel: 5 },
+  { id: 'axolotl-companion', name: 'Bulle l’axolotl', emoji: '🦎', requiredLevel: 6 },
+  { id: 'unicorn-companion', name: 'Étoile la licorne', emoji: '🦄', requiredLevel: 8 },
+  { id: 'dragon-companion', name: 'Drago le dragon', emoji: '🐉', requiredLevel: 10 },
+];
+
+export const COMPANION_ACCESSORIES = [
+  { id: 'none-pet-accessory', name: 'Aucun accessoire', emoji: null, requiredLevel: 1 },
+  { id: 'pet-bow', name: 'Petit nœud', emoji: '🎀', requiredLevel: 1 },
+  { id: 'pet-flower', name: 'Fleur', emoji: '🌸', requiredLevel: 2 },
+  { id: 'pet-glasses', name: 'Lunettes', emoji: '🕶️', requiredLevel: 3 },
+  { id: 'pet-scarf', name: 'Foulard', emoji: '🧣', requiredLevel: 4 },
+  { id: 'pet-cap', name: 'Casquette', emoji: '🧢', requiredLevel: 5 },
+  { id: 'pet-headphones', name: 'Mini casque', emoji: '🎧', requiredLevel: 6 },
+  { id: 'pet-star', name: 'Étoile magique', emoji: '⭐', requiredLevel: 7 },
+  { id: 'pet-crown', name: 'Petite couronne', emoji: '👑', requiredLevel: 8 },
+  { id: 'pet-wings', name: 'Petites ailes', emoji: '🪽', requiredLevel: 9 },
+  { id: 'pet-magic-hat', name: 'Chapeau magique', emoji: '🧙', requiredLevel: 10 },
+];
+
 // 8 décors en fond dégradé (noms fixés par le cahier des charges), déverrouillés
 // par palier de niveau d'avatar comme les personnages.
 export const DECORS = [
@@ -81,6 +145,10 @@ export const DEFAULT_CHARACTER = 'unicorn';
 export const DEFAULT_HAT = 'none-hat';
 export const DEFAULT_CAPE = 'none-cape';
 export const DEFAULT_DECOR = 'menthe';
+export const DEFAULT_HAIRSTYLE = 'original-hair';
+export const DEFAULT_OUTFIT = 'original-outfit';
+export const DEFAULT_COMPANION = 'none-companion';
+export const DEFAULT_COMPANION_ACCESSORY = 'none-pet-accessory';
 
 // Un accessoire sans condition (requiresAnyOf vide, ex. "aucun") est toujours
 // débloqué ; sinon il faut au moins un des badges listés.
@@ -133,10 +201,50 @@ export function emojiForCharacter(characterId) {
   return found ? found.emoji : CHARACTERS.find((c) => c.id === DEFAULT_CHARACTER).emoji;
 }
 
+function levelMedallionData(items, avatarLevel) {
+  return items.map((item) => ({ ...item, unlocked: avatarLevel >= item.requiredLevel }));
+}
+
+export function hairstyleMedallionData(avatarLevel) {
+  return levelMedallionData(HAIRSTYLES, avatarLevel);
+}
+
+export function outfitMedallionData(avatarLevel) {
+  return levelMedallionData(OUTFITS, avatarLevel);
+}
+
+export function companionMedallionData(avatarLevel) {
+  return levelMedallionData(COMPANIONS, avatarLevel);
+}
+
+export function companionAccessoryMedallionData(avatarLevel) {
+  return levelMedallionData(COMPANION_ACCESSORIES, avatarLevel);
+}
+
 export function visualForCharacter(characterId) {
   const fallback = CHARACTERS.find((c) => c.id === DEFAULT_CHARACTER);
   const found = CHARACTERS.find((c) => c.id === characterId) ?? fallback;
   return { id: found.id, name: found.name, skin: found.skin, hair: found.hair, outfit: found.outfit, accent: found.accent };
+}
+
+export function visualForHairstyle(hairstyleId) {
+  return HAIRSTYLES.find((item) => item.id === hairstyleId)
+    ?? HAIRSTYLES.find((item) => item.id === DEFAULT_HAIRSTYLE);
+}
+
+export function visualForOutfit(outfitId) {
+  return OUTFITS.find((item) => item.id === outfitId)
+    ?? OUTFITS.find((item) => item.id === DEFAULT_OUTFIT);
+}
+
+export function companionForId(companionId) {
+  return COMPANIONS.find((item) => item.id === companionId)
+    ?? COMPANIONS.find((item) => item.id === DEFAULT_COMPANION);
+}
+
+export function companionAccessoryForId(accessoryId) {
+  return COMPANION_ACCESSORIES.find((item) => item.id === accessoryId)
+    ?? COMPANION_ACCESSORIES.find((item) => item.id === DEFAULT_COMPANION_ACCESSORY);
 }
 
 export function emojiForHat(hatId) {

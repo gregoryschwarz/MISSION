@@ -21,11 +21,19 @@ import {
   hatMedallionData,
   capeMedallionData,
   decorMedallionData,
+  hairstyleMedallionData,
+  outfitMedallionData,
+  companionMedallionData,
+  companionAccessoryMedallionData,
   decorGradientCss,
   DEFAULT_CHARACTER,
   DEFAULT_HAT,
   DEFAULT_CAPE,
   DEFAULT_DECOR,
+  DEFAULT_HAIRSTYLE,
+  DEFAULT_OUTFIT,
+  DEFAULT_COMPANION,
+  DEFAULT_COMPANION_ACCESSORY,
 } from '../shared/avatarCustomization.js';
 
 const root = document.getElementById('app');
@@ -92,6 +100,10 @@ async function loadProfile(targetChildId) {
         selectedHat: DEFAULT_HAT,
         selectedCape: DEFAULT_CAPE,
         selectedDecor: DEFAULT_DECOR,
+        selectedHairstyle: DEFAULT_HAIRSTYLE,
+        selectedOutfit: DEFAULT_OUTFIT,
+        selectedCompanion: DEFAULT_COMPANION,
+        selectedCompanionAccessory: DEFAULT_COMPANION_ACCESSORY,
         ownedCharacterIds: [],
       };
 }
@@ -127,6 +139,10 @@ function renderHomeScreen(profile) {
     characterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
     hatId: profile.selectedHat ?? DEFAULT_HAT,
     capeId: profile.selectedCape ?? DEFAULT_CAPE,
+    hairstyleId: profile.selectedHairstyle ?? DEFAULT_HAIRSTYLE,
+    outfitId: profile.selectedOutfit ?? DEFAULT_OUTFIT,
+    companionId: profile.selectedCompanion ?? DEFAULT_COMPANION,
+    companionAccessoryId: profile.selectedCompanionAccessory ?? DEFAULT_COMPANION_ACCESSORY,
     decorGradient: decorGradientCss(profile.selectedDecor ?? DEFAULT_DECOR),
     soundEnabled,
     focusType: profile.focusType ?? null,
@@ -229,16 +245,28 @@ function showCustomize() {
     characters: characterMedallionData(profile.avatarLevel, profile.ownedCharacterIds ?? []),
     hats: hatMedallionData(profile.badges, profile.avatarLevel),
     capes: capeMedallionData(profile.badges, profile.avatarLevel),
+    hairstyles: hairstyleMedallionData(profile.avatarLevel),
+    outfits: outfitMedallionData(profile.avatarLevel),
+    companions: companionMedallionData(profile.avatarLevel),
+    companionAccessories: companionAccessoryMedallionData(profile.avatarLevel),
     decors: decorMedallionData(profile.avatarLevel),
     coins: profile.coins ?? 0,
     selectedCharacterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
     selectedHatId: profile.selectedHat ?? DEFAULT_HAT,
     selectedCapeId: profile.selectedCape ?? DEFAULT_CAPE,
     selectedDecorId: profile.selectedDecor ?? DEFAULT_DECOR,
+    selectedHairstyleId: profile.selectedHairstyle ?? DEFAULT_HAIRSTYLE,
+    selectedOutfitId: profile.selectedOutfit ?? DEFAULT_OUTFIT,
+    selectedCompanionId: profile.selectedCompanion ?? DEFAULT_COMPANION,
+    selectedCompanionAccessoryId: profile.selectedCompanionAccessory ?? DEFAULT_COMPANION_ACCESSORY,
     onSelectCharacter: handleSelectCharacter,
     onSelectHat: handleSelectHat,
     onSelectCape: handleSelectCape,
     onSelectDecor: handleSelectDecor,
+    onSelectHairstyle: handleSelectHairstyle,
+    onSelectOutfit: handleSelectOutfit,
+    onSelectCompanion: handleSelectCompanion,
+    onSelectCompanionAccessory: handleSelectCompanionAccessory,
     onPurchaseCharacter: handlePurchaseCharacter,
     onBack: () => renderHomeScreen(lastProfile),
     onNavigate: navigateTo,
@@ -288,6 +316,29 @@ async function handleSelectDecor(decorId) {
   lastProfile = nextProfile;
   await saveProfile(childId, nextProfile).catch(() => {});
   showCustomize();
+}
+
+async function selectAvatarPart(field, value) {
+  const nextProfile = { ...lastProfile, [field]: value };
+  lastProfile = nextProfile;
+  await saveProfile(childId, nextProfile).catch(() => {});
+  showCustomize();
+}
+
+function handleSelectHairstyle(hairstyleId) {
+  return selectAvatarPart('selectedHairstyle', hairstyleId);
+}
+
+function handleSelectOutfit(outfitId) {
+  return selectAvatarPart('selectedOutfit', outfitId);
+}
+
+function handleSelectCompanion(companionId) {
+  return selectAvatarPart('selectedCompanion', companionId);
+}
+
+function handleSelectCompanionAccessory(accessoryId) {
+  return selectAvatarPart('selectedCompanionAccessory', accessoryId);
 }
 
 async function showHome() {

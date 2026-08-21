@@ -1533,3 +1533,119 @@ input {
   height: 48px;
   margin: 0 auto;
 }
+
+/* Atelier Avatar V2 : éléments combinables, grand aperçu et compagnons. */
+.block-outfit-emblem {
+  inset: 7px 5px auto !important;
+  height: 28px;
+  display: grid !important;
+  place-items: center;
+  position: absolute !important;
+  font-size: 18px;
+  line-height: 1;
+  z-index: 1;
+}
+
+.block-avatar:not(.outfit-original-outfit) .block-body::after { display: none; }
+.block-avatar:not(.outfit-original-outfit) .block-leg { background: var(--avatar-outfit); }
+
+.hair-soft-bob .block-hair { height: 31px; border-radius: 12px 12px 4px 4px; }
+.hair-soft-bob .block-hair::after,
+.hair-high-ponytail .block-hair::after,
+.hair-side-braids .block-hair::after,
+.hair-long-waves .block-hair::after {
+  content: '';
+  position: absolute;
+  background: var(--avatar-hair);
+}
+.hair-soft-bob .block-hair::after { width: 12px; height: 43px; right: -2px; top: 8px; border-radius: 0 8px 8px 8px; }
+.hair-high-ponytail .block-hair { height: 22px; transform: skew(-7deg); }
+.hair-high-ponytail .block-hair::after { width: 25px; height: 48px; right: -18px; top: 2px; border-radius: 50% 50% 70% 30%; transform: rotate(-18deg); }
+.hair-curly .block-hair { height: 24px; border-radius: 50%; box-shadow: -8px 4px 0 var(--avatar-hair), 8px 4px 0 var(--avatar-hair), 0 -7px 0 var(--avatar-hair); }
+.hair-side-braids .block-hair { height: 22px; }
+.hair-side-braids .block-hair::after { width: 10px; height: 48px; left: -7px; top: 11px; border-radius: 8px; box-shadow: 58px 0 0 var(--avatar-hair); }
+.hair-pixie .block-hair { height: 25px; clip-path: polygon(0 0,100% 0,100% 55%,78% 42%,68% 82%,48% 48%,28% 78%,15% 45%,0 62%); }
+.hair-afro .block-hair { inset: -14px -12px auto; height: 42px; border-radius: 50%; box-shadow: -7px 10px 0 var(--avatar-hair), 7px 10px 0 var(--avatar-hair); }
+.hair-double-buns .block-hair { height: 22px; border-radius: 8px; box-shadow: -12px -8px 0 6px var(--avatar-hair), 12px -8px 0 6px var(--avatar-hair); }
+.hair-long-waves .block-hair { height: 25px; border-radius: 12px 12px 3px 3px; }
+.hair-long-waves .block-hair::after { width: 72px; height: 52px; left: -7px; top: 8px; border-radius: 0 0 22px 22px; z-index: -1; }
+.hair-mohawk .block-hair { inset: -13px 12px auto; height: 31px; clip-path: polygon(0 100%,12% 18%,28% 75%,43% 0,58% 72%,76% 12%,100% 100%); }
+.hair-space-buns .block-hair { height: 23px; background: linear-gradient(90deg,#3846a8,#8b5cf6); box-shadow: -13px -7px 0 7px #3846a8, 13px -7px 0 7px #8b5cf6; }
+.hair-rainbow-hair .block-hair { height: 29px; background: linear-gradient(90deg,#ef476f,#ffd166,#06d6a0,#118ab2,#9b5de5); border-radius: 12px 12px 5px 5px; }
+
+.avatar-companion {
+  display: grid !important;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  right: -48px;
+  bottom: 0;
+  position: absolute !important;
+  border-radius: 50%;
+  background: rgba(255,255,255,.88);
+  border: 3px solid rgba(255,255,255,.8);
+  box-shadow: 0 8px 18px rgba(25,22,40,.2);
+  z-index: 10;
+  animation: companionFloat 2.6s ease-in-out infinite;
+}
+.avatar-companion .companion-emoji { position: static; font-size: 37px; line-height: 1; }
+.avatar-companion .companion-accessory { position: absolute; right: -5px; top: -15px; font-size: 23px; transform: rotate(9deg); filter: drop-shadow(0 2px 1px rgba(0,0,0,.15)); }
+.avatar-companion .accessory-pet-glasses { top: 17px; right: 5px; font-size: 24px; }
+.avatar-companion .accessory-pet-scarf { top: 36px; right: 2px; }
+.avatar-companion .accessory-pet-wings { top: 20px; right: -16px; }
+@keyframes companionFloat { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+
+.customize-screen { max-width: 1240px; text-align: left; }
+.customize-heading { display:flex; justify-content:space-between; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4); }
+.customize-heading h1 { margin:0; }
+.customize-kicker { margin:0 0 3px; color:var(--color-pink); font-weight:800; text-transform:uppercase; letter-spacing:.08em; font-size:var(--text-xs); }
+.customize-layout { display:grid; grid-template-columns:minmax(260px, .72fr) minmax(0, 2fr); gap:var(--space-5); align-items:start; }
+.customize-preview { position:sticky; top:var(--space-4); min-height:430px; padding:var(--space-5); border-radius:var(--radius-lg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-3); color:#fff; text-align:center; box-shadow:var(--shadow-raised); overflow:hidden; }
+.customize-preview::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.34),transparent 48%); pointer-events:none; }
+.customize-preview-label { position:absolute; top:var(--space-3); left:var(--space-3); padding:5px 9px; border-radius:999px; background:rgba(20,18,35,.32); font-size:10px; font-weight:800; letter-spacing:.09em; }
+.customize-preview-stage { min-height:230px; display:grid; place-items:center; transform:scale(1.55); transform-origin:center; }
+.customize-preview strong,.customize-preview small { position:relative; text-shadow:0 2px 3px rgba(0,0,0,.25); }
+.customize-preview small { max-width:220px; }
+.customize-catalog { display:grid; gap:var(--space-4); min-width:0; }
+.customize-category { padding:var(--space-4); border:1px solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-card); box-shadow:var(--shadow-card); }
+.customize-category h2 { display:flex; align-items:center; gap:var(--space-2); margin:0 0 var(--space-3); font-size:var(--text-lg); }
+.customize-category h2 small { margin-left:auto; padding:4px 8px; border-radius:999px; background:var(--color-surface-soft); color:var(--color-text-muted); font-family:var(--font-body); font-size:var(--text-xs); }
+.customize-options { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:var(--space-2); }
+.customize-option.badge-medallion { width:auto; height:102px; min-width:0; border-radius:var(--radius-md); padding:8px 5px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; overflow:hidden; background:var(--color-surface-soft); color:var(--color-text); box-shadow:none; border:2px solid transparent; }
+.customize-option.badge-medallion.selectable:hover { transform:translateY(-2px); border-color:var(--color-mint); }
+.customize-option.badge-medallion.selected { border-color:var(--color-pink); background:color-mix(in srgb,var(--color-pink) 11%,var(--color-card)); box-shadow:0 0 0 2px color-mix(in srgb,var(--color-pink) 28%,transparent); }
+.customize-option-visual { position:relative; min-height:42px; display:grid; place-items:center; font-size:31px; line-height:1; }
+.customize-option-label { width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:750; text-align:center; }
+.customize-option small { font-size:9px; color:var(--color-text-muted); }
+.customize-option.locked { filter:none; opacity:.58; }
+.customize-option .block-avatar-compact { left:1px; top:-4px; }
+.decor-options { grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); }
+.decor-options .decor-swatch { width:100%; height:70px; border-radius:var(--radius-md); }
+.customize-back { max-width:520px; margin:var(--space-5) auto 0; display:block; }
+
+@media (max-width: 800px) {
+  .customize-heading { align-items:flex-start; }
+  .customize-layout { grid-template-columns:1fr; }
+  .customize-preview { position:relative; top:auto; min-height:340px; }
+  .customize-preview-stage { min-height:190px; transform:scale(1.3); }
+  .customize-options { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+
+@media (max-width: 430px) {
+  .customize-heading { display:block; }
+  .customize-heading .coins-balance { display:inline-block; }
+  .customize-category { padding:var(--space-3); }
+  .customize-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .avatar-companion { right:-34px; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .customize-category { background:var(--color-card); border-color:var(--color-border); }
+  .customize-option.badge-medallion { background:var(--color-surface-soft); color:var(--color-text); }
+  .customize-option.badge-medallion.selected { background:#3c2742; }
+  .customize-category h2 small { background:var(--color-surface-raised); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-companion { animation:none; }
+}

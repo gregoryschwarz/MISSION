@@ -1,7 +1,16 @@
 import { doc, setDoc, getDoc, getDocs, getDocsFromServer, addDoc, updateDoc, collection, query, where, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db } from '../shared/firebaseConfig.js';
 import { DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
-import { DEFAULT_CHARACTER, DEFAULT_HAT, DEFAULT_CAPE, DEFAULT_DECOR } from '../shared/avatarCustomization.js';
+import {
+  DEFAULT_CHARACTER,
+  DEFAULT_HAT,
+  DEFAULT_CAPE,
+  DEFAULT_DECOR,
+  DEFAULT_HAIRSTYLE,
+  DEFAULT_OUTFIT,
+  DEFAULT_COMPANION,
+  DEFAULT_COMPANION_ACCESSORY,
+} from '../shared/avatarCustomization.js';
 import { spendCoins, refundCoins } from '../shared/progression.js';
 
 // --- Compte parent (une famille = un parent Google, peut avoir plusieurs enfants) ---
@@ -89,6 +98,10 @@ export async function createChild(familyId, { childName }) {
     selectedHat: DEFAULT_HAT,
     selectedCape: DEFAULT_CAPE,
     selectedDecor: DEFAULT_DECOR,
+    selectedHairstyle: DEFAULT_HAIRSTYLE,
+    selectedOutfit: DEFAULT_OUTFIT,
+    selectedCompanion: DEFAULT_COMPANION,
+    selectedCompanionAccessory: DEFAULT_COMPANION_ACCESSORY,
     ownedCharacterIds: [],
     focusType: null,
     weeklyGoalTarget: 0,
