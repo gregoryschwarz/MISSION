@@ -80,6 +80,16 @@ function answerLabel(question, choice) {
   return choice;
 }
 
+function missionProgressHtml(index, total) {
+  const current = index + 1;
+  const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+  return `
+    <div class="mission-progress" role="progressbar" aria-label="Progression de la mission" aria-valuenow="${current}" aria-valuemin="1" aria-valuemax="${total}">
+      <div class="mission-progress-label"><span>Mission en cours</span><strong>${current} / ${total}</strong></div>
+      <div class="mission-progress-track"><span style="width:${percent}%"></span></div>
+    </div>`;
+}
+
 export function renderPairing(root, { onSubmit, error }) {
   root.innerHTML = `
     <div class="screen pairing-screen">
@@ -390,24 +400,28 @@ export function renderQuestion(root, { question, index, total, onAnswer, feedbac
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
-      <div class="progress">Question ${index + 1} / ${total}</div>
+      ${missionProgressHtml(index, total)}
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
-      <h2>${question.prompt}</h2>
-      ${visualDisplayHtml(question)}
-      ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
-      ${hasOptions
-        ? `<div class="options">
-            ${question.options
-              .map((choice) => {
-                const label = answerLabel(question, choice);
-                return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
-              })
-              .join('')}
-          </div>`
-        : `<form id="answer-form">
-            <input id="answer-input" type="${question.type === 'monnaie' ? 'text' : 'number'}" inputmode="${question.type === 'monnaie' ? 'decimal' : 'numeric'}" ${question.type === 'monnaie' ? 'placeholder="0,00 €" aria-label="Réponse en euros"' : ''} required />
-            <button type="submit" class="big-button">Valider</button>
-          </form>`}
+      <section class="mission-card">
+        <h2>${question.prompt}</h2>
+        ${visualDisplayHtml(question)}
+        ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
+        ${hasOptions
+          ? `<div class="options mission-options">
+              ${question.options
+                .map((choice) => {
+                  const label = answerLabel(question, choice);
+                  return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
+                })
+                .join('')}
+            </div>`
+          : `<form id="answer-form" class="answer-form">
+              <label class="answer-label" for="answer-input">Ta réponse</label>
+              <input id="answer-input" type="${question.type === 'monnaie' ? 'text' : 'number'}" inputmode="${question.type === 'monnaie' ? 'decimal' : 'numeric'}" placeholder="${question.type === 'monnaie' ? '0,00 €' : 'Écris ta réponse'}" ${question.type === 'monnaie' ? 'aria-describedby="money-answer-hint"' : ''} required />
+              ${question.type === 'monnaie' ? '<small id="money-answer-hint" class="answer-hint">Tu peux écrire 7 ou 7,00 €</small>' : ''}
+              <button type="submit" class="big-button">Valider ma réponse</button>
+            </form>`}
+      </section>
       ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
@@ -435,19 +449,21 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
   root.innerHTML = `
     <div class="screen mission-screen">
       <button id="help-button" class="help-button" aria-label="Aide">❓</button>
-      <div class="progress">Question ${index + 1} / ${total}</div>
+      ${missionProgressHtml(index, total)}
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
-      <h2>${question.prompt}</h2>
-      ${visualDisplayHtml(question)}
-      ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
-      <div class="options">
-        ${choices
-          .map((choice) => {
-            const label = answerLabel(question, choice);
-            return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
-          })
-          .join('')}
-      </div>
+      <section class="mission-card">
+        <h2>${question.prompt}</h2>
+        ${visualDisplayHtml(question)}
+        ${feedback ? `<p class="feedback ${feedback}">${feedback === 'correct' ? '🌟 Bravo !' : '🤔 Presque !'}</p>` : ''}
+        <div class="options mission-options">
+          ${choices
+            .map((choice) => {
+              const label = answerLabel(question, choice);
+              return `<button class="big-button answer-btn" data-value="${choice}">${label}</button>`;
+            })
+            .join('')}
+        </div>
+      </section>
       ${showHelp ? helpOverlayHtml(question.type, question) : ''}
     </div>
   `;
