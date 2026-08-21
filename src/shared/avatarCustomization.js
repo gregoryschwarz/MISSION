@@ -284,6 +284,30 @@ export function unlockedHats(badges, avatarLevel = 1) {
   return HATS.filter((h) => isUnlockedByBadge(h, badges, avatarLevel));
 }
 
+const BADGE_UNLOCK_HINTS = {
+  'streak-3': 'Série de 3 jours',
+  'streak-7': 'Série de 7 jours',
+  'streak-30': 'Série de 30 jours',
+  'perfect-1': '1 mission parfaite',
+  'perfect-10': '10 missions parfaites',
+  'perfect-50': '50 missions parfaites',
+};
+
+export function unlockHintForItem(item) {
+  if (item.packId) return 'Disponible dans un pack';
+  if (item.requiredLevel) return `Atteindre le niveau ${item.requiredLevel}`;
+  const badgeIds = item.requiresAnyOf ?? [];
+  if (!badgeIds.length) return 'Disponible';
+  if (badgeIds.length > 1 && badgeIds.every((id) => id.startsWith('mastery-'))) return 'Obtenir 1 badge Maîtrise';
+  const badgeId = badgeIds[0];
+  if (BADGE_UNLOCK_HINTS[badgeId]) return BADGE_UNLOCK_HINTS[badgeId];
+  if (badgeId.startsWith('mastery-')) {
+    const notion = badgeId.replace('mastery-', '').replaceAll('-', ' ');
+    return `Maîtriser ${notion.charAt(0).toUpperCase()}${notion.slice(1)}`;
+  }
+  return 'Obtenir un badge spécial';
+}
+
 export function unlockedCapes(badges, avatarLevel = 1) {
   return CAPES.filter((c) => isUnlockedByBadge(c, badges, avatarLevel));
 }
@@ -299,12 +323,12 @@ export function characterMedallionData(avatarLevel, ownedCharacterIds = []) {
 
 export function hatMedallionData(badges, avatarLevel = 1) {
   const unlockedIds = unlockedHats(badges, avatarLevel).map((h) => h.id);
-  return HATS.map((h) => ({ ...h, unlocked: unlockedIds.includes(h.id) }));
+  return HATS.map((h) => ({ ...h, unlocked: unlockedIds.includes(h.id), unlockHint: unlockHintForItem(h) }));
 }
 
 export function capeMedallionData(badges, avatarLevel = 1) {
   const unlockedIds = unlockedCapes(badges, avatarLevel).map((c) => c.id);
-  return CAPES.map((c) => ({ ...c, unlocked: unlockedIds.includes(c.id) }));
+  return CAPES.map((c) => ({ ...c, unlocked: unlockedIds.includes(c.id), unlockHint: unlockHintForItem(c) }));
 }
 
 export function decorMedallionData(avatarLevel, ownedPackIds = DEFAULT_OWNED_PACK_IDS) {

@@ -345,7 +345,8 @@ function customizeMedallionHtml(item, selectedId, coins = null) {
         <span class="medallion-cost">${item.cost}🪙</span><span class="customize-option-label">${label}</span>
       </button>`;
     }
-    return `<div class="customize-option badge-medallion locked" title="${label}"><span>🔒</span><span class="customize-option-label">${label}</span><small>${item.packId ? 'Dans un pack' : `Niveau ${item.requiredLevel ?? '?'}`}</small></div>`;
+    const unlockHint = item.unlockHint ?? (item.packId ? 'Disponible dans un pack' : item.requiredLevel ? `Atteindre le niveau ${item.requiredLevel}` : 'Objectif spécial');
+    return `<div class="customize-option badge-medallion locked" title="${label} — ${unlockHint}"><span>🔒</span><span class="customize-option-label">${label}</span><small>${unlockHint}</small></div>`;
   }
   const isSelected = item.id === selectedId;
   const content = item.skin ? blockAvatarHtml(item.id, 'none-hat', 'none-cape', true) : (item.emoji ?? '🚫');

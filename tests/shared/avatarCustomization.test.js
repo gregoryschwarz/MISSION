@@ -34,6 +34,7 @@ import {
   packIdsForSelectedItems,
   purchaseAvatarPack,
   configuredAvatarPacks,
+  unlockHintForItem,
   emojiForCharacter,
   emojiForHat,
   emojiForCape,
@@ -242,6 +243,17 @@ describe('Avatar V2 collections', () => {
     expect(visualForOutfit('unknown').id).toBe(DEFAULT_OUTFIT);
     expect(companionForId('unknown').id).toBe(DEFAULT_COMPANION);
     expect(companionAccessoryForId('unknown').id).toBe(DEFAULT_COMPANION_ACCESSORY);
+  });
+
+  it('explains every badge-based lock without an unknown level', () => {
+    expect(unlockHintForItem({ requiredLevel: 4 })).toBe('Atteindre le niveau 4');
+    const hats = hatMedallionData([]);
+    expect(hats.find((item) => item.id === 'crown').unlockHint).toBe('Série de 30 jours');
+    expect(hats.find((item) => item.id === 'top-hat').unlockHint).toBe('Obtenir 1 badge Maîtrise');
+    expect(hats.find((item) => item.id === 'wizard-hat').unlockHint).toBe('10 missions parfaites');
+    const capes = capeMedallionData([]);
+    expect(capes.find((item) => item.id === 'jetpack').unlockHint).toBe('Maîtriser Temps');
+    expect([...hats, ...capes].every((item) => !item.unlockHint.includes('?'))).toBe(true);
   });
 });
 
