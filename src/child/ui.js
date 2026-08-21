@@ -568,44 +568,81 @@ export function renderPairsRound(root, { round, feedback, showPauseReminder, onM
   draw();
 }
 
-export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, weeklyRewardText, onContinue }) {
+function resultNotionsHtml(breakdown) {
+  const attempted = Object.entries(breakdown ?? {})
+    .filter(([, stats]) => stats.total > 0)
+    .map(([type, stats]) => ({
+      type,
+      correct: stats.correct,
+      total: stats.total,
+      percent: Math.round((stats.correct / stats.total) * 100),
+    }));
+  const strong = attempted.filter((item) => item.percent >= 75);
+  const toReview = attempted.filter((item) => item.percent < 75);
+  const chips = (items, className) => items.length
+    ? items.map((item) => `<li class="result-notion ${className}">${emojiForType(item.type)} <span>${escapeHtml(item.type.replaceAll('-', ' '))}</span><strong>${item.correct}/${item.total}</strong></li>`).join('')
+    : '<li class="result-notion-empty">Aucune pour cette mission</li>';
+  return `
+    <div class="result-notion-group">
+      <h3>✅ Bien réussi</h3>
+      <ul>${chips(strong, 'result-notion-strong')}</ul>
+    </div>
+    <div class="result-notion-group">
+      <h3>🎯 À retravailler</h3>
+      <ul>${chips(toReview, 'result-notion-review')}</ul>
+    </div>`;
+}
+
+export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, weeklyRewardText, breakdown = {}, incorrectQuestions = [], onRetryMistakes = null, onContinue }) {
   const earnedBadgesData = newBadges.map((id) => BADGES.find((b) => b.id === id)).filter(Boolean);
+  const scorePercent = questionsTotal ? Math.round((correctCount / questionsTotal) * 100) : 0;
+  const appreciation = scorePercent >= 90
+    ? 'Excellent travail !'
+    : scorePercent >= 70
+      ? 'Très belle mission !'
+      : scorePercent >= 50
+        ? 'Tu progresses bien !'
+        : 'Continue, tu vas y arriver !';
   root.innerHTML = `
     <div class="screen results-screen">
-      <div class="results-medal">${leveledUp ? '🏆' : '🎉'}</div>
-      <h1>Mission terminée !</h1>
-      <div class="confetti">
-        <span style="left:10%">🎉</span>
-        <span style="left:30%">✨</span>
-        <span style="left:50%">🎊</span>
-        <span style="left:70%">✨</span>
-        <span style="left:90%">🎉</span>
+      <section class="results-hero">
+        <div class="results-medal">${leveledUp ? '🏆' : scorePercent === 100 ? '💯' : '🎉'}</div>
+        <div>
+          <p class="results-kicker">Mission terminée</p>
+          <h1>${appreciation}</h1>
+          <p>${correctCount} bonne${correctCount > 1 ? 's' : ''} réponse${correctCount > 1 ? 's' : ''} sur ${questionsTotal}</p>
+        </div>
+        <div class="score-ring" style="--score:${scorePercent * 3.6}deg" role="img" aria-label="Score ${scorePercent} pour cent">
+          <strong>${scorePercent}%</strong>
+        </div>
+      </section>
+      <div class="results-grid">
+        <section class="results-panel results-notions">
+          <h2>Mon bilan</h2>
+          ${resultNotionsHtml(breakdown)}
+        </section>
+        <section class="results-panel results-rewards">
+          <h2>Mes gains</h2>
+          <div class="results-gains">
+            <span class="result-gain gain-pop" style="animation-delay:0.1s">✨ <strong>+${gainedXp}</strong><small>XP</small></span>
+            <span class="result-gain gain-pop" style="animation-delay:0.25s">🪙 <strong>+${gainedCoins}</strong><small>pièces</small></span>
+          </div>
+          ${leveledUp ? '<p class="result-event">⭐ Niveau supérieur débloqué !</p>' : ''}
+          ${justCompletedDailyChallenge ? '<p class="result-event">🔥 Défi du jour relevé ! Bonus obtenu.</p>' : ''}
+          ${justCompletedWeeklyGoal ? `<div class="weekly-bonus-celebration"><div>🎊 🎁 🎊</div><h2>SUPER BONUS DÉBLOQUÉ !</h2><strong>${escapeHtml(weeklyRewardText ?? 'Ta récompense de la semaine')}</strong></div>` : ''}
+          ${earnedBadgesData.length
+            ? `<p class="badge-earned">🏅 Nouveau badge !</p><div class="badges-row">${earnedBadgesData.map((b, i) => `<div class="badge-medallion earned badge-pop" style="background: linear-gradient(135deg, ${b.gradient[0]}, ${b.gradient[1]});animation-delay:${0.4 + i * 0.15}s" title="${b.label}">${b.emoji}</div>`).join('')}</div>`
+            : ''}
+        </section>
       </div>
-      <p>${correctCount} / ${questionsTotal} bonnes réponses</p>
-      <div class="results-gains">
-        <span class="stat-pill stat-pill-light gain-pop" style="animation-delay:0.1s">✨ +${gainedXp} XP</span>
-        ${gainedCoins ? `<span class="stat-pill stat-pill-light gain-pop" style="animation-delay:0.25s">🪙 +${gainedCoins}</span>` : ''}
+      <div class="results-actions">
+        ${incorrectQuestions.length && onRetryMistakes ? `<button id="retry-mistakes" class="big-button result-retry">🔁 Refaire mes ${incorrectQuestions.length} erreur${incorrectQuestions.length > 1 ? 's' : ''}</button>` : ''}
+        <button id="continue" class="big-button">Retour à l'accueil</button>
       </div>
-      ${leveledUp ? '<p class="level-up-banner">⭐ Niveau supérieur débloqué !</p>' : ''}
-      ${justCompletedDailyChallenge ? '<p class="level-up">🔥 Défi du jour relevé ! Bonus +20 XP et +10 🪙</p>' : ''}
-      ${justCompletedWeeklyGoal ? `<div class="weekly-bonus-celebration"><div>🎊 🎁 🎊</div><h2>SUPER BONUS DÉBLOQUÉ !</h2><strong>${escapeHtml(weeklyRewardText ?? 'Ta récompense de la semaine')}</strong></div>` : ''}
-      ${
-        earnedBadgesData.length
-          ? `<p class="badge-earned">🏅 Nouveau badge !</p>
-             <div class="badges-row">
-               ${earnedBadgesData
-                 .map(
-                   (b, i) =>
-                     `<div class="badge-medallion earned badge-pop" style="background: linear-gradient(135deg, ${b.gradient[0]}, ${b.gradient[1]});animation-delay:${0.4 + i * 0.15}s" title="${b.label}">${b.emoji}</div>`
-                 )
-                 .join('')}
-             </div>`
-          : ''
-      }
-      <button id="continue" class="big-button">Retour à l'accueil</button>
     </div>
   `;
   root.querySelector('#continue').addEventListener('click', onContinue);
+  root.querySelector('#retry-mistakes')?.addEventListener('click', onRetryMistakes);
 }
 
 export function renderRewards(root, { coins, rewards, pendingRewardIds = [], onRequest, onBack, onNavigate }) {

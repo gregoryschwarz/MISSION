@@ -24,6 +24,9 @@ describe('session flow', () => {
     expect(session.correctCount).toBe(1);
     expect(session.breakdown.addition).toEqual({ correct: 1, total: 1 });
     expect(session.breakdown.multiplication).toEqual({ correct: 0, total: 1 });
+    expect(session.incorrectQuestions).toEqual([
+      expect.objectContaining({ type: 'multiplication', answer: 12, submittedAnswer: 99 }),
+    ]);
     expect(isSessionComplete(session)).toBe(true);
   });
 
@@ -49,6 +52,7 @@ describe('session flow', () => {
     expect(summary.questionsTotal).toBe(2);
     expect(summary.correctCount).toBe(2);
     expect(summary.durationSeconds).toBe(5);
+    expect(summary.incorrectQuestions).toEqual([]);
     expect(summary.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     vi.useRealTimers();
   });
@@ -92,6 +96,9 @@ describe('recordAnswer', () => {
     recordAnswer(session, { type: 'multiplication' }, false);
     expect(session.breakdown.multiplication).toEqual({ correct: 0, total: 1 });
     expect(session.correctCount).toBe(0);
+    expect(session.incorrectQuestions).toEqual([
+      { type: 'multiplication', submittedAnswer: null },
+    ]);
   });
 
   it('accumulates across multiple calls for the same type', () => {

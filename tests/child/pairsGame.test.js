@@ -51,6 +51,14 @@ describe('createPairsRound', () => {
     expect(round.calcTiles[0].items).toEqual(['1e', '50c']);
   });
 
+  it('keeps fixed answer options for later mistake practice', () => {
+    const questions = [
+      { type: 'comparaison', a: 2, b: 8, answer: '<', prompt: '2 ___ 8', options: ['>', '<'] },
+    ];
+    const round = createPairsRound(questions);
+    expect(round.calcTiles[0].options).toEqual(['>', '<']);
+  });
+
   it('carries a and b on a longueur calc tile', () => {
     const lengthQuestions = [
       { type: 'longueur', a: 12, b: 8, answer: '>', prompt: '12 cm ___ 8 cm', options: ['>', '<'] },

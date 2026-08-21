@@ -15,6 +15,7 @@ export function createPairsRound(questions) {
       b: q.b,
       hour12: q.hour12,
       minute: q.minute,
+      options: q.options,
       answer: q.answer,
     }))
   );

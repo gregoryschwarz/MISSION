@@ -314,9 +314,9 @@ async function showHome() {
   }
 }
 
-function startMissionWithQuestions(questions) {
-  missionMode = pickMissionMode(getLastMissionMode());
-  storeLastMissionMode(missionMode);
+function startMissionWithQuestions(questions, forcedMode = null) {
+  missionMode = forcedMode ?? pickMissionMode(getLastMissionMode());
+  if (!forcedMode) storeLastMissionMode(missionMode);
   session = createSession(questions);
   lastFeedback = null;
   answerReview = null;
@@ -449,7 +449,8 @@ async function handlePairsMatch(calcTileId, resultTileId) {
   const { isCorrect, firstAttempt } = attemptMatch(pairsRound, calcTileId, resultTileId);
   if (firstAttempt) {
     const calcTile = pairsRound.calcTiles.find((t) => t.id === calcTileId);
-    recordAnswer(session, calcTile, isCorrect);
+    const resultTile = pairsRound.resultTiles.find((t) => t.id === resultTileId);
+    recordAnswer(session, calcTile, isCorrect, resultTile?.answer ?? null);
   }
   lastFeedback = isCorrect ? 'correct' : 'incorrect';
   if (soundEnabled) {
@@ -521,6 +522,14 @@ async function finishMission() {
     justCompletedDailyChallenge: dailyChallenge.justCompletedDailyChallenge,
     justCompletedWeeklyGoal,
     weeklyRewardText: profileBefore.weeklyRewardText,
+    breakdown: summary.breakdown,
+    incorrectQuestions: summary.incorrectQuestions,
+    onRetryMistakes: summary.incorrectQuestions.length
+      ? () => startMissionWithQuestions(
+          summary.incorrectQuestions.map(({ submittedAnswer, ...question }) => question),
+          'qcm'
+        )
+      : null,
     onContinue: showHome,
   });
 }

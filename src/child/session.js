@@ -3,6 +3,7 @@ export function createSession(questions) {
     questions,
     index: 0,
     correctCount: 0,
+    incorrectQuestions: [],
     breakdown: {
       addition: { correct: 0, total: 0 },
       soustraction: { correct: 0, total: 0 },
@@ -29,12 +30,14 @@ export function isSessionComplete(session) {
   return session.index >= session.questions.length;
 }
 
-export function recordAnswer(session, question, isCorrect) {
+export function recordAnswer(session, question, isCorrect, submittedAnswer = null) {
   const breakdown = session.breakdown[question.type];
   breakdown.total += 1;
   if (isCorrect) {
     breakdown.correct += 1;
     session.correctCount += 1;
+  } else {
+    session.incorrectQuestions.push({ ...question, submittedAnswer });
   }
   return isCorrect;
 }
@@ -45,7 +48,7 @@ export function submitAnswer(session, answer) {
   }
   const question = currentQuestion(session);
   const isCorrect = answer === question.answer;
-  recordAnswer(session, question, isCorrect);
+  recordAnswer(session, question, isCorrect, answer);
   session.index += 1;
   return isCorrect;
 }
@@ -58,5 +61,6 @@ export function finishSession(session) {
     correctCount: session.correctCount,
     durationSeconds,
     breakdown: session.breakdown,
+    incorrectQuestions: session.incorrectQuestions,
   };
 }
