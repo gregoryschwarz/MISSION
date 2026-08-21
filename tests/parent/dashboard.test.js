@@ -328,6 +328,89 @@ describe('computeWeeklyWatch weekly data threshold', () => {
   });
 });
 
+describe('computeWeeklyWatch weekly trend', () => {
+  it('reports an upward trend against the previous week', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-14',
+          breakdown: {
+            addition: { correct: 5, total: 10 },
+          },
+        },
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 8, total: 10 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.previousWeekPercent).toBe(50);
+    expect(result.currentWeekPercent).toBe(80);
+    expect(result.trendDelta).toBe(30);
+    expect(result.trendDirection).toBe('up');
+    expect(result.trendLabel).toBe('\u2197 +30 pts');
+  });
+
+  it('reports a downward trend against the previous week', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-14',
+          breakdown: {
+            addition: { correct: 9, total: 10 },
+          },
+        },
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 6, total: 10 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.previousWeekPercent).toBe(90);
+    expect(result.currentWeekPercent).toBe(60);
+    expect(result.trendDelta).toBe(-30);
+    expect(result.trendDirection).toBe('down');
+    expect(result.trendLabel).toBe('\u2198 -30 pts');
+  });
+
+  it('does not invent a trend without enough data in both weeks', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-14',
+          breakdown: {
+            addition: { correct: 1, total: 2 },
+          },
+        },
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 3, total: 4 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.previousWeekPercent).toBe(null);
+    expect(result.currentWeekPercent).toBe(75);
+    expect(result.trendDelta).toBe(null);
+    expect(result.trendDirection).toBe('unknown');
+    expect(result.trendLabel).toBe('Pas assez de recul');
+  });
+});
+
 describe('dailyActivityLast7Days', () => {
   const referenceDate = new Date('2026-08-11T00:00:00Z');
 

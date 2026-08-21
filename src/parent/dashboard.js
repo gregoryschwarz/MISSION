@@ -186,6 +186,64 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
   const hasEnoughWeeklyData = weeklyAttempts >= 3;
   const weeklyAttemptsNeeded = Math.max(0, 3 - weeklyAttempts);
 
+  const previousWeekDate = new Date(ref.getTime() - 7 * DAY_MS);
+  const previousWeek = weekStartKey(
+    previousWeekDate.toISOString().slice(0, 10)
+  );
+
+  const previousWeekSessions = sessions.filter(
+    (session) => session.date && weekStartKey(session.date) === previousWeek
+  );
+
+  function successPercentForSessions(targetSessions) {
+    const totals = targetSessions.reduce(
+      (acc, session) => {
+        Object.values(session.breakdown ?? {}).forEach((entry) => {
+          acc.correct += entry.correct ?? 0;
+          acc.total += entry.total ?? 0;
+        });
+        return acc;
+      },
+      { correct: 0, total: 0 }
+    );
+
+    return {
+      attempts: totals.total,
+      percent:
+        totals.total >= 3
+          ? Math.round((totals.correct / totals.total) * 100)
+          : null,
+    };
+  }
+
+  const currentWeekStats = successPercentForSessions(weekSessions);
+  const previousWeekStats = successPercentForSessions(previousWeekSessions);
+
+  const currentWeekPercent = currentWeekStats.percent;
+  const previousWeekPercent = previousWeekStats.percent;
+
+  const trendDelta =
+    currentWeekPercent !== null && previousWeekPercent !== null
+      ? currentWeekPercent - previousWeekPercent
+      : null;
+
+  let trendDirection = 'unknown';
+  let trendLabel = 'Pas assez de recul';
+
+  if (trendDelta !== null) {
+    if (trendDelta >= 3) {
+      trendDirection = 'up';
+      trendLabel = `\u2197 +${trendDelta} pts`;
+    } else if (trendDelta <= -3) {
+      trendDirection = 'down';
+      trendLabel = `\u2198 ${trendDelta} pts`;
+    } else {
+      trendDirection = 'stable';
+      trendLabel = '\u2192 stable';
+    }
+  }
+
+
   let status = 'ok';
   let statusLabel = 'RAS';
 
@@ -217,6 +275,11 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
     weeklyAttempts,
     weeklyAttemptsNeeded,
     hasEnoughWeeklyData,
+    currentWeekPercent,
+    previousWeekPercent,
+    trendDelta,
+    trendDirection,
+    trendLabel,
     status,
     statusLabel,
   };
@@ -533,6 +596,10 @@ function weeklyWatchHtml(watch) {
         <div class="weekly-watch-item">
           <span>Priorité parent</span>
           <strong>${escapeHtml(focusLabel)}</strong>
+        </div>
+        <div class="weekly-watch-item">
+          <span>Tendance vs semaine precedente</span>
+          <strong>${escapeHtml(watch.trendLabel)}</strong>
         </div>
       </div>
 
