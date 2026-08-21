@@ -434,8 +434,8 @@ button:active {
 
 
 .weekly-watch-focus-button {
-  width: 100%;
-  margin-top: var(--space-3);
+  align-self: flex-start;
+  margin-top: var(--space-2);
   padding: 10px 14px;
   border: 0;
   border-radius: var(--radius-md);

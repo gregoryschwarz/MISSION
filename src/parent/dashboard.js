@@ -267,6 +267,10 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
 
   let recommendationTone = 'neutral';
   let recommendationLabel = '';
+  const recommendationFocusType =
+    hasEnoughWeeklyData && weakType && focusType !== weakType.type
+      ? weakType.type
+      : null;
 
   if (!hasEnoughWeeklyData) {
     recommendationTone = 'neutral';
@@ -323,6 +327,7 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
     trendLabel,
     recommendationTone,
     recommendationLabel,
+    recommendationFocusType,
     status,
     statusLabel,
   };
@@ -646,19 +651,18 @@ function weeklyWatchHtml(watch) {
         </div>
       </div>
 
-      ${
-        watch.weakType && watch.focusType !== watch.weakType.type
-          ? `<button
-               type="button"
-               class="weekly-watch-focus-button"
-               data-focus-type="${escapeHtml(watch.weakType.type)}"
-             >Cibler ${escapeHtml(capitalize(watch.weakType.type))}</button>`
-          : ''
-      }
-
       <div class="weekly-watch-recommendation weekly-watch-recommendation-${watch.recommendationTone}">
         <span class="weekly-watch-recommendation-title">Conseil parent</span>
         <strong>${escapeHtml(watch.recommendationLabel)}</strong>
+        ${
+          watch.recommendationFocusType
+            ? `<button
+                 type="button"
+                 class="weekly-watch-focus-button"
+                 data-focus-type="${escapeHtml(watch.recommendationFocusType)}"
+               >Cibler ${escapeHtml(capitalize(watch.recommendationFocusType))}</button>`
+            : ''
+        }
       </div>
     </section>
   `;

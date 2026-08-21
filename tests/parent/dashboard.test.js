@@ -436,6 +436,7 @@ describe('computeWeeklyWatch parent recommendation', () => {
     expect(result.trendDirection).toBe('up');
     expect(result.recommendationTone).toBe('positive');
     expect(result.recommendationLabel).toContain('Progr\u00e8s en cours');
+    expect(result.recommendationFocusType).toBe('monnaie');
   });
 
   it('recommends priority targeting when a weak notion is declining', () => {
@@ -481,6 +482,45 @@ describe('computeWeeklyWatch parent recommendation', () => {
     expect(result.hasEnoughWeeklyData).toBe(false);
     expect(result.recommendationTone).toBe('neutral');
     expect(result.recommendationLabel).toContain('conclusion fiable');
+    expect(result.recommendationFocusType).toBe(null);
+  });
+
+  it('does not offer the action when the weak notion is already targeted', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 1, total: 5 },
+          },
+        },
+      ],
+      { focusType: 'addition' },
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.hasEnoughWeeklyData).toBe(true);
+    expect(result.weakType.type).toBe('addition');
+    expect(result.recommendationFocusType).toBe(null);
+  });
+
+  it('does not offer the action when no weak notion is detected', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 5, total: 5 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.hasEnoughWeeklyData).toBe(true);
+    expect(result.weakType).toBe(null);
+    expect(result.recommendationFocusType).toBe(null);
   });
 });
 
