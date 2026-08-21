@@ -265,6 +265,47 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
     statusLabel = '\u00c0 encourager';
   }
 
+  let recommendationTone = 'neutral';
+  let recommendationLabel = '';
+
+  if (!hasEnoughWeeklyData) {
+    recommendationTone = 'neutral';
+    recommendationLabel =
+      `Encore ${weeklyAttemptsNeeded} r\u00e9ponse${weeklyAttemptsNeeded > 1 ? 's' : ''} avant de tirer une conclusion fiable.`;
+  } else if (weakType && trendDirection === 'down') {
+    recommendationTone = 'attention';
+    recommendationLabel =
+      `${capitalize(weakType.type)} baisse encore cette semaine : \u00e0 cibler en priorit\u00e9.`;
+  } else if (weakType && trendDirection === 'up') {
+    recommendationTone = 'positive';
+    recommendationLabel =
+      `Progr\u00e8s en cours sur ${capitalize(weakType.type)} : continuer sur cette lanc\u00e9e.`;
+  } else if (weakType && trendDirection === 'stable') {
+    recommendationTone = 'warning';
+    recommendationLabel =
+      `${capitalize(weakType.type)} reste fragile : maintenir un entra\u00eenement r\u00e9gulier.`;
+  } else if (weakType) {
+    recommendationTone = 'warning';
+    recommendationLabel =
+      `Continuer \u00e0 surveiller ${capitalize(weakType.type)} pendant quelques missions.`;
+  } else if (trendDirection === 'up') {
+    recommendationTone = 'positive';
+    recommendationLabel =
+      'Bonne dynamique cette semaine : continuer sur ce rythme.';
+  } else if (trendDirection === 'down') {
+    recommendationTone = 'warning';
+    recommendationLabel =
+      'Les r\u00e9sultats baissent cette semaine : proposer une courte mission cibl\u00e9e.';
+  } else if (trendDirection === 'stable') {
+    recommendationTone = 'positive';
+    recommendationLabel =
+      'Semaine stable : poursuivre le rythme actuel.';
+  } else {
+    recommendationTone = 'neutral';
+    recommendationLabel =
+      'Continuer quelques missions pour affiner le suivi.';
+  }
+
   return {
     lastActivityLabel,
     daysSinceLastActivity,
@@ -280,6 +321,8 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
     trendDelta,
     trendDirection,
     trendLabel,
+    recommendationTone,
+    recommendationLabel,
     status,
     statusLabel,
   };
@@ -612,6 +655,11 @@ function weeklyWatchHtml(watch) {
              >Cibler ${escapeHtml(capitalize(watch.weakType.type))}</button>`
           : ''
       }
+
+      <div class="weekly-watch-recommendation weekly-watch-recommendation-${watch.recommendationTone}">
+        <span class="weekly-watch-recommendation-title">Conseil parent</span>
+        <strong>${escapeHtml(watch.recommendationLabel)}</strong>
+      </div>
     </section>
   `;
 }

@@ -467,3 +467,36 @@ button:active {
   font-weight: 700;
   opacity: 0.78;
 }
+
+
+.weekly-watch-recommendation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.weekly-watch-recommendation-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.weekly-watch-recommendation-positive {
+  border-left: 4px solid #31b879;
+}
+
+.weekly-watch-recommendation-warning {
+  border-left: 4px solid #e9ad32;
+}
+
+.weekly-watch-recommendation-attention {
+  border-left: 4px solid #df6b57;
+}
+
+.weekly-watch-recommendation-neutral {
+  border-left: 4px solid #9b8ec4;
+}

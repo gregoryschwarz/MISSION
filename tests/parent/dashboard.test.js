@@ -411,6 +411,79 @@ describe('computeWeeklyWatch weekly trend', () => {
   });
 });
 
+describe('computeWeeklyWatch parent recommendation', () => {
+  it('recommends continuing when a weak notion is improving', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-14',
+          breakdown: {
+            monnaie: { correct: 1, total: 5 },
+          },
+        },
+        {
+          date: '2026-08-21',
+          breakdown: {
+            monnaie: { correct: 3, total: 5 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.weakType.type).toBe('monnaie');
+    expect(result.trendDirection).toBe('up');
+    expect(result.recommendationTone).toBe('positive');
+    expect(result.recommendationLabel).toContain('Progr\u00e8s en cours');
+  });
+
+  it('recommends priority targeting when a weak notion is declining', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-14',
+          breakdown: {
+            soustraction: { correct: 4, total: 5 },
+          },
+        },
+        {
+          date: '2026-08-21',
+          breakdown: {
+            soustraction: { correct: 1, total: 5 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.weakType.type).toBe('soustraction');
+    expect(result.trendDirection).toBe('down');
+    expect(result.recommendationTone).toBe('attention');
+    expect(result.recommendationLabel).toContain('priorit\u00e9');
+  });
+
+  it('does not overinterpret a week with insufficient data', () => {
+    const result = computeWeeklyWatch(
+      [
+        {
+          date: '2026-08-21',
+          breakdown: {
+            addition: { correct: 1, total: 2 },
+          },
+        },
+      ],
+      {},
+      { referenceDate: new Date('2026-08-21T12:00:00Z') }
+    );
+
+    expect(result.hasEnoughWeeklyData).toBe(false);
+    expect(result.recommendationTone).toBe('neutral');
+    expect(result.recommendationLabel).toContain('conclusion fiable');
+  });
+});
+
 describe('dailyActivityLast7Days', () => {
   const referenceDate = new Date('2026-08-11T00:00:00Z');
 
