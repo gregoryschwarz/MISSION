@@ -1,4 +1,5 @@
 import { randomInt, shuffle } from './random.js';
+import { generateUniqueQuestions } from './uniqueQuestions.js';
 
 export const REGULAR_WORDS = [
   { singular: 'un chat', plural: 'des chats' },
@@ -62,11 +63,10 @@ const FRENCH_GENERATORS = {
 export const FRENCH_TYPES = Object.keys(FRENCH_GENERATORS);
 
 export function generateFrenchMission(count = 10, difficultyLevels = {}) {
-  const questions = [];
-  for (let i = 0; i < count; i++) {
+  const questions = generateUniqueQuestions(count, (i) => {
     const type = FRENCH_TYPES[i % FRENCH_TYPES.length];
     const level = difficultyLevels[type] ?? 1;
-    questions.push(FRENCH_GENERATORS[type](level));
-  }
+    return FRENCH_GENERATORS[type](level);
+  });
   return shuffle(questions);
 }

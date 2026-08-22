@@ -11,6 +11,12 @@ const BASE_SUBJECT_QUESTION_BANKS = {
       q('🇬🇧 Que veut dire « blue » ?', 'bleu', 'rouge', 'vert'),
       q('🇬🇧 Quel mot signifie « trois » ?', 'three', 'tree', 'thirteen'),
       q('🇬🇧 Que veut dire « hello » ?', 'bonjour', 'au revoir', 'merci'),
+      q('🇬🇧 Que veut dire « dog » ?', 'chien', 'chat', 'oiseau'),
+      q('🇬🇧 Que veut dire « red » ?', 'rouge', 'bleu', 'jaune'),
+      q('🇬🇧 Quel mot signifie « merci » ?', 'thank you', 'hello', 'goodbye'),
+      q('🇬🇧 Que veut dire « school » ?', 'école', 'maison', 'jardin'),
+      q('🇬🇧 Quel mot signifie « soleil » ?', 'sun', 'moon', 'star'),
+      q('🇬🇧 Que veut dire « happy » ?', 'heureux', 'fatigué', 'triste'),
     ],
     2: [
       q('🇬🇧 Que veut dire « classroom » ?', 'salle de classe', 'cour de récréation', 'cantine'),
@@ -31,6 +37,12 @@ const BASE_SUBJECT_QUESTION_BANKS = {
       q('🐼 Quel animal mange principalement du bambou ?', 'panda', 'girafe', 'dauphin'),
       q('🌈 Combien de couleurs compte traditionnellement un arc-en-ciel ?', '7', '5', '9'),
       q('📚 Où peut-on emprunter des livres ?', 'bibliothèque', 'pharmacie', 'gare'),
+      q('☀️ Le Soleil est…', 'une étoile', 'une planète', 'un satellite'),
+      q('📅 Combien de jours compte une semaine ?', '7', '5', '10'),
+      q('🐝 Que fabriquent les abeilles ?', 'du miel', 'du lait', 'du pain'),
+      q('🗼 Dans quelle ville se trouve la tour Eiffel ?', 'Paris', 'Londres', 'Rome'),
+      q('🍂 Combien y a-t-il de saisons ?', '4', '3', '5'),
+      q('🌎 La Terre est…', 'une planète', 'une étoile', 'une comète'),
     ],
     2: [
       q('🌍 Quel est le plus grand océan ?', 'Pacifique', 'Atlantique', 'Arctique'),
@@ -51,6 +63,12 @@ const BASE_SUBJECT_QUESTION_BANKS = {
       q('🌱 De quoi une plante a-t-elle besoin pour pousser ?', 'eau et lumière', 'plastique et sable', 'sel et peinture'),
       q('🧊 Quel est l’état de l’eau dans un glaçon ?', 'solide', 'liquide', 'gazeux'),
       q('🌍 Sur quelle planète vivons-nous ?', 'la Terre', 'Mars', 'Jupiter'),
+      q('👂 Avec quel organe entend-on ?', 'les oreilles', 'les yeux', 'les mains'),
+      q('🐟 Où vit un poisson ?', 'dans l’eau', 'dans le sable', 'dans un arbre'),
+      q('🌙 La Lune est le satellite de…', 'la Terre', 'Mars', 'Vénus'),
+      q('🦜 De quoi le corps des oiseaux est-il couvert ?', 'de plumes', 'de poils', 'd’écailles'),
+      q('💓 Quel organe bat dans notre poitrine ?', 'le cœur', 'le foie', 'l’estomac'),
+      q('💡 De quoi a-t-on besoin pour former une ombre ?', 'de lumière', 'de musique', 'de vent'),
     ],
     2: [
       q('🫁 Quel organe nous aide à respirer ?', 'les poumons', 'l’estomac', 'les reins'),
@@ -71,6 +89,12 @@ const BASE_SUBJECT_QUESTION_BANKS = {
       q('🏰 Qui vivait souvent dans un château fort ?', 'un seigneur', 'un astronaute', 'un pharaon'),
       q('🌊 Comment appelle-t-on une grande étendue d’eau salée ?', 'un océan', 'une forêt', 'une montagne'),
       q('🧭 Sur une carte classique, où se trouve le nord ?', 'en haut', 'en bas', 'à droite'),
+      q('🌐 Quel objet représente la Terre en boule ?', 'un globe', 'une règle', 'une boussole'),
+      q('🏝️ Une terre entourée d’eau est…', 'une île', 'une vallée', 'un désert'),
+      q('🏘️ Un petit groupe de maisons à la campagne est…', 'un village', 'un océan', 'un continent'),
+      q('🚩 Que représente souvent un drapeau ?', 'un pays', 'une saison', 'une rivière'),
+      q('🦕 Quelle période vient avant l’Histoire écrite ?', 'la Préhistoire', 'le Moyen Âge', 'les Temps modernes'),
+      q('🏞️ Un cours d’eau qui se jette dans la mer est…', 'un fleuve', 'une montagne', 'une route'),
     ],
     2: [
       q('⚔️ Quelle période vient après l’Antiquité ?', 'le Moyen Âge', 'la Préhistoire', 'les Temps modernes'),
@@ -91,6 +115,12 @@ const BASE_SUBJECT_QUESTION_BANKS = {
       q('🔎 Trouve l’intrus : chat, chien, pomme.', 'pomme', 'chat', 'chien'),
       q('🧠 Si Léa est plus grande que Zoé, qui est la plus petite ?', 'Zoé', 'Léa', 'elles ont la même taille'),
       q('🔷 Quelle forme vient ensuite : ○ □ ○ □ …', '○', '□', '△'),
+      q('🧩 Complète la suite : 1, 3, 5, …', '7', '6', '8'),
+      q('🔎 Trouve l’intrus : rouge, bleu, banane.', 'banane', 'rouge', 'bleu'),
+      q('🧠 Si Tom est avant Lina, qui est derrière ?', 'Lina', 'Tom', 'personne'),
+      q('🔢 Quel nombre vient juste avant 10 ?', '9', '8', '11'),
+      q('🔷 Complète : △ ○ △ ○ …', '△', '○', '□'),
+      q('🧩 Deux paires de chaussettes font combien de chaussettes ?', '4', '2', '6'),
     ],
     2: [
       q('🧩 Complète : 3, 6, 9, 12, …', '15', '14', '18'),
@@ -111,6 +141,12 @@ const BASE_SUBJECT_QUESTION_BANKS = {
       q('✍️ Complète : une petite ___ rouge.', 'fleur', 'fleure', 'fleurs'),
       q('✍️ Quel mot commence par une majuscule ?', 'Paris', 'pARIS', 'paris'),
       q('✍️ Complète : Les chats sont ___.', 'noirs', 'noir', 'noires'),
+      q('✍️ Quel mot est bien écrit ?', 'école', 'écolle', 'ékole'),
+      q('✍️ Complète : un ___ bleu.', 'ballon', 'ballons', 'balon'),
+      q('✍️ Quel mot se termine par la lettre e ?', 'table', 'chat', 'vélo'),
+      q('✍️ Complète : La fille est ___.', 'grande', 'grand', 'grands'),
+      q('✍️ Quel mot est bien écrit ?', 'jardin', 'jardain', 'jarddin'),
+      q('✍️ Choisis la phrase correcte.', 'Le chien court.', 'le chien court.', 'Le chien cour.'),
     ],
     2: [
       q('✍️ Complète : Il ___ un vélo.', 'a', 'à', 'as'),
@@ -131,6 +167,12 @@ const BASE_SUBJECT_QUESTION_BANKS = {
       q('🎵 Quel instrument possède des touches noires et blanches ?', 'piano', 'violon', 'tambour'),
       q('🖌️ Avec quoi un peintre peut-il appliquer la peinture ?', 'pinceau', 'marteau', 'sifflet'),
       q('🥁 Quel instrument se frappe avec des baguettes ?', 'tambour', 'flûte', 'harpe'),
+      q('🎨 Rouge + jaune donnent quelle couleur ?', 'orange', 'vert', 'violet'),
+      q('🎵 Quel instrument possède des cordes et un archet ?', 'violon', 'piano', 'trompette'),
+      q('🖍️ Avec quoi peut-on colorier un dessin ?', 'des crayons', 'une fourchette', 'un marteau'),
+      q('🎤 Quel objet utilise souvent un chanteur ?', 'un micro', 'une règle', 'une boussole'),
+      q('🩰 Quel art consiste à danser sur une musique ?', 'la danse', 'la sculpture', 'la photographie'),
+      q('⚫ Quelle couleur obtient-on en mélangeant beaucoup de couleurs sombres ?', 'noir', 'blanc', 'jaune'),
     ],
     2: [
       q('🎨 Rouge + bleu donnent quelle couleur ?', 'violet', 'vert', 'orange'),
@@ -160,7 +202,7 @@ function quotedEnglish(prompt, fallback) {
 }
 
 function expandQuestion(subjectId, source, sourceIndex, format, level) {
-  const common = { type: subjectId, level, format };
+  const common = { type: subjectId, level, format, sourceId: `${subjectId}-${level}-${sourceIndex}` };
   const standardChoices = [source.answer, ...source.distractors];
   const audioText = subjectId === 'anglais' ? quotedEnglish(source.prompt, source.answer) : null;
   if (format === 'vrai-faux') {
@@ -220,12 +262,19 @@ export function generateSubjectQuestion(subjectId, level = 1) {
 export function generateSubjectMission(subjectId, count = 10, difficultyLevels = {}, { schoolLevel = 'CE2' } = {}) {
   if (!subjectForId(subjectId)) throw new Error(`Matière inconnue : ${subjectId}`);
   const level = difficultyForSchoolLevel(difficultyLevels[subjectId] ?? 1, schoolLevel);
-  const pool = shuffle([...SUBJECT_QUESTION_BANKS[subjectId][level]]);
+  const pool = shuffle(Array.from({ length: level }, (_, index) => SUBJECT_QUESTION_BANKS[subjectId][index + 1]).flat());
+  const groups = new Map();
+  pool.forEach((question) => {
+    if (!groups.has(question.sourceId)) groups.set(question.sourceId, []);
+    groups.get(question.sourceId).push(question);
+  });
+  const uniqueSources = shuffle([...groups.values()]);
   const questions = [];
   while (questions.length < count) {
-    const nextPool = questions.length ? shuffle([...SUBJECT_QUESTION_BANKS[subjectId][level]]) : pool;
-    for (const source of nextPool) {
+    const nextPool = questions.length ? shuffle(uniqueSources) : uniqueSources;
+    for (const variants of nextPool) {
       if (questions.length >= count) break;
+      const source = variants[randomInt(0, variants.length - 1)];
       questions.push(materializeQuestion(source));
     }
   }

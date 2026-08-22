@@ -4,6 +4,7 @@ import { shapeSides } from './shapes.js';
 import { COINS } from './money.js';
 import { formatTime } from './clock.js';
 import { wordProblemText } from './wordProblems.js';
+import { generateUniqueQuestions } from './uniqueQuestions.js';
 
 // Powers of ten (10, 100, ...) have only one nonzero digit worth 1: every
 // digit-respecting subtrahend is therefore either 0 or the number itself, so
@@ -196,7 +197,7 @@ export const QUESTION_TYPES = Object.keys(GENERATORS);
 
 export function generateSingleTypeMission(count, type, level = 1) {
   const generator = GENERATORS[type] ?? GENERATORS.addition;
-  return Array.from({ length: count }, () => generator(level));
+  return generateUniqueQuestions(count, () => generator(level));
 }
 
 const FOCUS_RATIO = 0.7;
@@ -206,11 +207,10 @@ export function generateMission(count = 10, difficultyLevels = DEFAULT_DIFFICULT
   const hasFocus = focusType && types.includes(focusType);
   const focusCount = hasFocus ? Math.round(count * FOCUS_RATIO) : 0;
   const otherTypes = hasFocus ? types.filter((t) => t !== focusType) : types;
-  const questions = [];
-  for (let i = 0; i < count; i++) {
+  const questions = generateUniqueQuestions(count, (i) => {
     const type = i < focusCount ? focusType : otherTypes[(i - focusCount) % otherTypes.length];
     const level = difficultyLevels[type] ?? 1;
-    questions.push(GENERATORS[type](level));
-  }
+    return GENERATORS[type](level);
+  });
   return shuffle(questions);
 }
