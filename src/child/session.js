@@ -1,23 +1,17 @@
-export function createSession(questions) {
+const CORE_BREAKDOWN_TYPES = [
+  'addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction',
+  'geometrie', 'monnaie', 'longueur', 'temps', 'probleme', 'accord-pluriel',
+];
+
+export function createSession(questions, subject = null) {
+  const breakdownTypes = [...new Set([...CORE_BREAKDOWN_TYPES, ...questions.map((question) => question.type)])];
   return {
     questions,
+    subject,
     index: 0,
     correctCount: 0,
     incorrectQuestions: [],
-    breakdown: {
-      addition: { correct: 0, total: 0 },
-      soustraction: { correct: 0, total: 0 },
-      multiplication: { correct: 0, total: 0 },
-      comparaison: { correct: 0, total: 0 },
-      division: { correct: 0, total: 0 },
-      fraction: { correct: 0, total: 0 },
-      geometrie: { correct: 0, total: 0 },
-      monnaie: { correct: 0, total: 0 },
-      longueur: { correct: 0, total: 0 },
-      temps: { correct: 0, total: 0 },
-      probleme: { correct: 0, total: 0 },
-      'accord-pluriel': { correct: 0, total: 0 },
-    },
+    breakdown: Object.fromEntries(breakdownTypes.map((type) => [type, { correct: 0, total: 0 }])),
     startedAt: Date.now(),
   };
 }
@@ -31,7 +25,7 @@ export function isSessionComplete(session) {
 }
 
 export function recordAnswer(session, question, isCorrect, submittedAnswer = null) {
-  const breakdown = session.breakdown[question.type];
+  const breakdown = session.breakdown[question.type] ?? (session.breakdown[question.type] = { correct: 0, total: 0 });
   breakdown.total += 1;
   if (isCorrect) {
     breakdown.correct += 1;
@@ -62,5 +56,6 @@ export function finishSession(session) {
     durationSeconds,
     breakdown: session.breakdown,
     incorrectQuestions: session.incorrectQuestions,
+    subject: session.subject,
   };
 }

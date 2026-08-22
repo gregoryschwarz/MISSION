@@ -15,6 +15,7 @@ import {
   configuredAvatarPacks,
 } from '../shared/avatarCustomization.js';
 import { spendCoins, refundCoins } from '../shared/progression.js';
+import { DEFAULT_ENABLED_SUBJECT_IDS, normalizeEnabledSubjects } from '../shared/subjects.js';
 
 // --- Compte parent (une famille = un parent Google, peut avoir plusieurs enfants) ---
 
@@ -114,6 +115,7 @@ export async function createChild(familyId, { childName }) {
     ownedPackIds: DEFAULT_OWNED_PACK_IDS,
     ownedCharacterIds: [],
     focusType: null,
+    enabledSubjects: DEFAULT_ENABLED_SUBJECT_IDS,
     weeklyGoalTarget: 0,
     weeklyRewardText: 'Vendredi et samedi soir : tu peux rester debout plus tard !',
     weeklyRewardDays: ['vendredi', 'samedi'],
@@ -204,6 +206,10 @@ export async function setFocusType(childId, focusType) {
 
 export async function setWeeklyGoalTarget(childId, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays = []) {
   await setDoc(doc(db, 'children', childId), { weeklyGoalTarget, weeklyRewardText, weeklyRewardDays }, { merge: true });
+}
+
+export async function setEnabledSubjects(childId, enabledSubjects) {
+  await setDoc(doc(db, 'children', childId), { enabledSubjects: normalizeEnabledSubjects(enabledSubjects) }, { merge: true });
 }
 
 export async function setDailyMissionLimit(childId, dailyMissionLimit) {
