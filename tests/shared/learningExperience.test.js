@@ -43,8 +43,8 @@ describe('mistake notebook', () => {
 
   it('returns review questions in priority order without persistence metadata', () => {
     const notebook = updateMistakeNotebook([], [mistake, { ...mistake, type: 'sciences', prompt: 'Planète ?', answer: 'Terre' }], '2026-08-22');
-    expect(reviewQuestionsFromNotebook(notebook, 1)[0]).toMatchObject({ type: 'anglais', answer: 'chat' });
-    expect(reviewQuestionsFromNotebook(notebook, 1)[0].errorCount).toBeUndefined();
+    expect(reviewQuestionsFromNotebook(notebook, 1, '2026-08-23')[0]).toMatchObject({ type: 'anglais', answer: 'chat' });
+    expect(reviewQuestionsFromNotebook(notebook, 1, '2026-08-23')[0].errorCount).toBeUndefined();
   });
 
   it('schedules an error for the next day, then spaces successful reviews', () => {

@@ -107,3 +107,9 @@ export function dynamicHintSteps(question) {
       return null;
   }
 }
+
+export function shortAnswerExplanation(question) {
+  const steps = dynamicHintSteps(question);
+  if (steps?.length) return steps[steps.length - 1];
+  return `À retenir : la bonne réponse est « ${question.answer} ».`;
+}

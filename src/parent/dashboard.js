@@ -2,7 +2,7 @@ import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { DIFFICULTY_LABELS, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { weekStartKey } from '../shared/progression.js';
 import { SUBJECTS, learningTypeLabel, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
-import { SCHOOL_LEVELS, subjectSummary } from '../shared/learningExperience.js';
+import { notionLearningStatuses, retentionSummary, SCHOOL_LEVELS, subjectSummary } from '../shared/learningExperience.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -761,7 +761,8 @@ function insightCardsHtml({ strongType, weakType }) {
   `;
 }
 
-function breakdownBarsHtml(breakdown, difficultyLevels) {
+function breakdownBarsHtml(breakdown, difficultyLevels, learningStatuses = []) {
+  const statusByType = Object.fromEntries(learningStatuses.map((item) => [item.type, item.status]));
   const entries = Object.entries(breakdown);
   if (entries.length === 0) {
     return '<p class="setup-hint">Aucune mission réalisée pour le moment.</p>';
@@ -771,11 +772,12 @@ function breakdownBarsHtml(breakdown, difficultyLevels) {
       ${entries
         .map(([type, percent]) => {
           const level = difficultyLevels[type] ?? 1;
+          const learningStatus = statusByType[type] === 'acquis' ? '✅ Acquis' : statusByType[type] === 'a-revoir' ? '🔁 À revoir' : '🌱 En progrès';
           return `
             <li class="breakdown-row">
               <span class="breakdown-label">${emojiForType(type)} ${escapeHtml(displayTypeLabel(type))}</span>
               <span class="breakdown-bar"><span class="breakdown-bar-fill" style="width:${percent}%;background:${colorForPercent(percent)}"></span></span>
-              <span class="breakdown-value">${percent}% — ${DIFFICULTY_LABELS[level]}</span>
+              <span class="breakdown-value">${percent}% — ${DIFFICULTY_LABELS[level]} · ${learningStatus}</span>
             </li>`;
         })
         .join('')}
@@ -791,6 +793,8 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   const insights = computeInsights(sessions);
   const dailyActivity = dailyActivityLast7Days(sessions);
   const weeklyWatch = computeWeeklyWatch(sessions, profile);
+  const learningStatuses = notionLearningStatuses(sessions);
+  const retention = retentionSummary(sessions, profile.mistakeNotebook ?? []);
   const enabledSubjects = normalizeEnabledSubjects(profile.enabledSubjects);
   root.innerHTML = `
     <div class="dashboard">
@@ -827,10 +831,20 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
         <div class="dashboard-column">
           <section class="breakdown">
             <h2>Réussite par notion</h2>
-            ${breakdownBarsHtml(breakdown, difficultyLevels)}
+            ${breakdownBarsHtml(breakdown, difficultyLevels, learningStatuses)}
           </section>
         </div>
       </div>
+      <section class="retention-summary">
+        <div class="retention-heading"><div><h2>🧠 Révisions et mémorisation</h2><p>Ce qui a été retravaillé et réellement consolidé dans le temps.</p></div><strong>${retention.reviewPercent}% de réussite en révision</strong></div>
+        <div class="retention-grid">
+          <article><b>${retention.reviewMissions}</b><span>missions de révision</span></article>
+          <article><b>${retention.reviewedQuestions}</b><span>questions retravaillées</span></article>
+          <article class="retention-acquired"><b>${retention.retainedCount}</b><span>notions retenues</span></article>
+          <article class="retention-progress"><b>${retention.progressingCount}</b><span>en consolidation</span></article>
+          <article class="retention-due"><b>${retention.dueCount}</b><span>à revoir maintenant</span></article>
+        </div>
+      </section>
       <section class="focus-selector">
         <h2>Missions ciblées &amp; objectif hebdomadaire</h2>
         <label>

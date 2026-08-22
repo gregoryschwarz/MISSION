@@ -438,6 +438,18 @@ button:active {
   white-space: nowrap;
 }
 
+.retention-summary { display:grid; gap:var(--space-4); }
+.retention-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:var(--space-4); }
+.retention-heading h2,.retention-heading p { margin:0; }
+.retention-heading p { margin-top:var(--space-1); color:var(--color-text-muted); }
+.retention-heading > strong { padding:8px 12px; border-radius:var(--radius-pill); background:var(--color-surface-soft); white-space:nowrap; }
+.retention-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--space-3); }
+.retention-grid article { display:grid; gap:4px; padding:var(--space-3); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface-soft); }
+.retention-grid b { font-family:var(--font-display); font-size:var(--text-2xl); }
+.retention-grid span { color:var(--color-text-muted); font-size:var(--text-sm); }
+.retention-acquired b { color:var(--color-mint); }.retention-progress b { color:#b38200; }.retention-due b { color:var(--color-coral); }
+@media (max-width:800px) { .retention-heading { display:grid; }.retention-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
 .daily-chart-svg {
   width: 100%;
   height: auto;

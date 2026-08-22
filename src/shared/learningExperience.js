@@ -22,30 +22,120 @@ function notebookKey(question) {
 }
 
 function storableQuestion(question) {
-  const { submittedAnswer, ...clean } = question;
+  const { submittedAnswer, isCorrect, _adaptiveRetry, ...clean } = question;
   return clean;
 }
 
-export function updateMistakeNotebook(existing = [], incorrectQuestions = [], date, maxEntries = 40) {
+function dateAfter(isoDate, days) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+const REVIEW_INTERVALS = [1, 3, 7, 14, 30];
+
+export function learningStatusForEntry(entry = {}) {
+  const stage = entry.retentionStage ?? 0;
+  if (stage >= 2) return { id: 'acquis', label: 'Acquis', emoji: '✅' };
+  if (stage === 1) return { id: 'en-progres', label: 'En progrès', emoji: '🌱' };
+  return { id: 'a-revoir', label: 'À revoir', emoji: '🔁' };
+}
+
+export function updateLearningNotebook(existing = [], answeredQuestions = [], date, maxEntries = 40) {
   const byKey = new Map(existing.map((entry) => [notebookKey(entry), { ...entry }]));
-  incorrectQuestions.forEach((question) => {
-    const clean = storableQuestion(question);
+  answeredQuestions.forEach((answered) => {
+    const clean = storableQuestion(answered);
     const key = notebookKey(clean);
     const previous = byKey.get(key);
+    if (answered.isCorrect && !previous) return;
+    if (!answered.isCorrect) {
+      byKey.set(key, {
+        ...previous,
+        ...clean,
+        errorCount: (previous?.errorCount ?? 0) + 1,
+        correctReviewCount: previous?.correctReviewCount ?? 0,
+        retentionStage: 0,
+        firstErrorDate: previous?.firstErrorDate ?? date,
+        lastErrorDate: date,
+        lastReviewDate: date,
+        nextReviewDate: dateAfter(date, REVIEW_INTERVALS[0]),
+        lastResult: 'incorrect',
+      });
+      return;
+    }
+    const retentionStage = Math.min(4, (previous.retentionStage ?? 0) + 1);
     byKey.set(key, {
+      ...previous,
       ...clean,
-      errorCount: (previous?.errorCount ?? 0) + 1,
-      firstErrorDate: previous?.firstErrorDate ?? date,
-      lastErrorDate: date,
+      correctReviewCount: (previous.correctReviewCount ?? 0) + 1,
+      retentionStage,
+      lastReviewDate: date,
+      nextReviewDate: dateAfter(date, REVIEW_INTERVALS[retentionStage]),
+      lastResult: 'correct',
     });
   });
   return [...byKey.values()]
-    .sort((a, b) => (b.errorCount - a.errorCount) || String(b.lastErrorDate).localeCompare(String(a.lastErrorDate)))
+    .sort((a, b) => (b.errorCount - a.errorCount) || String(a.nextReviewDate).localeCompare(String(b.nextReviewDate)))
     .slice(0, maxEntries);
 }
 
-export function reviewQuestionsFromNotebook(notebook = [], count = 10) {
-  return notebook.slice(0, count).map(({ errorCount, firstErrorDate, lastErrorDate, ...question }) => ({ ...question }));
+export function updateMistakeNotebook(existing = [], incorrectQuestions = [], date, maxEntries = 40) {
+  return updateLearningNotebook(
+    existing,
+    incorrectQuestions.map((question) => ({ ...question, isCorrect: false })),
+    date,
+    maxEntries
+  );
+}
+
+export function reviewQuestionsFromNotebook(notebook = [], count = 10, today = new Date().toISOString().slice(0, 10)) {
+  return notebook
+    .filter((entry) => !entry.nextReviewDate || entry.nextReviewDate <= today)
+    .sort((a, b) => (b.errorCount - a.errorCount) || String(a.nextReviewDate).localeCompare(String(b.nextReviewDate)))
+    .slice(0, count)
+    .map(({ errorCount, correctReviewCount, retentionStage, firstErrorDate, lastErrorDate, lastReviewDate, nextReviewDate, lastResult, ...question }) => ({ ...question }));
+}
+
+export function personalizedLearningPlan(notebook = [], count = 10, today = new Date().toISOString().slice(0, 10)) {
+  const reviewQuestions = reviewQuestionsFromNotebook(notebook, Math.min(4, count), today);
+  const priorityTypes = [...new Set([...notebook]
+    .sort((a, b) => (b.errorCount ?? 0) - (a.errorCount ?? 0))
+    .map((entry) => entry.type)
+    .filter(Boolean))];
+  return { reviewQuestions, priorityTypes };
+}
+
+export function notionLearningStatuses(sessions = [], minAttempts = 3) {
+  const totals = {};
+  sessions.forEach((session) => Object.entries(session.breakdown ?? {}).forEach(([type, stats]) => {
+    if (!stats.total) return;
+    if (!totals[type]) totals[type] = { correct: 0, total: 0 };
+    totals[type].correct += stats.correct ?? 0;
+    totals[type].total += stats.total;
+  }));
+  return Object.entries(totals)
+    .filter(([, stats]) => stats.total >= minAttempts)
+    .map(([type, stats]) => {
+      const percent = Math.round((stats.correct / stats.total) * 100);
+      const status = stats.total >= 5 && percent >= 80 ? 'acquis' : percent < 60 ? 'a-revoir' : 'en-progres';
+      return { type, ...stats, percent, status };
+    });
+}
+
+export function retentionSummary(sessions = [], notebook = [], today = new Date().toISOString().slice(0, 10)) {
+  const reviewSessions = sessions.filter((session) => ['mistake-review', 'personalized'].includes(session.missionKind));
+  const reviewedQuestions = reviewSessions.reduce((sum, session) => sum + (session.questionsTotal ?? 0), 0);
+  const correctReviews = reviewSessions.reduce((sum, session) => sum + (session.correctCount ?? 0), 0);
+  const statuses = notebook.map(learningStatusForEntry);
+  return {
+    reviewMissions: reviewSessions.length,
+    reviewedQuestions,
+    correctReviews,
+    reviewPercent: reviewedQuestions ? Math.round((correctReviews / reviewedQuestions) * 100) : 0,
+    retainedCount: statuses.filter((status) => status.id === 'acquis').length,
+    progressingCount: statuses.filter((status) => status.id === 'en-progres').length,
+    dueCount: notebook.filter((entry) => !entry.nextReviewDate || entry.nextReviewDate <= today).length,
+  };
 }
 
 export const WEEKLY_LEARNING_THEMES = [

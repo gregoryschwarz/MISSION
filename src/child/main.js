@@ -11,7 +11,7 @@ import { badgeCollectionData, badgeCountsAfterAwards } from '../shared/badges.js
 import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '../shared/dailyAdventure.js';
 import { seasonForDate } from '../shared/seasons.js';
 import { SUBJECTS, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
-import { newlyEarnedSubjectBadges, reviewQuestionsFromNotebook, storyChapter, storyProgressAfterMission, subjectMissionCountsAfter, updateMistakeNotebook, weeklyLearningTheme } from '../shared/learningExperience.js';
+import { newlyEarnedSubjectBadges, notionLearningStatuses, personalizedLearningPlan, reviewQuestionsFromNotebook, storyChapter, storyProgressAfterMission, subjectMissionCountsAfter, updateLearningNotebook, weeklyLearningTheme } from '../shared/learningExperience.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
@@ -129,6 +129,7 @@ async function loadProfile(targetChildId) {
         schoolLevel: 'CE2',
         assignedSubject: null,
         mistakeNotebook: [],
+        learningStats: {},
         subjectMissionCounts: {},
         storyProgress: 0,
       };
@@ -271,9 +272,11 @@ async function handleRequestReward(reward) {
 }
 
 function showNotionPicker() {
+  const learningStatuses = notionLearningStatuses([{ breakdown: lastProfile?.learningStats ?? {} }], 1);
   renderNotionPicker(root, {
     types: QUESTION_TYPES,
     difficultyLevels: lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS,
+    learningStatuses: Object.fromEntries(learningStatuses.map((item) => [item.type, item.status])),
     onSelect: startMission,
     onBack: () => renderHomeScreen(lastProfile),
     onNavigate: navigateTo,
@@ -420,11 +423,13 @@ function showSubjectPicker() {
     difficultyLevels: lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS,
     schoolLevel: lastProfile?.schoolLevel ?? 'CE2',
     mistakeCount: lastProfile?.mistakeNotebook?.length ?? 0,
+    dueReviewCount: personalizedLearningPlan(lastProfile?.mistakeNotebook ?? []).reviewQuestions.length,
     weeklyTheme: weeklyLearningTheme(),
     assignedSubject: lastProfile?.assignedSubject ?? null,
     onSelect: startSubjectMission,
     onStartFrench: startFrenchMission,
     onStartSurprise: startSurpriseMission,
+    onStartPersonalized: startPersonalizedMission,
     onReviewMistakes: startMistakeReview,
     onStartWeeklyTheme: startWeeklyThemeMission,
     onBack: () => renderHomeScreen(lastProfile),
@@ -583,6 +588,34 @@ function startMistakeReview() {
   const questions = reviewQuestionsFromNotebook(lastProfile?.mistakeNotebook ?? [], MISSION_LENGTH);
   if (!questions.length) return showSubjectPicker();
   startMissionWithQuestions(questions, 'quiz', 'revision', 'mistake-review');
+}
+
+function freshQuestionsForType(type, count) {
+  const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  if (QUESTION_TYPES.includes(type)) {
+    return generateSingleTypeMission(count, type, difficultyLevels[type] ?? 1);
+  }
+  if (type === 'accord-pluriel') return generateFrenchMission(count, difficultyLevels);
+  if (subjectForId(type) && normalizeEnabledSubjects(lastProfile?.enabledSubjects).includes(type)) {
+    return generateSubjectMission(type, count, difficultyLevels, { schoolLevel: lastProfile?.schoolLevel });
+  }
+  return [];
+}
+
+function startPersonalizedMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const plan = personalizedLearningPlan(lastProfile?.mistakeNotebook ?? [], MISSION_LENGTH);
+  const candidates = [...plan.reviewQuestions];
+  plan.priorityTypes.forEach((type) => candidates.push(...freshQuestionsForType(type, 2)));
+  candidates.push(...generateMission(MISSION_LENGTH, lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS, lastProfile?.focusType ?? null));
+  const seen = new Set();
+  const questions = candidates.filter((question) => {
+    const key = `${question.type}::${question.prompt}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, MISSION_LENGTH);
+  startMissionWithQuestions(questions, 'quiz', 'revision', 'personalized');
 }
 
 function dailyMissionLimitReached() {
@@ -776,7 +809,12 @@ async function finishMission() {
     dailyChestDate: chestReward.success ? chestReward.dailyChestDate : profileBefore.dailyChestDate ?? null,
     dailyChestCount: chestReward.success ? chestReward.dailyChestCount : profileBefore.dailyChestCount ?? 0,
     rareTreasureIds,
-    mistakeNotebook: updateMistakeNotebook(profileBefore.mistakeNotebook ?? [], summary.incorrectQuestions, summary.date),
+    mistakeNotebook: updateLearningNotebook(profileBefore.mistakeNotebook ?? [], summary.answeredQuestions, summary.date),
+    learningStats: Object.entries(summary.breakdown).reduce((stats, [type, current]) => {
+      const previous = stats[type] ?? { correct: 0, total: 0 };
+      stats[type] = { correct: previous.correct + current.correct, total: previous.total + current.total };
+      return stats;
+    }, { ...(profileBefore.learningStats ?? {}) }),
     subjectMissionCounts,
     storyProgress: storyProgressAfterMission(profileBefore),
     assignedSubject: profileBefore.assignedSubject === summary.subject ? null : profileBefore.assignedSubject ?? null,

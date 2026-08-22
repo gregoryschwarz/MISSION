@@ -2,7 +2,7 @@ import { emojiForType, renderBadgeMedallionsHtml, badgeCollectionData, BADGE_CAT
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { DIFFICULTY_LABELS } from '../shared/difficulty.js';
 import { learningTypeLabel } from '../shared/subjects.js';
-import { dynamicHintSteps } from './hints.js';
+import { dynamicHintSteps, shortAnswerExplanation } from './hints.js';
 import { shapeSvg } from './shapes.js';
 import { coinSvg, formatEuroCents, parseEuroInput } from './money.js';
 import { lengthBarSvg } from './length.js';
@@ -197,7 +197,7 @@ function answerReviewHtml(question, feedback, index, total) {
   return `
     <div class="answer-review answer-review-${feedback}" role="status" aria-live="polite">
       <strong>${isCorrect ? '🌟 Bravo, bonne réponse !' : '🤔 Presque !'}</strong>
-      ${isCorrect ? '' : `<span>La bonne réponse était <b>${correctLabel}</b>.</span>`}
+      ${isCorrect ? '' : `<span>La bonne réponse était <b>${correctLabel}</b>.</span><small class="answer-explanation">💡 ${escapeHtml(shortAnswerExplanation(question))}<br />Tu la reverras un peu plus tard pour mieux la retenir.</small>`}
       <button id="next-question" type="button" class="big-button">
         ${index + 1 >= total ? 'Voir mes résultats' : 'Question suivante'} →
       </button>
@@ -242,7 +242,7 @@ export function renderPairingPending(root, { onRetry, onCancel, error = null }) 
   root.querySelector('#pairing-cancel').addEventListener('click', onCancel);
 }
 
-export function renderNotionPicker(root, { types, difficultyLevels = {}, onSelect, onBack, onNavigate }) {
+export function renderNotionPicker(root, { types, difficultyLevels = {}, learningStatuses = {}, onSelect, onBack, onNavigate }) {
   root.innerHTML = `
     <div class="screen notion-picker-screen with-tabs">
       <h1>Choisis une notion</h1>
@@ -255,6 +255,7 @@ export function renderNotionPicker(root, { types, difficultyLevels = {}, onSelec
                 <span class="notion-card-emoji">${emojiForType(type)}</span>
                 <span class="notion-card-label">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
                 <span class="notion-card-level">${DIFFICULTY_LABELS[level] ?? DIFFICULTY_LABELS[1]}</span>
+                <span class="notion-learning-status status-${learningStatuses[type] ?? 'en-progres'}">${learningStatuses[type] === 'acquis' ? '✅ Acquis' : learningStatuses[type] === 'a-revoir' ? '🔁 À revoir' : '🌱 En progrès'}</span>
               </button>`;
           })
           .join('')}
@@ -325,7 +326,7 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
-export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, schoolLevel = 'CE2', mistakeCount = 0, weeklyTheme, assignedSubject = null, onSelect, onStartFrench, onStartSurprise, onReviewMistakes, onStartWeeklyTheme, onBack, onNavigate }) {
+export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, schoolLevel = 'CE2', mistakeCount = 0, dueReviewCount = 0, weeklyTheme, assignedSubject = null, onSelect, onStartFrench, onStartSurprise, onStartPersonalized, onReviewMistakes, onStartWeeklyTheme, onBack, onNavigate }) {
   root.innerHTML = `
     <div class="screen subject-picker-screen with-tabs">
       <header class="subject-picker-heading">
@@ -334,8 +335,9 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, sch
         <span>Une mission de 10 questions adaptée au niveau ${escapeHtml(schoolLevel)}.</span>
       </header>
       <div class="learning-quick-actions">
+        <button id="personalized-mission" class="learning-quick-card learning-quick-card-featured"><span>🧠</span><div><strong>Mission personnalisée</strong><small>${mistakeCount ? 'Créée à partir de tes notions fragiles' : 'Elle apprendra progressivement avec toi'}</small></div></button>
         <button id="surprise-mission" class="learning-quick-card"><span>🎲</span><div><strong>Mission surprise</strong><small>Un mélange intelligent de plusieurs matières</small></div></button>
-        <button id="mistake-review" class="learning-quick-card" ${mistakeCount ? '' : 'disabled'}><span>📒</span><div><strong>Cahier des erreurs</strong><small>${mistakeCount ? `${mistakeCount} exercice${mistakeCount > 1 ? 's' : ''} à revoir` : 'Aucune erreur à réviser'}</small></div></button>
+        <button id="mistake-review" class="learning-quick-card" ${dueReviewCount ? '' : 'disabled'}><span>📒</span><div><strong>Révisions du jour</strong><small>${dueReviewCount ? `${dueReviewCount} exercice${dueReviewCount > 1 ? 's' : ''} arrivé${dueReviewCount > 1 ? 's' : ''} à échéance` : mistakeCount ? 'Prochaine révision programmée plus tard' : 'Aucune erreur à réviser'}</small></div></button>
         ${weeklyTheme ? `<button id="weekly-theme-mission" class="learning-quick-card"><span>${weeklyTheme.emoji}</span><div><strong>${escapeHtml(weeklyTheme.label)}</strong><small>${escapeHtml(weeklyTheme.description)}</small></div></button>` : ''}
       </div>
       <div class="subject-grid">
@@ -359,6 +361,7 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, sch
   root.querySelector('[data-core="francais"]').addEventListener('click', onStartFrench);
   root.querySelectorAll('[data-subject]').forEach((button) => button.addEventListener('click', () => onSelect(button.dataset.subject)));
   root.querySelector('#surprise-mission').addEventListener('click', onStartSurprise);
+  root.querySelector('#personalized-mission').addEventListener('click', onStartPersonalized);
   root.querySelector('#mistake-review').addEventListener('click', onReviewMistakes);
   root.querySelector('#weekly-theme-mission')?.addEventListener('click', onStartWeeklyTheme);
   root.querySelector('#subject-picker-back').addEventListener('click', onBack);
