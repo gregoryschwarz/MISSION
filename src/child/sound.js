@@ -59,7 +59,12 @@ export function speakEnglish(text, speechApi = typeof window !== 'undefined' ? w
     const utterance = new Utterance(text);
     utterance.lang = 'en-GB';
     utterance.rate = 0.82;
-    synthesis.cancel?.();
+    const voices = synthesis.getVoices?.() ?? [];
+    utterance.voice = voices.find((voice) => String(voice.lang).toLowerCase().startsWith('en-gb'))
+      ?? voices.find((voice) => String(voice.lang).toLowerCase().startsWith('en'))
+      ?? null;
+    if (synthesis.speaking) synthesis.cancel?.();
+    synthesis.resume?.();
     synthesis.speak(utterance);
     return true;
   } catch (err) {

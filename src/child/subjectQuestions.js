@@ -1,6 +1,7 @@
 import { randomInt, shuffle } from './random.js';
 import { subjectForId } from '../shared/subjects.js';
 import { difficultyForSchoolLevel, surpriseSubjectIds } from '../shared/learningExperience.js';
+import { SUPPLEMENTAL_SUBJECT_FACTS } from './supplementalSubjectFacts.js';
 
 const q = (prompt, answer, distractorA, distractorB) => ({ prompt, answer, distractors: [distractorA, distractorB] });
 
@@ -283,7 +284,8 @@ export const SUBJECT_QUESTION_BANKS = Object.fromEntries(
     subjectId,
     Object.fromEntries(Object.entries(levels).map(([level, questions]) => [
       level,
-      questions.flatMap((question, sourceIndex) => formatsForSubject(subjectId).map((format) => expandQuestion(subjectId, question, sourceIndex, format, Number(level)))),
+      [...questions, ...(SUPPLEMENTAL_SUBJECT_FACTS[subjectId]?.[level] ?? []).map(([prompt, answer, distractorA, distractorB]) => q(prompt, answer, distractorA, distractorB))]
+        .flatMap((question, sourceIndex) => formatsForSubject(subjectId).map((format) => expandQuestion(subjectId, question, sourceIndex, format, Number(level)))),
     ])),
   ])
 );

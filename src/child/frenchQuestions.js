@@ -8,6 +8,15 @@ export const REGULAR_WORDS = [
   { singular: 'une fleur', plural: 'des fleurs' },
   { singular: 'un ami', plural: 'des amis' },
   { singular: 'une pomme', plural: 'des pommes' },
+  { singular: 'un ballon', plural: 'des ballons' },
+  { singular: 'une école', plural: 'des écoles' },
+  { singular: 'un jardin', plural: 'des jardins' },
+  { singular: 'une voiture', plural: 'des voitures' },
+  { singular: 'un crayon', plural: 'des crayons' },
+  { singular: 'une étoile', plural: 'des étoiles' },
+  { singular: 'un nuage', plural: 'des nuages' },
+  { singular: 'une montagne', plural: 'des montagnes' },
+  { singular: 'un bateau', plural: 'des bateaux' },
 ];
 
 export const X_PLURAL_WORDS = [
@@ -17,6 +26,15 @@ export const X_PLURAL_WORDS = [
   { singular: 'un bijou', plural: 'des bijoux' },
   { singular: 'un jeu', plural: 'des jeux' },
   { singular: 'un genou', plural: 'des genoux' },
+  { singular: 'un journal', plural: 'des journaux' },
+  { singular: 'un animal', plural: 'des animaux' },
+  { singular: 'un travail', plural: 'des travaux' },
+  { singular: 'un vitrail', plural: 'des vitraux' },
+  { singular: 'un cheveu', plural: 'des cheveux' },
+  { singular: 'un feu', plural: 'des feux' },
+  { singular: 'un caillou', plural: 'des cailloux' },
+  { singular: 'un hibou', plural: 'des hiboux' },
+  { singular: 'un pou', plural: 'des poux' },
 ];
 
 export const INVARIABLE_WORDS = [
@@ -24,6 +42,12 @@ export const INVARIABLE_WORDS = [
   { singular: 'un nez', plural: 'des nez' },
   { singular: 'une croix', plural: 'des croix' },
   { singular: 'un tapis', plural: 'des tapis' },
+  { singular: 'un prix', plural: 'des prix' },
+  { singular: 'une voix', plural: 'des voix' },
+  { singular: 'un choix', plural: 'des choix' },
+  { singular: 'un repas', plural: 'des repas' },
+  { singular: 'un bras', plural: 'des bras' },
+  { singular: 'un progrès', plural: 'des progrès' },
 ];
 
 const WORDS_BY_LEVEL = {
