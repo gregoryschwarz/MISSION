@@ -1,4 +1,4 @@
-import { emojiForType, renderBadgeMedallionsHtml, badgeAlbumData, BADGES } from '../shared/badges.js';
+import { emojiForType, renderBadgeMedallionsHtml, badgeCollectionData, BADGE_CATEGORIES, BADGES } from '../shared/badges.js';
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { DIFFICULTY_LABELS } from '../shared/difficulty.js';
 import { dynamicHintSteps } from './hints.js';
@@ -859,32 +859,44 @@ export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinP
   attachBottomTabs(root, onNavigate);
 }
 
-export function renderBadgeAlbum(root, { earnedBadgeIds, badgeDates, totalBadgeCount, onBack }) {
-  const album = badgeAlbumData(earnedBadgeIds, badgeDates);
-  const percent = totalBadgeCount ? Math.round((album.length / totalBadgeCount) * 100) : 0;
+export function renderBadgeAlbum(root, { profile, onBack }) {
+  const collection = badgeCollectionData(profile);
+  const earnedCount = collection.filter((badge) => badge.earned).length;
+  const percent = Math.round((earnedCount / collection.length) * 100);
+  const nextBadge = collection
+    .filter((badge) => !badge.earned)
+    .sort((a, b) => b.progressPercent - a.progressPercent)[0];
   root.innerHTML = `
     <div class="screen badge-album-screen">
-      <h1>🏅 Ma collection</h1>
-      <p class="badge-album-count">${album.length} badge${album.length > 1 ? 's' : ''} sur ${totalBadgeCount}</p>
-      <div class="xp-bar badge-album-progress" role="progressbar" aria-valuenow="${album.length}" aria-valuemin="0" aria-valuemax="${totalBadgeCount}">
+      <header class="badge-album-hero">
+        <div><p>MON ALBUM D’EXPLOITS</p><h1>🏅 Mes badges</h1><span>Chaque badge raconte une victoire différente.</span></div>
+        <div class="badge-album-total"><strong>${earnedCount}</strong><span>sur ${collection.length}</span><small>${percent}% complété</small></div>
+      </header>
+      <div class="xp-bar badge-album-progress" role="progressbar" aria-label="Album complété à ${percent}%" aria-valuenow="${earnedCount}" aria-valuemin="0" aria-valuemax="${collection.length}">
         <div class="xp-bar-fill" style="width:${percent}%"></div>
       </div>
-      ${
-        album.length
-          ? `<h2>Badges gagnés 🎉</h2><ul class="badge-album-list">${album
-              .map(
-                (b) => `
-              <li class="badge-album-entry">
-                <div class="badge-medallion" style="background: linear-gradient(135deg, ${b.gradient[0]}, ${b.gradient[1]})">${b.emoji}</div>
-                <div>
-                  <p class="badge-album-label">${b.label}</p>
-                  ${b.unlockedAtLabel ? `<p class="badge-album-date">🔓 Débloqué le ${b.unlockedAtLabel}</p>` : ''}
-                </div>
-              </li>`
-              )
-              .join('')}</ul>`
-          : "<p>Pas encore de badge — lance une mission pour commencer à en gagner !</p>"
-      }
+      ${nextBadge ? `<aside class="next-badge-card">
+        <span class="next-badge-icon">${nextBadge.emoji}</span>
+        <div><small>MON PROCHAIN BADGE</small><strong>${escapeHtml(nextBadge.label)}</strong><span>${escapeHtml(nextBadge.description)}</span></div>
+        <div class="next-badge-progress"><strong>${nextBadge.progressLabel}</strong><span><i style="width:${nextBadge.progressPercent}%"></i></span></div>
+      </aside>` : '<aside class="next-badge-card badge-album-complete">👑 Album complet : quelle légende !</aside>'}
+      <div class="badge-album-categories">
+        ${BADGE_CATEGORIES.map((category) => {
+          const badges = collection.filter((badge) => badge.category === category.id);
+          const categoryEarned = badges.filter((badge) => badge.earned).length;
+          return `<section class="badge-album-category">
+            <div class="badge-album-category-heading"><div><h2>${category.emoji} ${category.label}</h2><p>${escapeHtml(category.description)}</p></div><strong>${categoryEarned}/${badges.length}</strong></div>
+            <div class="badge-album-grid">${badges.map((badge) => `
+              <article class="badge-album-card ${badge.earned ? 'earned' : 'locked'}">
+                <div class="badge-album-medallion" style="--badge-from:${badge.gradient[0]};--badge-to:${badge.gradient[1]}">${badge.earned ? badge.emoji : `<span>${badge.emoji}</span><i>🔒</i>`}</div>
+                <div class="badge-album-card-copy"><h3>${escapeHtml(badge.label)}</h3><p>${escapeHtml(badge.description)}</p></div>
+                ${badge.earned
+                  ? `<span class="badge-earned-date">✓ Gagné${badge.unlockedAtLabel ? ` le ${badge.unlockedAtLabel}` : ''}</span>`
+                  : `<div class="badge-card-progress"><span><i style="width:${badge.progressPercent}%"></i></span><small>${badge.progressLabel}</small></div>`}
+              </article>`).join('')}</div>
+          </section>`;
+        }).join('')}
+      </div>
       <button id="badge-album-back" class="big-button">Retour</button>
     </div>
   `;

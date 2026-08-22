@@ -28,6 +28,24 @@ const PERFECT_MISSION_BADGES = [
   { count: 50, id: 'perfect-50' },
 ];
 
+const PROGRESSION_BADGES = [
+  { metric: 'totalCorrectCount', target: 50, id: 'answers-50' },
+  { metric: 'totalCorrectCount', target: 250, id: 'answers-250' },
+  { metric: 'totalCorrectCount', target: 1000, id: 'answers-1000' },
+  { metric: 'avatarLevel', target: 5, id: 'level-5' },
+  { metric: 'avatarLevel', target: 10, id: 'level-10' },
+  { metric: 'avatarLevel', target: 20, id: 'level-20' },
+];
+
+const CHALLENGE_BADGES = [
+  { metric: 'dailyChallengeCompletions', target: 1, id: 'daily-1' },
+  { metric: 'dailyChallengeCompletions', target: 7, id: 'daily-7' },
+  { metric: 'dailyChallengeCompletions', target: 30, id: 'daily-30' },
+  { metric: 'weeklyGoalCompletions', target: 1, id: 'weekly-1' },
+  { metric: 'weeklyGoalCompletions', target: 5, id: 'weekly-5' },
+  { metric: 'weeklyGoalCompletions', target: 10, id: 'weekly-10' },
+];
+
 export function xpForSession(correctCount) {
   return correctCount * XP_PER_CORRECT;
 }
@@ -183,6 +201,18 @@ export function newlyEarnedPerfectBadges(perfectMissionsCount, existingBadges) {
   ).map((b) => b.id);
 }
 
+export function newlyEarnedProgressionBadges(stats, existingBadges) {
+  return PROGRESSION_BADGES.filter(
+    (badge) => (stats[badge.metric] ?? 0) >= badge.target && !existingBadges.includes(badge.id)
+  ).map((badge) => badge.id);
+}
+
+export function newlyEarnedChallengeBadges(stats, existingBadges) {
+  return CHALLENGE_BADGES.filter(
+    (badge) => (stats[badge.metric] ?? 0) >= badge.target && !existingBadges.includes(badge.id)
+  ).map((badge) => badge.id);
+}
+
 export function applyProgression(profile, sessionSummary, nextDifficultyLevels) {
   const today = sessionSummary.date;
   const gainedXp = xpForSession(sessionSummary.correctCount);
@@ -202,13 +232,15 @@ export function applyProgression(profile, sessionSummary, nextDifficultyLevels) 
     ? newlyEarnedPerfectBadges(perfectMissionsCount, badgesBeforePerfectCheck)
     : [];
 
-  const newBadges = [...streakBadges, ...masteryBadges, ...perfectBadges];
+  const totalCorrectCount = (profile.totalCorrectCount ?? 0) + sessionSummary.correctCount;
+  const badgesBeforeProgressCheck = [...badgesBeforePerfectCheck, ...perfectBadges];
+  const progressionBadges = newlyEarnedProgressionBadges({ avatarLevel, totalCorrectCount }, badgesBeforeProgressCheck);
+  const newBadges = [...streakBadges, ...masteryBadges, ...perfectBadges, ...progressionBadges];
   const badges = [...profile.badges, ...newBadges];
   const badgeDates = { ...(profile.badgeDates ?? {}) };
   newBadges.forEach((id) => {
     badgeDates[id] = today;
   });
-  const totalCorrectCount = (profile.totalCorrectCount ?? 0) + sessionSummary.correctCount;
   const gainedCoins = coinsForSession(sessionSummary.correctCount, isPerfect);
   const coins = (profile.coins ?? 0) + gainedCoins;
 

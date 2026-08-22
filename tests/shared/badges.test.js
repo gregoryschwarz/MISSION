@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType, formatDateFr, badgeAlbumData } from '../../src/shared/badges.js';
+import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType, formatDateFr, badgeAlbumData, badgeCollectionData } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
-  it('defines all 18 badges with a category, in a fixed order', () => {
+  it('defines all 30 badges with a category, in a fixed order', () => {
     expect(BADGES.map((b) => b.id)).toEqual([
       'streak-3',
       'streak-7',
@@ -22,10 +22,22 @@ describe('BADGES', () => {
       'perfect-1',
       'perfect-10',
       'perfect-50',
+      'answers-50',
+      'answers-250',
+      'answers-1000',
+      'level-5',
+      'level-10',
+      'level-20',
+      'daily-1',
+      'daily-7',
+      'daily-30',
+      'weekly-1',
+      'weekly-5',
+      'weekly-10',
     ]);
   });
 
-  it('assigns every badge to one of the 3 known categories', () => {
+  it('assigns every badge to one of the 5 known categories', () => {
     const categoryIds = BADGE_CATEGORIES.map((c) => c.id);
     BADGES.forEach((badge) => expect(categoryIds).toContain(badge.category));
   });
@@ -34,7 +46,7 @@ describe('BADGES', () => {
 describe('badgeMedallionData', () => {
   it('marks badges as earned when their id is present', () => {
     const result = badgeMedallionData(['streak-3', 'mastery-division']);
-    expect(result).toHaveLength(18);
+    expect(result).toHaveLength(30);
     expect(result.find((b) => b.id === 'streak-3')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'mastery-division')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'streak-7')).toMatchObject({ earned: false });
@@ -64,11 +76,13 @@ describe('renderBadgeMedallionsHtml', () => {
     expect(html).toContain('🔒');
   });
 
-  it('groups badges into 3 category sections with the right titles', () => {
+  it('groups badges into 5 compact category summaries', () => {
     const html = renderBadgeMedallionsHtml([]);
-    expect(html).toContain('Série');
-    expect(html).toContain('Maîtrise');
+    expect(html).toContain('Régularité');
+    expect(html).toContain('Talents maîtrisés');
     expect(html).toContain('Missions parfaites');
+    expect(html).toContain('Grande aventure');
+    expect(html).toContain('Défis relevés');
   });
 
   it('renders the new division and fraction mastery badges when earned', () => {
@@ -84,14 +98,14 @@ describe('renderBadgeMedallionsHtml', () => {
 
   it('renders the monnaie, longueur, and temps mastery badges when earned', () => {
     const html = renderBadgeMedallionsHtml(['mastery-monnaie', 'mastery-longueur', 'mastery-temps']);
-    expect(html).toContain('💰');
+    expect(html).toContain('💶');
     expect(html).toContain('📏');
     expect(html).toContain('🕐');
   });
 
   it('renders the probleme mastery badge when earned', () => {
     const html = renderBadgeMedallionsHtml(['mastery-probleme']);
-    expect(html).toContain('📖');
+    expect(html).toContain('🧩');
   });
 
   it('renders the accord-pluriel mastery badge when earned', () => {
@@ -135,6 +149,27 @@ describe('badgeAlbumData', () => {
   });
 });
 
+describe('badgeCollectionData', () => {
+  it('shows earned and locked badges with meaningful progress', () => {
+    const result = badgeCollectionData({
+      badges: ['streak-3'],
+      badgeDates: { 'streak-3': '2026-08-07' },
+      streakDays: 3,
+      totalCorrectCount: 125,
+      avatarLevel: 4,
+    });
+    expect(result).toHaveLength(30);
+    expect(result.find((badge) => badge.id === 'streak-3')).toMatchObject({ earned: true, progressPercent: 100, unlockedAtLabel: '7 août 2026' });
+    expect(result.find((badge) => badge.id === 'answers-250')).toMatchObject({ earned: false, progress: 125, progressPercent: 50 });
+    expect(result.find((badge) => badge.id === 'level-5')).toMatchObject({ progressLabel: '4/5' });
+  });
+
+  it('uses notion difficulty as mastery progress', () => {
+    const result = badgeCollectionData({ difficultyLevels: { monnaie: 2 } });
+    expect(result.find((badge) => badge.id === 'mastery-monnaie')).toMatchObject({ progress: 2, progressLabel: '2/3' });
+  });
+});
+
 describe('emojiForType', () => {
   it('returns the correct emoji for each of the 12 mastery types', () => {
     expect(emojiForType('addition')).toBe('➕');
@@ -144,10 +179,10 @@ describe('emojiForType', () => {
     expect(emojiForType('division')).toBe('➗');
     expect(emojiForType('fraction')).toBe('🍕');
     expect(emojiForType('geometrie')).toBe('📐');
-    expect(emojiForType('monnaie')).toBe('💰');
+    expect(emojiForType('monnaie')).toBe('💶');
     expect(emojiForType('longueur')).toBe('📏');
     expect(emojiForType('temps')).toBe('🕐');
-    expect(emojiForType('probleme')).toBe('📖');
+    expect(emojiForType('probleme')).toBe('🧩');
     expect(emojiForType('accord-pluriel')).toBe('🔤');
   });
 

@@ -18,6 +18,8 @@ import {
   newlyEarnedBadges,
   newlyMasteredTypes,
   newlyEarnedPerfectBadges,
+  newlyEarnedProgressionBadges,
+  newlyEarnedChallengeBadges,
   applyProgression,
 } from '../../src/shared/progression.js';
 import { DEFAULT_DIFFICULTY_LEVELS } from '../../src/shared/difficulty.js';
@@ -303,6 +305,17 @@ describe('newlyEarnedPerfectBadges', () => {
 
   it('awards multiple thresholds at once if count jumps past several', () => {
     expect(newlyEarnedPerfectBadges(10, [])).toEqual(['perfect-1', 'perfect-10']);
+  });
+});
+
+describe('new progression and challenge badges', () => {
+  it('awards cumulative answer and level milestones without duplicates', () => {
+    expect(newlyEarnedProgressionBadges({ totalCorrectCount: 260, avatarLevel: 5 }, [])).toEqual(['answers-50', 'answers-250', 'level-5']);
+    expect(newlyEarnedProgressionBadges({ totalCorrectCount: 260, avatarLevel: 5 }, ['answers-50', 'level-5'])).toEqual(['answers-250']);
+  });
+
+  it('awards daily and weekly challenge milestones', () => {
+    expect(newlyEarnedChallengeBadges({ dailyChallengeCompletions: 7, weeklyGoalCompletions: 1 }, [])).toEqual(['daily-1', 'daily-7', 'weekly-1']);
   });
 });
 

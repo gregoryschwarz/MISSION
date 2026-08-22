@@ -91,6 +91,8 @@ export async function createChild(familyId, { childName }) {
     dailyChallengeDate: null,
     dailyChallengeProgress: 0,
     dailyChallengeCompleted: false,
+    dailyChallengeCompletions: 0,
+    weeklyGoalCompletions: 0,
     streakDays: 0,
     lastSessionDate: null,
     difficultyLevels: DEFAULT_DIFFICULTY_LEVELS,
