@@ -66,6 +66,35 @@ describe('session flow', () => {
     expect(submitAnswer(session, 'poumons')).toBe(false);
   });
 
+  it('accepts one small typo in a sufficiently long text answer', () => {
+    const session = createSession([{ type: 'sciences', prompt: 'Quel organe ?', answer: 'le cœur' }], 'sciences');
+    expect(submitAnswer(session, 'coeru')).toBe(true);
+  });
+
+  it('does not use typo tolerance for short answers that could change meaning', () => {
+    const session = createSession([{ type: 'sciences', prompt: 'Quelle planète ?', answer: 'Mars' }], 'sciences');
+    expect(submitAnswer(session, 'bars')).toBe(false);
+  });
+
+  it('replays a mistake only after two different questions', () => {
+    const questions = [
+      { type: 'addition', prompt: '1 + 1', answer: 2 },
+      { type: 'addition', prompt: '2 + 2', answer: 4 },
+      { type: 'addition', prompt: '3 + 3', answer: 6 },
+      { type: 'addition', prompt: '4 + 4', answer: 8 },
+    ];
+    const session = createSession(questions);
+    submitAnswer(session, 99);
+    expect(session.questions.map((question) => question.prompt)).toEqual(['1 + 1', '2 + 2', '3 + 3', '1 + 1', '4 + 4']);
+    expect(session.questions[3]._adaptiveRetry).toBe(true);
+  });
+
+  it('defers a late mistake to another day instead of replaying it immediately', () => {
+    const session = createSession(sampleQuestions);
+    submitAnswer(session, 99);
+    expect(session.questions).toHaveLength(2);
+  });
+
   it('produces a summary with duration and breakdown', () => {
     vi.useFakeTimers();
     const session = createSession(sampleQuestions);
@@ -77,6 +106,8 @@ describe('session flow', () => {
     expect(summary.correctCount).toBe(2);
     expect(summary.durationSeconds).toBe(5);
     expect(summary.incorrectQuestions).toEqual([]);
+    expect(summary.answeredQuestions).toHaveLength(2);
+    expect(summary.answeredQuestions.every((answer) => answer.isCorrect)).toBe(true);
     expect(summary.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     vi.useRealTimers();
   });

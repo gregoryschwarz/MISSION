@@ -4,12 +4,17 @@ import {
   difficultyForSchoolLevel,
   normalizeSchoolLevel,
   reviewQuestionsFromNotebook,
+  learningStatusForEntry,
+  notionLearningStatuses,
+  personalizedLearningPlan,
+  retentionSummary,
   storyChapter,
   storyProgressAfterMission,
   subjectMissionCountsAfter,
   subjectSummary,
   surpriseSubjectIds,
   updateMistakeNotebook,
+  updateLearningNotebook,
   weeklyLearningTheme,
 } from '../../src/shared/learningExperience.js';
 
@@ -40,6 +45,59 @@ describe('mistake notebook', () => {
     const notebook = updateMistakeNotebook([], [mistake, { ...mistake, type: 'sciences', prompt: 'Planète ?', answer: 'Terre' }], '2026-08-22');
     expect(reviewQuestionsFromNotebook(notebook, 1)[0]).toMatchObject({ type: 'anglais', answer: 'chat' });
     expect(reviewQuestionsFromNotebook(notebook, 1)[0].errorCount).toBeUndefined();
+  });
+
+  it('schedules an error for the next day, then spaces successful reviews', () => {
+    const failed = updateLearningNotebook([], [{ ...mistake, isCorrect: false }], '2026-08-22');
+    expect(failed[0]).toMatchObject({ nextReviewDate: '2026-08-23', retentionStage: 0, lastResult: 'incorrect' });
+    const reviewed = updateLearningNotebook(failed, [{ ...mistake, isCorrect: true }], '2026-08-23');
+    expect(reviewed[0]).toMatchObject({ nextReviewDate: '2026-08-26', retentionStage: 1, lastResult: 'correct' });
+    const retained = updateLearningNotebook(reviewed, [{ ...mistake, isCorrect: true }], '2026-08-26');
+    expect(retained[0]).toMatchObject({ nextReviewDate: '2026-09-02', retentionStage: 2 });
+    expect(learningStatusForEntry(retained[0]).id).toBe('acquis');
+  });
+
+  it('selects only due reviews and prioritizes repeated errors', () => {
+    const notebook = [
+      { ...mistake, errorCount: 1, nextReviewDate: '2026-08-24' },
+      { ...mistake, type: 'sciences', prompt: 'Planète ?', errorCount: 3, nextReviewDate: '2026-08-22' },
+    ];
+    expect(reviewQuestionsFromNotebook(notebook, 10, '2026-08-22').map((question) => question.type)).toEqual(['sciences']);
+    expect(personalizedLearningPlan(notebook, 10, '2026-08-22')).toMatchObject({
+      reviewQuestions: [expect.objectContaining({ type: 'sciences' })],
+      priorityTypes: ['sciences', 'anglais'],
+    });
+  });
+});
+
+describe('learning retention', () => {
+  const sessions = [
+    { missionKind: 'standard', breakdown: { addition: { correct: 4, total: 5 }, soustraction: { correct: 1, total: 5 } } },
+    { missionKind: 'mistake-review', correctCount: 4, questionsTotal: 5, breakdown: { addition: { correct: 4, total: 5 } } },
+    { missionKind: 'personalized', correctCount: 3, questionsTotal: 5, breakdown: { soustraction: { correct: 3, total: 5 } } },
+  ];
+
+  it('labels every attempted notion as acquired, progressing or needing review', () => {
+    expect(notionLearningStatuses(sessions)).toEqual([
+      expect.objectContaining({ type: 'addition', status: 'acquis', percent: 80 }),
+      expect.objectContaining({ type: 'soustraction', status: 'a-revoir', percent: 40 }),
+    ]);
+  });
+
+  it('summarizes what was reviewed and retained for the parent', () => {
+    const notebook = [
+      { type: 'addition', prompt: '1+1', retentionStage: 2, nextReviewDate: '2026-08-30' },
+      { type: 'soustraction', prompt: '3-1', retentionStage: 0, nextReviewDate: '2026-08-22' },
+    ];
+    expect(retentionSummary(sessions, notebook, '2026-08-22')).toEqual({
+      reviewMissions: 2,
+      reviewedQuestions: 10,
+      correctReviews: 7,
+      reviewPercent: 70,
+      retainedCount: 1,
+      progressingCount: 0,
+      dueCount: 1,
+    });
   });
 });
 
