@@ -80,6 +80,14 @@ describe('session flow', () => {
     const session = createSession([]);
     expect(session.breakdown['accord-pluriel']).toEqual({ correct: 0, total: 0 });
   });
+
+  it('creates dynamic breakdown entries and keeps the selected subject in the summary', () => {
+    const questions = [{ type: 'sciences', answer: 'Mars', prompt: 'Quelle planète ?', options: ['Mars', 'Vénus', 'Terre'] }];
+    const session = createSession(questions, 'sciences');
+    expect(session.breakdown.sciences).toEqual({ correct: 0, total: 0 });
+    submitAnswer(session, 'Mars');
+    expect(finishSession(session)).toMatchObject({ subject: 'sciences', correctCount: 1 });
+  });
 });
 
 describe('recordAnswer', () => {

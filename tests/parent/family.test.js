@@ -43,6 +43,7 @@ import {
   revokeChildDevice,
   approvePairingRequest,
   setFocusType,
+  setEnabledSubjects,
   createReward,
   updateReward,
   fetchRewards,
@@ -235,6 +236,13 @@ describe('setFocusType', () => {
   it('merges the focusType onto the child document', async () => {
     await setFocusType('c1', 'addition');
     expect(setDoc).toHaveBeenCalledWith(expect.anything(), { focusType: 'addition' }, { merge: true });
+  });
+});
+
+describe('setEnabledSubjects', () => {
+  it('stores only known unique subjects in catalogue order', async () => {
+    await setEnabledSubjects('c1', ['arts', 'anglais', 'unknown', 'arts']);
+    expect(setDoc).toHaveBeenCalledWith(expect.anything(), { enabledSubjects: ['anglais', 'arts'] }, { merge: true });
   });
 });
 
