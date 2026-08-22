@@ -66,14 +66,42 @@ function decorSceneHtml(decorId) {
   </div>`;
 }
 
-function coinGoalHtml(goal, compact = false) {
+function coinGoalHtml(goal, compact = false, actionable = false) {
   if (!goal) return '';
   const progress = goal.cost > 0 ? Math.min(100, Math.round(((goal.cost - goal.remaining) / goal.cost) * 100)) : 100;
-  return `<div class="coin-goal ${goal.affordable ? 'coin-goal-ready' : ''} ${compact ? 'coin-goal-compact' : ''}">
+  const tag = actionable ? 'button' : 'div';
+  return `<${tag} ${actionable ? 'type="button" id="coin-goal-action"' : ''} class="coin-goal ${goal.affordable ? 'coin-goal-ready' : ''} ${compact ? 'coin-goal-compact' : ''} ${actionable ? 'coin-goal-action' : ''}">
     <div class="coin-goal-copy"><span>${goal.affordable ? '🎉 ACHAT DISPONIBLE' : '🎯 PROCHAIN OBJECTIF'}</span><strong>${goal.emoji} ${escapeHtml(goal.name)}</strong></div>
     <div class="coin-goal-progress"><div style="width:${progress}%"></div></div>
-    <small>${goal.affordable ? `Tu as les ${goal.cost} pièces nécessaires !` : `Encore ${goal.remaining} pièce${goal.remaining > 1 ? 's' : ''} sur ${goal.cost}`}</small>
-  </div>`;
+    <small>${goal.affordable ? `Tu as les ${goal.cost} pièces nécessaires — acheter maintenant ›` : `Encore ${goal.remaining} pièce${goal.remaining > 1 ? 's' : ''} sur ${goal.cost} — voir la boutique ›`}</small>
+  </${tag}>`;
+}
+
+function dailyAdventureHtml(adventure = { progress: 0, target: 3, completed: false, chestClaimed: false }) {
+  const steps = Array.from({ length: adventure.target }, (_, index) => {
+    const number = index + 1;
+    const state = number <= adventure.progress ? 'complete' : number === adventure.progress + 1 ? 'current' : 'locked';
+    return `<div class="adventure-step ${state}"><span>${state === 'complete' ? '✓' : number}</span><small>Mission ${number}</small></div>`;
+  }).join('<i class="adventure-path-line"></i>');
+  return `<section class="daily-adventure ${adventure.completed ? 'completed' : ''}">
+    <div class="daily-adventure-heading"><div><p>AVENTURE DU JOUR</p><h3>🗺️ La route vers le coffre</h3></div><strong>${adventure.progress}/${adventure.target}</strong></div>
+    <div class="daily-adventure-path">${steps}<i class="adventure-path-line"></i><div class="adventure-chest ${adventure.chestClaimed ? 'claimed' : adventure.completed ? 'ready' : 'locked'}"><span>${adventure.chestClaimed ? '✨' : adventure.completed ? '🎁' : '🔒'}</span><small>${adventure.chestClaimed ? 'Ouvert' : 'Coffre'}</small></div></div>
+  </section>`;
+}
+
+function companionMessageHtml(companionId, { adventure, coinGoal, streakDays }) {
+  const companion = companionForId(companionId);
+  if (!companion.emoji) return '';
+  const message = coinGoal?.affordable
+    ? `On peut débloquer ${coinGoal.name} !`
+    : adventure?.completed
+      ? 'Bravo, le coffre du jour est à toi !'
+      : adventure?.progress > 0
+        ? `Encore ${adventure.target - adventure.progress} mission${adventure.target - adventure.progress > 1 ? 's' : ''} avant le coffre !`
+        : streakDays > 1
+          ? `Notre série de ${streakDays} jours continue !`
+          : 'Je suis prêt pour notre prochaine aventure !';
+  return `<aside class="companion-message" aria-live="polite"><span>${companion.emoji}</span><div><strong>${escapeHtml(companion.name)}</strong><p>${escapeHtml(message)}</p></div></aside>`;
 }
 
 // Navigation par onglets persistante, affichée uniquement sur les 4 écrans
@@ -306,8 +334,9 @@ function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
+  const mainGoal = priorityGoal ?? { kind: 'mission', emoji: '🗺️', label: 'Continuer mon aventure', detail: 'Une nouvelle mission m’attend', action: 'Jouer' };
   root.innerHTML = `
     <div class="screen home-screen with-tabs">
       <div class="home-header decor-scene decor-${decorId ?? 'menthe'}" style="background:${decorGradient ?? ''}">
@@ -318,6 +347,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
             <div class="avatar ${auraClass}">${blockAvatarHtml(characterId, hatId, capeId, false, hairstyleId, outfitId, companionId, companionAccessoryId)}</div>
           </div>
         </div>
+        ${companionMessageHtml(companionId, { adventure: dailyAdventure, coinGoal, streakDays })}
         <h1><span id="child-name"></span><span class="home-level">Niveau ${avatarLevel}</span></h1>
         ${
           xpProgress
@@ -333,7 +363,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
           ${statPillHtml('🏅', (badges ?? []).length, 'Badges')}
           ${statPillHtml('✅', totalCorrectCount ?? 0, 'Bonnes réponses')}
         </div>
-        ${coinGoalHtml(coinGoal, true)}
+        ${coinGoalHtml(coinGoal, true, true)}
       </div>
       <main class="home-content">
         ${streakBannerHtml(streakStatus, streakDays)}
@@ -344,8 +374,10 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
         <div class="home-lower">
           <section class="home-progress-panel">
             <h2>🏆 Mes progrès</h2>
-            ${dailyMissionLimit > 0 ? `<p class="daily-limit-banner ${dailyMissionCount >= dailyMissionLimit ? 'limit-reached' : ''}">${dailyMissionCount >= dailyMissionLimit ? '🌙 Bravo, objectif du jour terminé. Reviens demain !' : `⏱️ ${dailyMissionCount}/${dailyMissionLimit} missions aujourd’hui`}</p>` : ''}
+            <button type="button" id="priority-goal-action" class="priority-goal-card" data-kind="${mainGoal.kind}"><span>${mainGoal.emoji}</span><div><small>MON PROCHAIN OBJECTIF</small><strong>${escapeHtml(mainGoal.label)}</strong><p>${escapeHtml(mainGoal.detail)}</p></div><em>${mainGoal.action} ›</em></button>
+            ${dailyAdventureHtml(dailyAdventure)}
             ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
+            ${rareTreasures.length ? `<div class="rare-treasure-shelf"><strong>✨ Mes trésors rares</strong><div>${rareTreasures.map((treasure) => `<span title="${escapeHtml(treasure.name)}">${treasure.emoji}<small>${escapeHtml(treasure.name)}</small></span>`).join('')}</div></div>` : ''}
             <div class="home-badges">${renderBadgeMedallionsHtml(badges)}</div>
           </section>
           <div class="home-actions" aria-label="Actions principales">
@@ -369,6 +401,8 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
   root.querySelector('#start-french-mission').addEventListener('click', onStartFrenchMission);
   root.querySelector('#show-rewards').addEventListener('click', onShowRewards);
   root.querySelector('#show-badges').addEventListener('click', onShowBadgeAlbum);
+  root.querySelector('#coin-goal-action')?.addEventListener('click', () => onCoinGoalAction?.());
+  root.querySelector('#priority-goal-action')?.addEventListener('click', (event) => onPriorityAction?.(event.currentTarget.dataset.kind));
   root.querySelector('#daily-challenge-start')?.addEventListener('click', onStartMission);
   attachBottomTabs(root, onNavigate);
 }
@@ -726,8 +760,10 @@ function resultNotionsHtml(breakdown) {
     </div>`;
 }
 
-export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, coinBreakdown, coinGoal, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, weeklyRewardText, breakdown = {}, incorrectQuestions = [], onRetryMistakes = null, onContinue }) {
+export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, coinBreakdown, coinGoal, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, dailyChestReward = null, companionId = 'none-companion', weeklyRewardText, breakdown = {}, incorrectQuestions = [], onRetryMistakes = null, onContinue }) {
   const earnedBadgesData = newBadges.map((id) => BADGES.find((b) => b.id === id)).filter(Boolean);
+  const companion = companionForId(companionId);
+  const chestsBeforeRare = dailyChestReward ? 3 - (dailyChestReward.dailyChestCount % 3) : 0;
   const scorePercent = questionsTotal ? Math.round((correctCount / questionsTotal) * 100) : 0;
   const appreciation = scorePercent >= 90
     ? 'Excellent travail !'
@@ -748,6 +784,7 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
         <div class="score-ring" style="--score:${scorePercent * 3.6}deg" role="img" aria-label="Score ${scorePercent} pour cent">
           <strong>${scorePercent}%</strong>
         </div>
+        ${companion.emoji ? `<aside class="result-companion"><span>${companion.emoji}</span><p>${scorePercent >= 80 ? 'Waouh, quelle mission !' : 'Je suis fier de tes efforts !'}</p></aside>` : ''}
       </section>
       <div class="results-grid">
         <section class="results-panel results-notions">
@@ -764,13 +801,15 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
             <span><strong>+${coinBreakdown.answerCoins}</strong> bonnes réponses</span>
             ${coinBreakdown.perfectBonus ? `<span><strong>+${coinBreakdown.perfectBonus}</strong> mission parfaite</span>` : ''}
             ${coinBreakdown.dailyBonus ? `<span><strong>+${coinBreakdown.dailyBonus}</strong> défi du jour</span>` : ''}
+            ${coinBreakdown.chestBonus ? `<span><strong>+${coinBreakdown.chestBonus}</strong> coffre du jour</span>` : ''}
           </div>` : ''}
           ${coinGoalHtml(coinGoal)}
-          ${leveledUp ? '<p class="result-event">⭐ Niveau supérieur débloqué !</p>' : ''}
+          ${leveledUp ? '<p class="result-event result-level-up">⭐ Niveau supérieur débloqué !</p>' : ''}
           ${justCompletedDailyChallenge ? '<p class="result-event">🔥 Défi du jour relevé ! Bonus obtenu.</p>' : ''}
           ${justCompletedWeeklyGoal ? `<div class="weekly-bonus-celebration"><div>🎊 🎁 🎊</div><h2>SUPER BONUS DÉBLOQUÉ !</h2><strong>${escapeHtml(weeklyRewardText ?? 'Ta récompense de la semaine')}</strong></div>` : ''}
+          ${dailyChestReward ? `<div class="daily-chest-celebration"><div class="opening-chest">🎁</div><p>COFFRE DU JOUR OUVERT</p><strong>+${dailyChestReward.bonusCoins} pièces</strong>${dailyChestReward.treasure ? `<div class="rare-treasure-reveal"><span>${dailyChestReward.treasure.emoji}</span><div><small>OBJET RARE DÉCOUVERT</small><strong>${escapeHtml(dailyChestReward.treasure.name)}</strong></div></div>` : `<small>Encore ${chestsBeforeRare} coffre${chestsBeforeRare > 1 ? 's' : ''} avant le prochain objet rare !</small>`}</div>` : ''}
           ${earnedBadgesData.length
-            ? `<p class="badge-earned">🏅 Nouveau badge !</p><div class="badges-row">${earnedBadgesData.map((b, i) => `<div class="badge-medallion earned badge-pop" style="background: linear-gradient(135deg, ${b.gradient[0]}, ${b.gradient[1]});animation-delay:${0.4 + i * 0.15}s" title="${b.label}">${b.emoji}</div>`).join('')}</div>`
+            ? `<p class="badge-earned">🏅 Nouveau badge !</p><div class="new-badge-reveals">${earnedBadgesData.map((b, i) => `<article class="new-badge-reveal" style="--badge-from:${b.gradient[0]};--badge-to:${b.gradient[1]};animation-delay:${0.25 + i * 0.08}s"><span>${b.emoji}</span><div><strong>${escapeHtml(b.label)}</strong><small>${escapeHtml(b.description)}</small></div></article>`).join('')}</div>`
             : ''}
         </section>
       </div>
@@ -782,6 +821,20 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
   `;
   root.querySelector('#continue').addEventListener('click', onContinue);
   root.querySelector('#retry-mistakes')?.addEventListener('click', onRetryMistakes);
+}
+
+export function renderUnlockCelebration(root, { emoji, title, description, actionLabel, onContinue }) {
+  root.innerHTML = `
+    <div class="screen unlock-celebration-screen">
+      <div class="unlock-sparkles" aria-hidden="true">✨ ⭐ ✨</div>
+      <div class="unlock-item-reveal" role="img" aria-label="${escapeHtml(title)}">${emoji}</div>
+      <p>NOUVEAUTÉ DANS TA COLLECTION</p>
+      <h1>${escapeHtml(title)}</h1>
+      <span>${escapeHtml(description)}</span>
+      <button id="unlock-continue" class="big-button">${escapeHtml(actionLabel)}</button>
+    </div>`;
+  root.querySelector('#unlock-continue').addEventListener('click', onContinue);
+  root.querySelector('#unlock-continue').focus();
 }
 
 export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinPacks = [], rewards, pendingRewardIds = [], onRequest, onBuyCoinPack, onBack, onNavigate }) {
@@ -888,8 +941,8 @@ export function renderBadgeAlbum(root, { profile, onBack }) {
             <div class="badge-album-category-heading"><div><h2>${category.emoji} ${category.label}</h2><p>${escapeHtml(category.description)}</p></div><strong>${categoryEarned}/${badges.length}</strong></div>
             <div class="badge-album-grid">${badges.map((badge) => `
               <article class="badge-album-card ${badge.earned ? 'earned' : 'locked'}">
-                <div class="badge-album-medallion" style="--badge-from:${badge.gradient[0]};--badge-to:${badge.gradient[1]}">${badge.earned ? badge.emoji : `<span>${badge.emoji}</span><i>🔒</i>`}</div>
-                <div class="badge-album-card-copy"><h3>${escapeHtml(badge.label)}</h3><p>${escapeHtml(badge.description)}</p></div>
+                <div class="badge-album-medallion" style="--badge-from:${badge.gradient[0]};--badge-to:${badge.gradient[1]}">${badge.earned ? badge.emoji : `<span>${badge.secret ? '❔' : badge.emoji}</span><i>🔒</i>`}</div>
+                <div class="badge-album-card-copy"><h3>${escapeHtml(badge.secret && !badge.earned ? 'Badge secret' : badge.label)}</h3><p>${escapeHtml(badge.secret && !badge.earned ? 'Une surprise rare révélera ce badge…' : badge.description)}</p></div>
                 ${badge.earned
                   ? `<span class="badge-earned-date">✓ Gagné${badge.unlockedAtLabel ? ` le ${badge.unlockedAtLabel}` : ''}</span>`
                   : `<div class="badge-card-progress"><span><i style="width:${badge.progressPercent}%"></i></span><small>${badge.progressLabel}</small></div>`}

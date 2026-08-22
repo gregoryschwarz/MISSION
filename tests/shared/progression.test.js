@@ -317,6 +317,10 @@ describe('new progression and challenge badges', () => {
   it('awards daily and weekly challenge milestones', () => {
     expect(newlyEarnedChallengeBadges({ dailyChallengeCompletions: 7, weeklyGoalCompletions: 1 }, [])).toEqual(['daily-1', 'daily-7', 'weekly-1']);
   });
+
+  it('awards the secret treasure badge after the first rare discovery', () => {
+    expect(newlyEarnedChallengeBadges({ rareTreasureCount: 1 }, [])).toEqual(['secret-treasure']);
+  });
 });
 
 describe('applyProgression', () => {

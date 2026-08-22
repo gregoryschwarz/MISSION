@@ -44,6 +44,7 @@ const CHALLENGE_BADGES = [
   { metric: 'weeklyGoalCompletions', target: 1, id: 'weekly-1' },
   { metric: 'weeklyGoalCompletions', target: 5, id: 'weekly-5' },
   { metric: 'weeklyGoalCompletions', target: 10, id: 'weekly-10' },
+  { metric: 'rareTreasureCount', target: 1, id: 'secret-treasure' },
 ];
 
 export function xpForSession(correctCount) {

@@ -6,8 +6,10 @@ import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './qu
 import { generateFrenchMission } from './frenchQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression, applyDailyChallenge, applyWeeklyGoal, newlyEarnedChallengeBadges, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, coinRewardBreakdown, availableXp, purchaseXpCoinPack, XP_COIN_PACKS, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
+import { badgeCollectionData } from '../shared/badges.js';
+import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '../shared/dailyAdventure.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderConnectionError } from './ui.js';
+import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
@@ -94,6 +96,9 @@ async function loadProfile(targetChildId) {
         weeklyGoalWeekStart: null,
         dailyChallengeCompletions: 0,
         weeklyGoalCompletions: 0,
+        dailyChestDate: null,
+        dailyChestCount: 0,
+        rareTreasureIds: [],
         dailyMissionLimit: 3,
         dailyMissionCount: 0,
         dailyMissionCountDate: null,
@@ -121,10 +126,28 @@ async function saveProfile(targetChildId, profile) {
   await setDoc(ref, profile);
 }
 
+function priorityGoalForProfile(profile, today, coinGoal) {
+  const adventure = dailyAdventureState(profile, today);
+  if (!adventure.completed) {
+    return { kind: 'mission', emoji: '🗺️', label: 'Terminer l’aventure du jour', detail: `${adventure.progress}/3 missions avant le coffre`, action: 'Continuer' };
+  }
+  if (coinGoal?.affordable) {
+    return { kind: 'purchase', emoji: coinGoal.emoji, label: coinGoal.name, detail: 'Tu as assez de pièces pour l’obtenir', action: 'Acheter' };
+  }
+  const nextBadge = badgeCollectionData(profile)
+    .filter((badge) => !badge.earned && !badge.secret)
+    .sort((a, b) => b.progressPercent - a.progressPercent)[0];
+  if (nextBadge) {
+    return { kind: 'badge', emoji: nextBadge.emoji, label: nextBadge.label, detail: `${nextBadge.description} · ${nextBadge.progressLabel}`, action: 'Voir' };
+  }
+  return { kind: 'complete', emoji: '👑', label: 'Toutes les collections avancent', detail: 'Continue à battre tes records !', action: 'Jouer' };
+}
+
 function renderHomeScreen(profile) {
   const today = new Date().toISOString().slice(0, 10);
   const dailyChallengeIsToday = profile.dailyChallengeDate === today;
   const weeklyGoalIsThisWeek = profile.weeklyGoalWeekStart === weekStartKey(today);
+  const coinGoal = nextCoinPurchaseGoal(profile, avatarPackSettings);
   renderHome(root, {
     childName: profile.childName,
     avatarLevel: profile.avatarLevel,
@@ -133,7 +156,10 @@ function renderHomeScreen(profile) {
     streakStatus: streakStatus(profile.lastSessionDate ?? null, today),
     totalCorrectCount: profile.totalCorrectCount ?? 0,
     coins: profile.coins ?? 0,
-    coinGoal: nextCoinPurchaseGoal(profile, avatarPackSettings),
+    coinGoal,
+    priorityGoal: priorityGoalForProfile(profile, today, coinGoal),
+    dailyAdventure: dailyAdventureState(profile, today),
+    rareTreasures: RARE_TREASURES.filter((treasure) => (profile.rareTreasureIds ?? []).includes(treasure.id)),
     dailyChallengeProgress: dailyChallengeIsToday ? profile.dailyChallengeProgress ?? 0 : 0,
     dailyChallengeCompleted: dailyChallengeIsToday ? !!profile.dailyChallengeCompleted : false,
     dailyChallengeTarget: DAILY_CHALLENGE_TARGET,
@@ -163,6 +189,12 @@ function renderHomeScreen(profile) {
     onStartFrenchMission: () => startFrenchMission(),
     onShowRewards: showRewards,
     onShowBadgeAlbum: showBadgeAlbum,
+    onCoinGoalAction: handleHomeCoinGoal,
+    onPriorityAction: (kind) => {
+      if (kind === 'purchase') return handleHomeCoinGoal();
+      if (kind === 'badge') return showBadgeAlbum();
+      return startMission();
+    },
     onNavigate: navigateTo,
   });
 }
@@ -327,7 +359,14 @@ async function handlePurchaseCharacter(characterId, cost) {
   };
   lastProfile = nextProfile;
   await saveProfile(childId, nextProfile).catch(() => {});
-  showCustomize();
+  const item = characterMedallionData(nextProfile.avatarLevel, nextProfile.ownedCharacterIds).find((character) => character.id === characterId);
+  renderUnlockCelebration(root, {
+    emoji: item?.emoji ?? '🦸‍♀️',
+    title: 'Nouveau personnage débloqué !',
+    description: `${item?.name ?? 'Ton personnage'} est déjà équipé.`,
+    actionLabel: 'Voir mon personnage',
+    onContinue: showCustomize,
+  });
 }
 
 async function handleSelectHat(hatId) {
@@ -371,7 +410,22 @@ async function handlePurchasePack(packId) {
   };
   lastProfile = nextProfile;
   await saveProfile(childId, nextProfile).catch(() => {});
-  showCustomize();
+  const pack = avatarPackData(nextProfile.avatarLevel, nextProfile.ownedPackIds, avatarPackSettings).find((item) => item.id === packId);
+  renderUnlockCelebration(root, {
+    emoji: pack?.emoji ?? '🎁',
+    title: 'Nouveau pack débloqué !',
+    description: `${pack?.name ?? 'Ton pack'} rejoint maintenant ta collection.`,
+    actionLabel: 'Choisir mes nouveaux objets',
+    onContinue: showCustomize,
+  });
+}
+
+function handleHomeCoinGoal() {
+  if (!lastProfile) return;
+  const goal = nextCoinPurchaseGoal(lastProfile, avatarPackSettings);
+  if (!goal?.affordable) return showCustomize();
+  if (goal.kind === 'personnage') return handlePurchaseCharacter(goal.id, goal.cost);
+  return handlePurchasePack(goal.id);
 }
 
 async function selectAvatarPart(field, value) {
@@ -585,22 +639,25 @@ async function finishMission() {
   const justCompletedWeeklyGoal = weeklyGoal.weeklyGoalTarget > 0 && previousWeeklyProgress < weeklyGoal.weeklyGoalTarget && weeklyGoal.weeklyGoalProgress >= weeklyGoal.weeklyGoalTarget;
   const dailyChallengeCompletions = (profileBefore.dailyChallengeCompletions ?? 0) + (dailyChallenge.justCompletedDailyChallenge ? 1 : 0);
   const weeklyGoalCompletions = (profileBefore.weeklyGoalCompletions ?? 0) + (justCompletedWeeklyGoal ? 1 : 0);
+  const previousDailyMissionCount = profileBefore.dailyMissionCountDate === summary.date ? profileBefore.dailyMissionCount ?? 0 : 0;
+  const dailyMissionCount = previousDailyMissionCount + 1;
+  const chestReward = claimDailyAdventureChest(profileBefore, { date: summary.date, completedMissions: dailyMissionCount });
+  const rareTreasureIds = chestReward.success ? chestReward.rareTreasureIds : profileBefore.rareTreasureIds ?? [];
   const challengeBadges = newlyEarnedChallengeBadges(
-    { dailyChallengeCompletions, weeklyGoalCompletions },
+    { dailyChallengeCompletions, weeklyGoalCompletions, rareTreasureCount: rareTreasureIds.length },
     progressionResult.badges
   );
   const newBadges = [...progressionResult.newBadges, ...challengeBadges];
   const badges = [...progressionResult.badges, ...challengeBadges];
   const badgeDates = { ...progressionResult.badgeDates };
   challengeBadges.forEach((id) => { badgeDates[id] = summary.date; });
-  const previousDailyMissionCount = profileBefore.dailyMissionCountDate === summary.date ? profileBefore.dailyMissionCount ?? 0 : 0;
   const finalXp = progressionResult.xp + dailyChallenge.bonusXp;
-  const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins;
-  const rewardBreakdown = coinRewardBreakdown(
+  const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins + (chestReward.success ? chestReward.bonusCoins : 0);
+  const rewardBreakdown = { ...coinRewardBreakdown(
     summary.correctCount,
     summary.correctCount === summary.questionsTotal,
     dailyChallenge.justCompletedDailyChallenge
-  );
+  ), chestBonus: chestReward.success ? chestReward.bonusCoins : 0 };
   const finalAvatarLevel = levelForXp(finalXp);
   const finalLeveledUp = finalAvatarLevel > profileBefore.avatarLevel;
   const nextProfile = {
@@ -622,7 +679,10 @@ async function finishMission() {
     dailyChallengeCompletions,
     weeklyGoalCompletions,
     dailyMissionCountDate: summary.date,
-    dailyMissionCount: previousDailyMissionCount + 1,
+    dailyMissionCount,
+    dailyChestDate: chestReward.success ? chestReward.dailyChestDate : profileBefore.dailyChestDate ?? null,
+    dailyChestCount: chestReward.success ? chestReward.dailyChestCount : profileBefore.dailyChestCount ?? 0,
+    rareTreasureIds,
     lastSessionDate: progressionResult.lastSessionDate,
     difficultyLevels: nextDifficultyLevels,
   };
@@ -650,6 +710,8 @@ async function finishMission() {
     newBadges,
     justCompletedDailyChallenge: dailyChallenge.justCompletedDailyChallenge,
     justCompletedWeeklyGoal,
+    dailyChestReward: chestReward.success ? chestReward : null,
+    companionId: profileBefore.selectedCompanion ?? DEFAULT_COMPANION,
     weeklyRewardText: profileBefore.weeklyRewardText,
     breakdown: summary.breakdown,
     incorrectQuestions: summary.incorrectQuestions,

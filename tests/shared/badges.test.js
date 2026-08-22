@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType, formatDateFr, badgeAlbumData, badgeCollectionData } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
-  it('defines all 30 badges with a category, in a fixed order', () => {
+  it('defines all 31 badges with a category, in a fixed order', () => {
     expect(BADGES.map((b) => b.id)).toEqual([
       'streak-3',
       'streak-7',
@@ -34,6 +34,7 @@ describe('BADGES', () => {
       'weekly-1',
       'weekly-5',
       'weekly-10',
+      'secret-treasure',
     ]);
   });
 
@@ -46,7 +47,7 @@ describe('BADGES', () => {
 describe('badgeMedallionData', () => {
   it('marks badges as earned when their id is present', () => {
     const result = badgeMedallionData(['streak-3', 'mastery-division']);
-    expect(result).toHaveLength(30);
+    expect(result).toHaveLength(31);
     expect(result.find((b) => b.id === 'streak-3')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'mastery-division')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'streak-7')).toMatchObject({ earned: false });
@@ -158,7 +159,7 @@ describe('badgeCollectionData', () => {
       totalCorrectCount: 125,
       avatarLevel: 4,
     });
-    expect(result).toHaveLength(30);
+    expect(result).toHaveLength(31);
     expect(result.find((badge) => badge.id === 'streak-3')).toMatchObject({ earned: true, progressPercent: 100, unlockedAtLabel: '7 août 2026' });
     expect(result.find((badge) => badge.id === 'answers-250')).toMatchObject({ earned: false, progress: 125, progressPercent: 50 });
     expect(result.find((badge) => badge.id === 'level-5')).toMatchObject({ progressLabel: '4/5' });

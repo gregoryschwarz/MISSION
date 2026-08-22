@@ -29,6 +29,7 @@ export const BADGES = [
   { id: 'weekly-1', category: 'challenge', emoji: '🎁', label: 'Premier grand objectif', description: 'Atteindre 1 objectif de la semaine', metric: 'weeklyGoalCompletions', target: 1, gradient: ['#caffbf', '#70d6a2'] },
   { id: 'weekly-5', category: 'challenge', emoji: '🗺️', label: 'Capitaine de semaine', description: 'Atteindre 5 objectifs de la semaine', metric: 'weeklyGoalCompletions', target: 5, gradient: ['#a0c4ff', '#5e81f4'] },
   { id: 'weekly-10', category: 'challenge', emoji: '🏰', label: 'Reine des objectifs', description: 'Atteindre 10 objectifs de la semaine', metric: 'weeklyGoalCompletions', target: 10, gradient: ['#ffc6ff', '#b983ff'] },
+  { id: 'secret-treasure', category: 'challenge', emoji: '🗝️', label: 'Chasseuse de trésors', description: 'Découvrir un objet rare dans un coffre', metric: 'rareTreasureCount', target: 1, gradient: ['#ffe66d', '#ff6b6b'], secret: true },
 ];
 
 export const BADGE_CATEGORIES = [
@@ -104,7 +105,8 @@ export function badgeCollectionData(profile = {}) {
   const badgeDates = profile.badgeDates ?? {};
   return BADGES.map((badge) => {
     const earned = earnedBadgeIds.includes(badge.id);
-    const progress = earned ? badge.target : Math.min(progressForBadge(badge, profile), badge.target);
+    const badgeProfile = { ...profile, rareTreasureCount: profile.rareTreasureIds?.length ?? profile.rareTreasureCount ?? 0 };
+    const progress = earned ? badge.target : Math.min(progressForBadge(badge, badgeProfile), badge.target);
     return {
       ...badge,
       earned,
