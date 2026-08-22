@@ -18,6 +18,9 @@
   --color-coral: #f25f5c; /* secondaire / erreur */
   --color-sage: #8cb369; /* tertiaire */
   --color-pink: #ef476f; /* accent */
+  --color-sky: #66b8e8;
+  --color-violet: #9b7be5;
+  --color-orchid: #e68ac7;
 
   /* --- Couleur par thème de maths ---
      Les 5 thèmes du cahier des charges ont une couleur fixe.
@@ -88,6 +91,9 @@
     --color-coral: #ff7c78;
     --color-sage: #a4c985;
     --color-pink: #ff6f94;
+    --color-sky: #79c8f2;
+    --color-violet: #b397f1;
+    --color-orchid: #f09bd6;
     --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.28);
     --shadow-raised: 0 14px 32px rgba(0, 0, 0, 0.42);
   }

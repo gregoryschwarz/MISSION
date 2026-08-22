@@ -23,6 +23,20 @@ export const HELP_TEXT = {
     "Pour résoudre un problème, repère les nombres et ce qu'on te demande : est-ce qu'on ajoute (le total augmente) ou est-ce qu'on retire ? Calcule ensuite comme d'habitude.",
   'accord-pluriel':
     "Pour former le pluriel, ajoute généralement un -s au mot. Attention : certains mots en -eau, -eu ou -ou prennent un -x (oiseaux, jeux, choux...), et d'autres ne changent pas du tout (une souris, des souris).",
+  anglais:
+    "Lis toute la phrase et repère les mots que tu connais déjà. Les images et le contexte peuvent t'aider. Pour progresser, répète le mot anglais à voix haute avec sa traduction.",
+  'culture-generale':
+    "Élimine d'abord les réponses qui ne correspondent pas au thème de la question. Cherche ensuite un indice dans les lieux, les animaux, les objets ou les personnages cités.",
+  sciences:
+    "Observe le phénomène décrit et demande-toi ce que tu as déjà vu dans la nature ou dans ton corps. En sciences, une réponse doit pouvoir être expliquée par une observation.",
+  'histoire-geographie':
+    "En histoire, replace les événements du plus ancien au plus récent. En géographie, utilise les continents, les points cardinaux et les grands repères de la carte.",
+  logique:
+    "Cherche la règle qui se répète : ajouter, retirer, doubler, alterner ou classer. Vérifie ta règle sur chaque élément avant de choisir la réponse suivante.",
+  orthographe:
+    "Lis la phrase entière et écoute le son du mot. Vérifie les accords, les accents et les petits mots qui se prononcent pareil mais ne s'écrivent pas pareil.",
+  arts:
+    "Observe les couleurs, les formes et les familles d'instruments. En musique, frappe doucement le rythme avec tes mains pour compter les temps.",
 };
 
 export function helpTextForType(type) {

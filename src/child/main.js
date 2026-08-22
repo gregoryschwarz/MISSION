@@ -4,13 +4,15 @@ import { ensureDeviceAuth } from './authSession.js';
 import { getStoredChildId, storeChildId, clearStoredChildId, resolvePairingCode, requestPairing, pairingStatus } from './pairing.js';
 import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
 import { generateFrenchMission } from './frenchQuestions.js';
+import { generateSubjectMission } from './subjectQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression, applyDailyChallenge, applyWeeklyGoal, newlyEarnedChallengeBadges, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, coinRewardBreakdown, availableXp, purchaseXpCoinPack, XP_COIN_PACKS, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
 import { badgeCollectionData, badgeCountsAfterAwards } from '../shared/badges.js';
 import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '../shared/dailyAdventure.js';
 import { seasonForDate } from '../shared/seasons.js';
+import { SUBJECTS, normalizeEnabledSubjects } from '../shared/subjects.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
+import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
@@ -121,6 +123,7 @@ async function loadProfile(targetChildId) {
         selectedCompanionAccessory: DEFAULT_COMPANION_ACCESSORY,
         ownedPackIds: DEFAULT_OWNED_PACK_IDS,
         ownedCharacterIds: [],
+        enabledSubjects: normalizeEnabledSubjects(),
       };
 }
 
@@ -190,7 +193,7 @@ function renderHomeScreen(profile) {
     onToggleSound: toggleSound,
     onCustomize: showCustomize,
     onChooseNotion: showNotionPicker,
-    onStartFrenchMission: () => startFrenchMission(),
+    onChooseSubject: showSubjectPicker,
     onShowRewards: showRewards,
     onShowBadgeAlbum: showBadgeAlbum,
     onCoinGoalAction: handleHomeCoinGoal,
@@ -394,6 +397,18 @@ async function handleSelectDecor(decorId) {
   showCustomize();
 }
 
+function showSubjectPicker() {
+  const enabledSubjectIds = new Set(normalizeEnabledSubjects(lastProfile?.enabledSubjects));
+  renderSubjectPicker(root, {
+    subjects: SUBJECTS.filter((subject) => enabledSubjectIds.has(subject.id)),
+    difficultyLevels: lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS,
+    onSelect: startSubjectMission,
+    onStartFrench: startFrenchMission,
+    onBack: () => renderHomeScreen(lastProfile),
+    onNavigate: navigateTo,
+  });
+}
+
 async function handleBuyCoinPack(packId) {
   if (!lastProfile) return;
   const purchase = purchaseXpCoinPack(lastProfile, packId);
@@ -482,10 +497,10 @@ async function showHome() {
   }
 }
 
-function startMissionWithQuestions(questions, forcedMode = null) {
+function startMissionWithQuestions(questions, forcedMode = null, subject = null) {
   missionMode = forcedMode ?? pickMissionMode(getLastMissionMode());
   if (!forcedMode) storeLastMissionMode(missionMode);
-  session = createSession(questions);
+  session = createSession(questions, subject);
   lastFeedback = null;
   answerReview = null;
   helpVisible = false;
@@ -504,13 +519,21 @@ function startMission(notionType = null) {
   const questions = notionType
     ? generateSingleTypeMission(MISSION_LENGTH, notionType, difficultyLevels[notionType] ?? 1)
     : generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null);
-  startMissionWithQuestions(questions);
+  startMissionWithQuestions(questions, null, 'mathematiques');
 }
 
 function startFrenchMission() {
   if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
-  startMissionWithQuestions(generateFrenchMission(MISSION_LENGTH, difficultyLevels));
+  startMissionWithQuestions(generateFrenchMission(MISSION_LENGTH, difficultyLevels), 'qcm', 'francais');
+}
+
+function startSubjectMission(subjectId) {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const enabledSubjectIds = normalizeEnabledSubjects(lastProfile?.enabledSubjects);
+  if (!enabledSubjectIds.includes(subjectId)) return showSubjectPicker();
+  const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  startMissionWithQuestions(generateSubjectMission(subjectId, MISSION_LENGTH, difficultyLevels), 'qcm', subjectId);
 }
 
 function dailyMissionLimitReached() {
@@ -730,7 +753,8 @@ async function finishMission() {
     onRetryMistakes: summary.incorrectQuestions.length
       ? () => startMissionWithQuestions(
           summary.incorrectQuestions.map(({ submittedAnswer, ...question }) => question),
-          'qcm'
+          'qcm',
+          summary.subject ?? null
         )
       : null,
     onContinue: showHome,

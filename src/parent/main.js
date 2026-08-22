@@ -12,6 +12,7 @@ import {
   fetchChildProfile,
   fetchSessions,
   setFocusType,
+  setEnabledSubjects,
   setWeeklyGoalTarget,
   setDailyMissionLimit,
   creditChildCoins,
@@ -165,6 +166,10 @@ async function loadDashboard(familyId, childId) {
     },
     onSetWeeklyGoal: async ({ target, rewardText, rewardDays }) => {
       await setWeeklyGoalTarget(childId, target, rewardText, rewardDays);
+      await loadDashboard(familyId, childId);
+    },
+    onSetEnabledSubjects: async (enabledSubjects) => {
+      await setEnabledSubjects(childId, enabledSubjects);
       await loadDashboard(familyId, childId);
     },
     onSetDailyLimit: async (limit) => {

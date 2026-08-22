@@ -16,6 +16,13 @@ export const DEFAULT_DIFFICULTY_LEVELS = {
   temps: 1,
   probleme: 1,
   'accord-pluriel': 1,
+  anglais: 1,
+  'culture-generale': 1,
+  sciences: 1,
+  'histoire-geographie': 1,
+  logique: 1,
+  orthographe: 1,
+  arts: 1,
 };
 
 export const DIFFICULTY_LABELS = {

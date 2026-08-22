@@ -1,6 +1,7 @@
 import { emojiForType, renderBadgeMedallionsHtml, badgeCollectionData, BADGE_CATEGORIES, BADGES } from '../shared/badges.js';
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { DIFFICULTY_LABELS } from '../shared/difficulty.js';
+import { learningTypeLabel } from '../shared/subjects.js';
 import { dynamicHintSteps } from './hints.js';
 import { shapeSvg } from './shapes.js';
 import { coinSvg, formatEuroCents, parseEuroInput } from './money.js';
@@ -317,6 +318,38 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
+export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, onSelect, onStartFrench, onBack, onNavigate }) {
+  root.innerHTML = `
+    <div class="screen subject-picker-screen with-tabs">
+      <header class="subject-picker-heading">
+        <p>À TOI DE CHOISIR</p>
+        <h1>📚 Toutes les matières</h1>
+        <span>Une mission de 10 questions adaptée à ton niveau.</span>
+      </header>
+      <div class="subject-grid">
+        <button class="subject-card subject-card-core" data-core="francais">
+          <span class="subject-card-emoji">📖</span>
+          <span><strong>Français</strong><small>Grammaire et accords</small></span>
+          <em>${DIFFICULTY_LABELS[difficultyLevels['accord-pluriel'] ?? 1]}</em>
+        </button>
+        ${subjects.map((subject, index) => `
+          <button class="subject-card subject-accent-${subject.accent}" data-subject="${subject.id}" style="animation-delay:${index * 45}ms">
+            <span class="subject-card-emoji">${subject.emoji}</span>
+            <span><strong>${escapeHtml(subject.label)}</strong><small>${escapeHtml(subject.description)}</small></span>
+            <em>${DIFFICULTY_LABELS[difficultyLevels[subject.id] ?? 1]}</em>
+          </button>`).join('')}
+      </div>
+      ${subjects.length ? '' : '<p class="subject-empty-state">🔒 Les matières supplémentaires sont désactivées dans l’espace parent.</p>'}
+      <button id="subject-picker-back" class="big-button">Retour</button>
+    </div>
+    ${bottomTabsHtml('missions')}
+  `;
+  root.querySelector('[data-core="francais"]').addEventListener('click', onStartFrench);
+  root.querySelectorAll('[data-subject]').forEach((button) => button.addEventListener('click', () => onSelect(button.dataset.subject)));
+  root.querySelector('#subject-picker-back').addEventListener('click', onBack);
+  attachBottomTabs(root, onNavigate);
+}
+
 function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
   if (!target) return '';
   const completed = progress >= target;
@@ -334,7 +367,7 @@ function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, badgeCounts = {}, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, badgeCounts = {}, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onChooseSubject, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
   const mainGoal = priorityGoal ?? { kind: 'mission', emoji: '🗺️', label: 'Continuer mon aventure', detail: 'Une nouvelle mission m’attend', action: 'Jouer' };
   const totalBadgeWins = Object.values(badgeCounts).reduce((total, count) => total + count, 0) || (badges ?? []).length;
@@ -384,7 +417,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
           <div class="home-actions" aria-label="Actions principales">
             <button id="start-mission" class="big-button home-primary-action">✨ Mission du jour</button>
             <button id="choose-notion" class="big-button">🎯 Choisir une notion</button>
-            <button id="start-french-mission" class="big-button">📚 Mission Français</button>
+            <button id="choose-subject" class="big-button">📚 Toutes les matières</button>
             <button id="customize" class="big-button">🎨 Personnaliser</button>
             <button id="show-rewards" class="big-button">🎁 Récompenses</button>
             <button id="show-badges" class="big-button">🏅 Mes badges</button>
@@ -399,7 +432,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
   root.querySelector('#sound-toggle').addEventListener('click', onToggleSound);
   root.querySelector('#customize').addEventListener('click', onCustomize);
   root.querySelector('#choose-notion').addEventListener('click', onChooseNotion);
-  root.querySelector('#start-french-mission').addEventListener('click', onStartFrenchMission);
+  root.querySelector('#choose-subject').addEventListener('click', onChooseSubject);
   root.querySelector('#show-rewards').addEventListener('click', onShowRewards);
   root.querySelector('#show-badges').addEventListener('click', onShowBadgeAlbum);
   root.querySelector('#coin-goal-action')?.addEventListener('click', () => onCoinGoalAction?.());
@@ -748,7 +781,7 @@ function resultNotionsHtml(breakdown) {
   const strong = attempted.filter((item) => item.percent >= 75);
   const toReview = attempted.filter((item) => item.percent < 75);
   const chips = (items, className) => items.length
-    ? items.map((item) => `<li class="result-notion ${className}">${emojiForType(item.type)} <span>${escapeHtml(item.type.replaceAll('-', ' '))}</span><strong>${item.correct}/${item.total}</strong></li>`).join('')
+    ? items.map((item) => `<li class="result-notion ${className}">${emojiForType(item.type)} <span>${escapeHtml(learningTypeLabel(item.type))}</span><strong>${item.correct}/${item.total}</strong></li>`).join('')
     : '<li class="result-notion-empty">Aucune pour cette mission</li>';
   return `
     <div class="result-notion-group">

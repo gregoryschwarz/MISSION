@@ -1,6 +1,7 @@
 import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { DIFFICULTY_LABELS, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { weekStartKey } from '../shared/progression.js';
+import { SUBJECTS, learningTypeLabel, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -268,7 +269,7 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
   let recommendationTone = 'neutral';
   let recommendationLabel = '';
   const recommendationFocusType =
-    hasEnoughWeeklyData && weakType && focusType !== weakType.type
+    hasEnoughWeeklyData && weakType && NOTION_TYPES.includes(weakType.type) && focusType !== weakType.type
       ? weakType.type
       : null;
 
@@ -279,19 +280,19 @@ export function computeWeeklyWatch(sessions, profile, { referenceDate = new Date
   } else if (weakType && trendDirection === 'down') {
     recommendationTone = 'attention';
     recommendationLabel =
-      `${capitalize(weakType.type)} baisse encore cette semaine : \u00e0 cibler en priorit\u00e9.`;
+      `${displayTypeLabel(weakType.type)} baisse encore cette semaine : à cibler en priorité.`;
   } else if (weakType && trendDirection === 'up') {
     recommendationTone = 'positive';
     recommendationLabel =
-      `Progr\u00e8s en cours sur ${capitalize(weakType.type)} : continuer sur cette lanc\u00e9e.`;
+      `Progrès en cours sur ${displayTypeLabel(weakType.type)} : continuer sur cette lancée.`;
   } else if (weakType && trendDirection === 'stable') {
     recommendationTone = 'warning';
     recommendationLabel =
-      `${capitalize(weakType.type)} reste fragile : maintenir un entra\u00eenement r\u00e9gulier.`;
+      `${displayTypeLabel(weakType.type)} reste fragile : maintenir un entraînement régulier.`;
   } else if (weakType) {
     recommendationTone = 'warning';
     recommendationLabel =
-      `Continuer \u00e0 surveiller ${capitalize(weakType.type)} pendant quelques missions.`;
+      `Continuer à surveiller ${displayTypeLabel(weakType.type)} pendant quelques missions.`;
   } else if (trendDirection === 'up') {
     recommendationTone = 'positive';
     recommendationLabel =
@@ -389,6 +390,10 @@ const NOTION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison
 
 function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function displayTypeLabel(type) {
+  return subjectForId(type)?.label ?? capitalize(learningTypeLabel(type));
 }
 
 const REWARD_CATEGORIES = [
@@ -658,7 +663,7 @@ export function renderChildrenList(root, { children, pairingRequests = [], onSel
 
 function weeklyWatchHtml(watch) {
   const weakLabel = watch.weakType
-    ? `${emojiForType(watch.weakType.type)} ${capitalize(watch.weakType.type)} · ${watch.weakType.percent}%`
+    ? `${emojiForType(watch.weakType.type)} ${displayTypeLabel(watch.weakType.type)} · ${watch.weakType.percent}%`
     : 'Pas assez de données';
 
   const focusLabel = watch.focusType
@@ -721,7 +726,7 @@ function weeklyWatchHtml(watch) {
                  type="button"
                  class="weekly-watch-focus-button"
                  data-focus-type="${escapeHtml(watch.recommendationFocusType)}"
-               >Cibler ${escapeHtml(capitalize(watch.recommendationFocusType))}</button>`
+               >Cibler ${escapeHtml(displayTypeLabel(watch.recommendationFocusType))}</button>`
             : ''
         }
       </div>
@@ -739,7 +744,7 @@ function insightCardsHtml({ strongType, weakType }) {
         strongType
           ? `<div class="insight-card insight-strong">
               <p class="insight-title">💪 Point fort</p>
-              <p class="insight-body">${emojiForType(strongType.type)} ${capitalize(strongType.type)} — ${strongType.percent}% de réussite</p>
+              <p class="insight-body">${emojiForType(strongType.type)} ${escapeHtml(displayTypeLabel(strongType.type))} — ${strongType.percent}% de réussite</p>
             </div>`
           : ''
       }
@@ -747,7 +752,7 @@ function insightCardsHtml({ strongType, weakType }) {
         weakType
           ? `<div class="insight-card insight-weak">
               <p class="insight-title">📚 À travailler</p>
-              <p class="insight-body">${emojiForType(weakType.type)} ${capitalize(weakType.type)} — ${weakType.percent}% de réussite</p>
+              <p class="insight-body">${emojiForType(weakType.type)} ${escapeHtml(displayTypeLabel(weakType.type))} — ${weakType.percent}% de réussite</p>
             </div>`
           : ''
       }
@@ -767,7 +772,7 @@ function breakdownBarsHtml(breakdown, difficultyLevels) {
           const level = difficultyLevels[type] ?? 1;
           return `
             <li class="breakdown-row">
-              <span class="breakdown-label">${emojiForType(type)} ${capitalize(type)}</span>
+              <span class="breakdown-label">${emojiForType(type)} ${escapeHtml(displayTypeLabel(type))}</span>
               <span class="breakdown-bar"><span class="breakdown-bar-fill" style="width:${percent}%;background:${colorForPercent(percent)}"></span></span>
               <span class="breakdown-value">${percent}% — ${DIFFICULTY_LABELS[level]}</span>
             </li>`;
@@ -777,7 +782,7 @@ function breakdownBarsHtml(breakdown, difficultyLevels) {
   `;
 }
 
-export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onOpenShop, onSetFocus, onSetWeeklyGoal, onSetDailyLimit, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
+export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onOpenShop, onSetFocus, onSetEnabledSubjects, onSetWeeklyGoal, onSetDailyLimit, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
   const breakdown = aggregateBreakdown(sessions);
   const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const dailyBreakdown = dailyBreakdownByType(sessions);
@@ -785,6 +790,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   const insights = computeInsights(sessions);
   const dailyActivity = dailyActivityLast7Days(sessions);
   const weeklyWatch = computeWeeklyWatch(sessions, profile);
+  const enabledSubjects = normalizeEnabledSubjects(profile.enabledSubjects);
   root.innerHTML = `
     <div class="dashboard">
       <header>
@@ -809,7 +815,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
           <section class="insights">
             <h2>En un coup d'œil</h2>
             ${insightCardsHtml(insights)}
-            ${insights.weakType ? `<div class="recommendation-card">💡 Suggestion : proposer une mission « ${escapeHtml(capitalize(insights.weakType.type))} » (${insights.weakType.percent}% de réussite).</div>` : '<div class="recommendation-card">💡 Continue quelques missions pour obtenir une recommandation personnalisée.</div>'}
+            ${insights.weakType ? `<div class="recommendation-card">💡 Suggestion : proposer une mission « ${escapeHtml(displayTypeLabel(insights.weakType.type))} » (${insights.weakType.percent}% de réussite).</div>` : '<div class="recommendation-card">💡 Continue quelques missions pour obtenir une recommandation personnalisée.</div>'}
           </section>
           <section class="daily-activity">
             <h2>Activité des 7 derniers jours</h2>
@@ -860,6 +866,15 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
           <button type="submit">Enregistrer la limite</button>
         </form>
       </section>
+      <section class="subject-settings">
+        <div class="subject-settings-heading"><div><h2>📚 Matières disponibles</h2><p>Choisis les missions supplémentaires visibles sur la tablette. Les mathématiques et le français restent toujours disponibles.</p></div><strong>${enabledSubjects.length}/${SUBJECTS.length} actives</strong></div>
+        <form id="subject-settings-form">
+          <div class="parent-subject-grid">
+            ${SUBJECTS.map((subject) => `<label class="parent-subject-card"><input type="checkbox" name="enabled-subject" value="${subject.id}" ${enabledSubjects.includes(subject.id) ? 'checked' : ''} /><span>${subject.emoji}</span><div><strong>${escapeHtml(subject.label)}</strong><small>${escapeHtml(subject.description)}</small></div></label>`).join('')}
+          </div>
+          <button type="submit">Enregistrer les matières</button>
+        </form>
+      </section>
       <section class="notification-settings"><button id="enable-notifications">🔔 Activer les alertes de récompenses</button><p class="setup-hint">L’espace parent vérifiera les nouvelles demandes toutes les 10 secondes.</p></section>
       <section class="monthly-activity"><h2>Calendrier du mois</h2>${monthlyCalendarHtml(sessions)}</section>
       <section class="weekly-progress">
@@ -895,7 +910,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
           ${sessions
             .map(
               (s) =>
-                `<li>${s.date} — ${s.correctCount}/${s.questionsTotal} en ${Math.round(s.durationSeconds / 60)} min</li>`
+                `<li>${s.date} — ${s.subject ? `${escapeHtml(displayTypeLabel(s.subject))} · ` : ''}${s.correctCount}/${s.questionsTotal} en ${Math.round(s.durationSeconds / 60)} min</li>`
             )
             .join('')}
         </ul>
@@ -915,6 +930,11 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   root.querySelector('#share-code').addEventListener('click', () => onShareCode(child.pairingCode, profile.childName));
   root.querySelector('#enable-notifications').addEventListener('click', onEnableNotifications);
   root.querySelector('#focus-type').addEventListener('change', (event) => onSetFocus(event.target.value || null));
+  root.querySelector('#subject-settings-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const subjectIds = [...root.querySelectorAll('input[name="enabled-subject"]:checked')].map((input) => input.value);
+    onSetEnabledSubjects(subjectIds);
+  });
 
   root.querySelector('.weekly-watch-focus-button')?.addEventListener('click', (event) => {
     const type = event.currentTarget.dataset.focusType;

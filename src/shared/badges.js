@@ -1,3 +1,5 @@
+import { learningTypeEmoji } from './subjects.js';
+
 export const BADGES = [
   { id: 'streak-3', category: 'streak', emoji: '🔥', label: 'Étincelle', description: 'Jouer 3 jours de suite', metric: 'streakDays', target: 3, repeatable: true, gradient: ['#ffd166', '#ff9f43'] },
   { id: 'streak-7', category: 'streak', emoji: '⭐', label: 'Étoile fidèle', description: 'Jouer 7 jours de suite', metric: 'streakDays', target: 7, repeatable: true, gradient: ['#c9b8ff', '#8fd6ff'] },
@@ -134,5 +136,5 @@ export function badgeCountsAfterAwards(existingCounts = {}, earnedBadgeIds = [],
 
 export function emojiForType(type) {
   const badge = BADGES.find((b) => b.id === `mastery-${type}`);
-  return badge ? badge.emoji : '❓';
+  return badge?.emoji ?? learningTypeEmoji(type) ?? '❓';
 }
