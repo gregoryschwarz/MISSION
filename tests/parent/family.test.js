@@ -126,7 +126,7 @@ describe('family avatar pack settings', () => {
     writeBatch.mockReturnValueOnce(batch);
     getDocs.mockResolvedValueOnce({ docs: [] });
     expect(await ensureAvatarPackSettings('family-abc')).toBe(true);
-    expect(batch.set).toHaveBeenCalledTimes(15);
+    expect(batch.set).toHaveBeenCalledTimes(30);
     expect(batch.commit).toHaveBeenCalledOnce();
   });
 
@@ -135,7 +135,7 @@ describe('family avatar pack settings', () => {
       docs: [{ id: 'magic-pack', data: () => ({ active: false, cost: 42, requiredLevel: 11 }) }],
     });
     const packs = await fetchAvatarPackSettings('family-abc');
-    expect(packs).toHaveLength(15);
+    expect(packs).toHaveLength(30);
     expect(packs.find((pack) => pack.id === 'magic-pack')).toMatchObject({ active: false, cost: 42, requiredLevel: 11 });
     expect(packs.find((pack) => pack.id === 'starter-pack').active).toBe(true);
   });

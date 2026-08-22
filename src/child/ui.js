@@ -46,6 +46,14 @@ const DECOR_SCENES = {
   'block-city': ['🏙️', '🧊', '🔷'], 'neon-arcade': ['🕹️', '⚡', '💠'], 'mystic-stage': ['🎤', '✨', '🎵'], 'moon-concert': ['🌙', '🎶', '⭐'],
   'enchanted-grove': ['🌳', '🧚', '🍄'], 'candy-clouds': ['☁️', '🍬', '🌈'], 'crystal-cave': ['💎', '✨', '🔮'],
   'ocean-lagoon': ['🌴', '🌊', '🐚'], 'zen-garden': ['🎋', '🪨', '🌸'], 'sunset-beach': ['🌅', '🌴', '🌊'],
+  'fairy-village':['🏡','🧚','🌸'], 'magic-waterfall':['🌿','💦','✨'], 'royal-stable':['🏠','🐴','🌾'], 'horse-meadow':['🌳','🐎','🌼'],
+  'prehistoric-jungle':['🌴','🦕','🌋'], 'fossil-museum':['🏛️','🦴','🔎'], 'magic-kitchen':['🧁','✨','🍰'], 'cake-shop':['🏠','🍭','🎂'],
+  'underwater-palace':['🏰','🐠','🐚'], 'coral-reef':['🪸','🐟','🌊'], 'ferris-wheel':['🎡','🎈','✨'], 'fairground-arcade':['🕹️','🎟️','💡'],
+  'festival-stage':['🎤','🎵','🎸'], backstage:['🎹','⭐','🎧'], 'mystery-manor':['🏚️','🔍','🌙'], 'secret-lab':['🧪','⚗️','🔐'],
+  'forest-camp':['⛺','🌲','🔥'], 'starry-tent':['⛺','⭐','🌙'], 'cloud-castle':['🏰','☁️','🌈'], 'giant-moon':['☁️','🌙','⭐'],
+  'flower-garden':['🌷','🐝','🌸'], 'magic-greenhouse':['🏡','🌿','🦋'], 'summer-pool':['🏊','☀️','🍹'], 'tropical-island':['🌴','☀️','🌊'],
+  'magic-school':['🏫','✨','🪄'], 'enchanted-library':['📚','🕯️','🦉'], 'birthday-room':['🎂','🎈','🎁'], 'surprise-party':['🥳','🎉','🎊'],
+  'champion-stadium':['🏟️','⚽','🏆'], 'golden-podium':['🥇','🏆','✨'],
 };
 
 function decorSceneHtml(decorId) {
@@ -370,16 +378,20 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
 // plutôt qu'un simple cadenas — cf. les maquettes ("🔒 80").
 function customizeMedallionHtml(item, selectedId, coins = null) {
   const label = item.name ?? item.emoji ?? '';
+  const characterName = item.skin ? label.split(' ') : [];
+  const optionLabel = item.skin
+    ? `<span class="customize-option-label character-option-name"><strong>${escapeHtml(characterName[0])}</strong><small>${escapeHtml(characterName.slice(1).join(' '))}</small></span>`
+    : `<span class="customize-option-label">${escapeHtml(label)}</span>`;
   if (!item.unlocked) {
     if (coins !== null && item.cost > 0) {
       const affordable = coins >= item.cost;
       return `<button class="customize-option badge-medallion buyable ${affordable ? '' : 'unaffordable'}" data-id="${item.id}" data-cost="${item.cost}" title="${label} — ${item.cost} 🪙">
         <span class="medallion-lock">🔒</span>
-        <span class="medallion-cost">${item.cost}🪙</span><span class="customize-option-label">${label}</span>
+        <span class="medallion-cost">${item.cost}🪙</span>${optionLabel}
       </button>`;
     }
     const unlockHint = item.unlockHint ?? (item.packId ? 'Disponible dans un pack' : item.requiredLevel ? `Atteindre le niveau ${item.requiredLevel}` : 'Objectif spécial');
-    return `<div class="customize-option badge-medallion locked" title="${label} — ${unlockHint}"><span>🔒</span><span class="customize-option-label">${label}</span><small>${unlockHint}</small></div>`;
+    return `<div class="customize-option badge-medallion locked" title="${label} — ${unlockHint}"><span>🔒</span>${optionLabel}<small class="customize-unlock-hint">${unlockHint}</small></div>`;
   }
   const isSelected = item.id === selectedId;
   const isCape = CAPES.some((cape) => cape.id === item.id);
@@ -391,7 +403,7 @@ function customizeMedallionHtml(item, selectedId, coins = null) {
       : isHat
         ? blockAvatarHtml('unicorn', item.id, 'none-cape', true)
         : (item.emoji ?? '🚫');
-  return `<button class="customize-option badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}"><span class="customize-option-visual">${content}</span><span class="customize-option-label">${label}</span>${isSelected ? '<small>Équipé</small>' : ''}</button>`;
+  return `<button class="customize-option badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}"><span class="customize-option-visual">${content}</span>${optionLabel}${isSelected ? '<small>Équipé</small>' : ''}</button>`;
 }
 
 function customizeDecorSwatchHtml(decor, selectedId) {

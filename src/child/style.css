@@ -1681,6 +1681,10 @@ input {
 .customize-option.badge-medallion.selected { border-color:var(--color-pink); background:color-mix(in srgb,var(--color-pink) 11%,var(--color-card)); box-shadow:0 0 0 2px color-mix(in srgb,var(--color-pink) 28%,transparent); }
 .customize-option-visual { position:relative; min-height:42px; display:grid; place-items:center; font-size:31px; line-height:1; }
 .customize-option-label { width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:750; text-align:center; }
+.character-option-name { display:grid; gap:1px; overflow:visible; white-space:normal; }
+.character-option-name strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
+.character-option-name small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--color-text-muted); font-size:8px; font-weight:650; text-transform:capitalize; }
+.customize-unlock-hint { display:block; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .customize-option small { font-size:9px; color:var(--color-text-muted); }
 .customize-option.locked { filter:none; opacity:.58; }
 .customize-option.locked small { min-height:24px; display:grid; place-items:center; padding:0 2px; font-size:10px; line-height:1.15; color:var(--color-text-muted); text-align:center; }

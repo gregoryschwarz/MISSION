@@ -92,7 +92,7 @@ describe('DECORS', () => {
       'Nuit étoilée',
     ]);
     expect(DECORS.slice(0, 8).map((d) => d.requiredLevel)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(DECORS).toHaveLength(22);
+    expect(DECORS).toHaveLength(52);
   });
 });
 
@@ -211,10 +211,10 @@ describe('emojiForCharacter', () => {
 
 describe('Avatar V2 collections', () => {
   it('offers a generous modular wardrobe and several companions', () => {
-    expect(HAIRSTYLES).toHaveLength(16);
-    expect(OUTFITS).toHaveLength(28);
-    expect(COMPANIONS).toHaveLength(13);
-    expect(COMPANION_ACCESSORIES).toHaveLength(15);
+    expect(HAIRSTYLES).toHaveLength(31);
+    expect(OUTFITS).toHaveLength(43);
+    expect(COMPANIONS).toHaveLength(28);
+    expect(COMPANION_ACCESSORIES).toHaveLength(30);
   });
 
   it('keeps premium décors locked until their pack is owned', () => {
@@ -261,7 +261,7 @@ describe('Avatar V2 collections', () => {
 
 describe('Avatar packs', () => {
   it('defines normal and seasonal packs with unique item ownership', () => {
-    expect(AVATAR_PACKS).toHaveLength(15);
+    expect(AVATAR_PACKS).toHaveLength(30);
     expect(AVATAR_PACKS.find((pack) => pack.id === 'halloween-pack')).toMatchObject({ seasonal: true, emoji: '🎃' });
     expect(AVATAR_PACKS.find((pack) => pack.id === 'christmas-pack')).toMatchObject({ seasonal: true, emoji: '🎄' });
     const allItemIds = AVATAR_PACKS.flatMap((pack) => pack.itemIds);
@@ -278,6 +278,15 @@ describe('Avatar packs', () => {
     expect(AVATAR_PACKS.find((pack) => pack.id === 'fantasy-decor-pack')).toMatchObject({ decorPack: true, cost: 90 });
     expect(AVATAR_PACKS.find((pack) => pack.id === 'escape-decor-pack')).toMatchObject({ decorPack: true, cost: 100 });
     expect(packIdsForSelectedItems(['enchanted-grove', 'snow-village', 'mystic-stage'])).toEqual(['fantasy-decor-pack', 'christmas-pack', 'mystic-idols-pack']);
+  });
+
+  it('includes the validated themed collections with complete customization sets', () => {
+    const fairyPack = AVATAR_PACKS.find((pack) => pack.id === 'fairy-kingdom-pack');
+    expect(fairyPack).toMatchObject({ name: 'Royaume des fées', requiredLevel: 4, cost: 120 });
+    expect(fairyPack.itemIds).toEqual(expect.arrayContaining([
+      'fairy-braid', 'fairy-dress', 'griffin-companion', 'pet-fairy-crown', 'fairy-village', 'magic-waterfall',
+    ]));
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'champions-pack')?.name).toBe('Les Championnes');
   });
 
   it('separates the required level from permanent ownership', () => {
