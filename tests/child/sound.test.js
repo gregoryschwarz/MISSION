@@ -40,4 +40,15 @@ describe('speakEnglish', () => {
   it('returns false when the browser has no speech synthesis', () => {
     expect(speakEnglish('hello', {})).toBe(false);
   });
+
+  it('selects an installed English voice and resumes a suspended mobile engine', () => {
+    const englishVoice = { lang: 'en-GB', name: 'English UK' };
+    const speak = vi.fn();
+    const resume = vi.fn();
+    class Utterance { constructor(text) { this.text = text; } }
+    const speechSynthesis = { speak, resume, speaking: false, getVoices: () => [{ lang: 'fr-FR' }, englishVoice] };
+    expect(speakEnglish('school', { speechSynthesis, SpeechSynthesisUtterance: Utterance })).toBe(true);
+    expect(resume).toHaveBeenCalledOnce();
+    expect(speak).toHaveBeenCalledWith(expect.objectContaining({ voice: englishVoice, lang: 'en-GB' }));
+  });
 });
