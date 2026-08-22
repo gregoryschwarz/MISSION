@@ -48,14 +48,15 @@ import {
 } from '../../src/shared/avatarCustomization.js';
 
 describe('CHARACTERS', () => {
-  it('defines 9 characters with the unicorn unlocked from level 1', () => {
-    expect(CHARACTERS).toHaveLength(9);
+  it('defines 16 characters with the unicorn unlocked from level 1', () => {
+    expect(CHARACTERS).toHaveLength(16);
     expect(CHARACTERS.find((c) => c.id === 'unicorn').requiredLevel).toBe(1);
+    expect(CHARACTERS.filter((c) => c.gender === 'girl')).toHaveLength(14);
   });
 
-  it('spreads required levels from 1 to 9 without duplicates', () => {
+  it('spreads required levels from 1 to 16 without duplicates', () => {
     const levels = CHARACTERS.map((c) => c.requiredLevel).sort((a, b) => a - b);
-    expect(levels).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(levels).toEqual(Array.from({ length: 16 }, (_, index) => index + 1));
   });
 
   it('gives every character a coin cost, free for the default unicorn', () => {
@@ -162,7 +163,7 @@ describe('unlockedDecors', () => {
 describe('characterMedallionData', () => {
   it('marks only the unicorn as unlocked at level 1', () => {
     const result = characterMedallionData(1);
-    expect(result).toHaveLength(9);
+    expect(result).toHaveLength(16);
     expect(result.find((c) => c.id === 'unicorn').unlocked).toBe(true);
     expect(result.find((c) => c.id === 'dragon').unlocked).toBe(false);
   });

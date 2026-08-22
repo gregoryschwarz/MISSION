@@ -382,7 +382,15 @@ function customizeMedallionHtml(item, selectedId, coins = null) {
     return `<div class="customize-option badge-medallion locked" title="${label} — ${unlockHint}"><span>🔒</span><span class="customize-option-label">${label}</span><small>${unlockHint}</small></div>`;
   }
   const isSelected = item.id === selectedId;
-  const content = item.skin ? blockAvatarHtml(item.id, 'none-hat', 'none-cape', true) : (item.emoji ?? '🚫');
+  const isCape = CAPES.some((cape) => cape.id === item.id);
+  const isHat = HATS.some((hat) => hat.id === item.id);
+  const content = item.skin
+    ? blockAvatarHtml(item.id, 'none-hat', 'none-cape', true)
+    : isCape
+      ? blockAvatarHtml('unicorn', 'none-hat', item.id, true)
+      : isHat
+        ? blockAvatarHtml('unicorn', item.id, 'none-cape', true)
+        : (item.emoji ?? '🚫');
   return `<button class="customize-option badge-medallion selectable ${isSelected ? 'selected' : ''}" data-id="${item.id}" title="${label}"><span class="customize-option-visual">${content}</span><span class="customize-option-label">${label}</span>${isSelected ? '<small>Équipé</small>' : ''}</button>`;
 }
 
@@ -431,12 +439,16 @@ export function renderCustomize(root, { characters, hats, capes, hairstyles, out
         <p class="coins-balance">🪙 ${coins} pièces</p>
       </header>
       <div class="customize-layout">
-        <aside class="customize-preview decor-scene decor-${selectedDecor.id}" style="background:${previewGradient}">
-          <span class="customize-preview-label">APERÇU</span>
-          ${decorSceneHtml(selectedDecor.id)}
-          <div class="customize-preview-stage">${blockAvatarHtml(selectedCharacterId, selectedHatId, selectedCapeId, false, selectedHairstyleId, selectedOutfitId, selectedCompanionId, selectedCompanionAccessoryId)}</div>
-          <strong>${selectedCompanion?.emoji ? `${selectedCompanion.emoji} ${selectedCompanion.name}` : 'Ton avatar est prêt !'}</strong>
-          <small>Choisis chaque élément pour créer ton style.</small>
+        <aside class="customize-preview-card">
+          <div class="customize-preview decor-scene decor-${selectedDecor.id}" style="background:${previewGradient}">
+            <span class="customize-preview-label">APERÇU</span>
+            ${decorSceneHtml(selectedDecor.id)}
+            <div class="customize-preview-stage">${blockAvatarHtml(selectedCharacterId, selectedHatId, selectedCapeId, false, selectedHairstyleId, selectedOutfitId, selectedCompanionId, selectedCompanionAccessoryId)}</div>
+          </div>
+          <div class="customize-preview-caption">
+            <strong>${selectedCompanion?.emoji ? `${selectedCompanion.emoji} ${selectedCompanion.name}` : 'Ton avatar est prêt !'}</strong>
+            <small>Choisis chaque élément pour créer ton style.</small>
+          </div>
         </aside>
         <div class="customize-catalog">
           <section class="customize-category avatar-pack-shop">

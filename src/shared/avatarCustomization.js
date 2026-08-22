@@ -1,20 +1,27 @@
 // Personnalisation de l'avatar enfant : personnages, chapeaux, capes et décors
-// de fond. Voir docs/cahier-des-charges.md ("Avatar personnalisable : 9
+// de fond. Voir docs/cahier-des-charges.md ("Avatar personnalisable :
 // personnages + accessoires (chapeaux 🎩 & capes ✨) + 8 décors colorés en fond").
 
 // `cost` = deuxième voie de déblocage : un personnage encore hors de portée
 // niveau peut être acheté directement avec des pièces (comme sur les
 // maquettes de référence, ex. médaillon verrouillé "🔒 80").
 export const CHARACTERS = [
-  { id: 'unicorn', name: 'Luna aventurière', emoji: '🦄', skin: '#f2c7a5', hair: '#5b2d90', outfit: '#ff5fa2', accent: '#ffe066', requiredLevel: 1, cost: 0 },
-  { id: 'butterfly', name: 'Nova astronaute', emoji: '🦋', skin: '#9b5f3f', hair: '#241c2b', outfit: '#f5f7ff', accent: '#6c63ff', requiredLevel: 2, cost: 20 },
-  { id: 'cat', name: 'Kira ninja', emoji: '🐱', skin: '#d99b72', hair: '#17151e', outfit: '#343047', accent: '#ff4d6d', requiredLevel: 3, cost: 30 },
-  { id: 'dog', name: 'Milo sportif', emoji: '🐶', skin: '#f0b98d', hair: '#7a431f', outfit: '#20b486', accent: '#ffffff', requiredLevel: 4, cost: 40 },
-  { id: 'fox', name: 'Zélie exploratrice', emoji: '🦊', skin: '#e8ad83', hair: '#d45b32', outfit: '#f2a93b', accent: '#315f49', requiredLevel: 5, cost: 50 },
-  { id: 'panda', name: 'Aya magicienne', emoji: '🐼', skin: '#70402f', hair: '#251713', outfit: '#7656c8', accent: '#ffd166', requiredLevel: 6, cost: 60 },
-  { id: 'lion', name: 'Léo chevalier', emoji: '🦁', skin: '#c9855d', hair: '#8b4d20', outfit: '#718096', accent: '#3c91e6', requiredLevel: 7, cost: 70 },
-  { id: 'koala', name: 'Lou scientifique', emoji: '🐨', skin: '#f4c9a8', hair: '#c89b6d', outfit: '#e8f5ff', accent: '#00a6a6', requiredLevel: 8, cost: 80 },
-  { id: 'dragon', name: 'Sasha pirate', emoji: '🐉', skin: '#8f563d', hair: '#151515', outfit: '#b23a48', accent: '#f4d35e', requiredLevel: 9, cost: 100 },
+  { id: 'unicorn', name: 'Luna aventurière', gender: 'girl', emoji: '🦄', skin: '#f2c7a5', hair: '#5b2d90', outfit: '#ff5fa2', accent: '#ffe066', requiredLevel: 1, cost: 0 },
+  { id: 'butterfly', name: 'Nova astronaute', gender: 'girl', emoji: '🦋', skin: '#9b5f3f', hair: '#241c2b', outfit: '#f5f7ff', accent: '#6c63ff', requiredLevel: 2, cost: 20 },
+  { id: 'cat', name: 'Kira ninja', gender: 'girl', emoji: '🐱', skin: '#d99b72', hair: '#17151e', outfit: '#343047', accent: '#ff4d6d', requiredLevel: 3, cost: 30 },
+  { id: 'dog', name: 'Milo sportif', gender: 'boy', emoji: '🐶', skin: '#f0b98d', hair: '#7a431f', outfit: '#20b486', accent: '#ffffff', requiredLevel: 4, cost: 40 },
+  { id: 'fox', name: 'Zélie exploratrice', gender: 'girl', emoji: '🦊', skin: '#e8ad83', hair: '#d45b32', outfit: '#f2a93b', accent: '#315f49', requiredLevel: 5, cost: 50 },
+  { id: 'panda', name: 'Aya magicienne', gender: 'girl', emoji: '🐼', skin: '#70402f', hair: '#251713', outfit: '#7656c8', accent: '#ffd166', requiredLevel: 6, cost: 60 },
+  { id: 'lion', name: 'Léo chevalier', gender: 'boy', emoji: '🦁', skin: '#c9855d', hair: '#8b4d20', outfit: '#718096', accent: '#3c91e6', requiredLevel: 7, cost: 70 },
+  { id: 'koala', name: 'Lou scientifique', gender: 'girl', emoji: '🐨', skin: '#f4c9a8', hair: '#c89b6d', outfit: '#e8f5ff', accent: '#00a6a6', requiredLevel: 8, cost: 80 },
+  { id: 'dragon', name: 'Sasha pirate', gender: 'girl', emoji: '🐉', skin: '#8f563d', hair: '#151515', outfit: '#b23a48', accent: '#f4d35e', requiredLevel: 9, cost: 100 },
+  { id: 'iris-fairy', name: 'Iris la fée', gender: 'girl', emoji: '🧚', skin: '#8d563f', hair: '#43235f', outfit: '#a96ee8', accent: '#a8f0dc', requiredLevel: 10, cost: 120 },
+  { id: 'maya-mermaid', name: 'Maya des océans', gender: 'girl', emoji: '🧜‍♀️', skin: '#d99a72', hair: '#123f68', outfit: '#23a6a6', accent: '#c9f6ef', requiredLevel: 11, cost: 140 },
+  { id: 'zoe-hero', name: 'Zoé héroïne', gender: 'girl', emoji: '🦸‍♀️', skin: '#6f402f', hair: '#201927', outfit: '#3d6fe0', accent: '#ffcf4a', requiredLevel: 12, cost: 160 },
+  { id: 'ines-adventurer', name: 'Inès exploratrice', gender: 'girl', emoji: '🧭', skin: '#efb58a', hair: '#743a24', outfit: '#2f7d63', accent: '#f5c451', requiredLevel: 13, cost: 190 },
+  { id: 'rose-princess', name: 'Rose des étoiles', gender: 'girl', emoji: '👸', skin: '#ba775b', hair: '#3a2028', outfit: '#e66dad', accent: '#ffe08a', requiredLevel: 14, cost: 220 },
+  { id: 'jade-dancer', name: 'Jade danseuse', gender: 'girl', emoji: '💃', skin: '#7d4a37', hair: '#16131c', outfit: '#e24d72', accent: '#ffc6dd', requiredLevel: 15, cost: 260 },
+  { id: 'alba-elf', name: 'Alba gardienne', gender: 'girl', emoji: '🧝‍♀️', skin: '#f0c29e', hair: '#d8e7ef', outfit: '#5371b8', accent: '#b7f2d5', requiredLevel: 16, cost: 300 },
 ];
 
 const MASTERY_BADGE_IDS = [
