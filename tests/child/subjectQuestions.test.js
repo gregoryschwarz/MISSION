@@ -53,6 +53,13 @@ describe('generateSubjectMission', () => {
     expect(new Set(mission.map((question) => question.prompt)).size).toBe(10);
   });
 
+  it('does not disguise the same learning fact as several formats in one mission', () => {
+    SUBJECTS.forEach(({ id }) => {
+      const mission = generateSubjectMission(id, 10, { [id]: 1 }, { schoolLevel: 'CP' });
+      expect(new Set(mission.map((question) => question.sourceId)).size).toBe(10);
+    });
+  });
+
   it('honours the school-level difficulty cap', () => {
     const mission = generateSubjectMission('sciences', 10, { sciences: 3 }, { schoolLevel: 'CP' });
     expect(mission.every((question) => question.level === 1)).toBe(true);

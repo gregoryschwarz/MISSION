@@ -512,4 +512,11 @@ describe('generateSingleTypeMission', () => {
     const mission = generateSingleTypeMission(3, 'not-a-real-type');
     mission.forEach((q) => expect(q.type).toBe('addition'));
   });
+
+  it('does not repeat the same multiplication inside one QCM series', () => {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const mission = generateSingleTypeMission(10, 'multiplication', 1);
+      expect(new Set(mission.map((question) => question.prompt)).size).toBe(10);
+    }
+  });
 });

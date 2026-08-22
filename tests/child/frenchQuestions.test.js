@@ -95,4 +95,11 @@ describe('generateFrenchMission', () => {
     const regularForms = REGULAR_WORDS.flatMap((w) => [w.singular, w.plural]);
     mission.forEach((q) => expect(regularForms).toContain(q.given));
   });
+
+  it('does not ask the same singular or plural question twice in one series', () => {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const mission = generateFrenchMission(10, { 'accord-pluriel': 1 });
+      expect(new Set(mission.map((question) => question.prompt)).size).toBe(10);
+    }
+  });
 });
