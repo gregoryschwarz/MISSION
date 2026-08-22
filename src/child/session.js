@@ -41,10 +41,19 @@ export function submitAnswer(session, answer) {
     throw new Error('Cannot submit answer: session is complete');
   }
   const question = currentQuestion(session);
-  const isCorrect = answer === question.answer;
+  const isCorrect = answersMatch(answer, question.answer);
   recordAnswer(session, question, isCorrect, answer);
   session.index += 1;
   return isCorrect;
+}
+
+export function normalizeTextAnswer(value) {
+  return String(value ?? '').trim().toLocaleLowerCase('fr-FR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+export function answersMatch(submitted, expected) {
+  if (typeof expected === 'number') return Number(submitted) === expected;
+  return normalizeTextAnswer(submitted) === normalizeTextAnswer(expected);
 }
 
 export function finishSession(session) {

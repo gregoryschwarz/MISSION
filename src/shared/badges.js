@@ -32,6 +32,13 @@ export const BADGES = [
   { id: 'weekly-5', category: 'challenge', emoji: '🗺️', label: 'Capitaine de semaine', description: 'Atteindre 5 nouveaux objectifs de la semaine', metric: 'weeklyGoalCompletions', target: 5, repeatable: true, gradient: ['#a0c4ff', '#5e81f4'] },
   { id: 'weekly-10', category: 'challenge', emoji: '🏰', label: 'Reine des objectifs', description: 'Atteindre 10 nouveaux objectifs de la semaine', metric: 'weeklyGoalCompletions', target: 10, repeatable: true, gradient: ['#ffc6ff', '#b983ff'] },
   { id: 'secret-treasure', category: 'challenge', emoji: '🗝️', label: 'Chasseuse de trésors', description: 'Découvrir un nouvel objet rare dans un coffre', metric: 'rareTreasureCount', target: 1, repeatable: true, gradient: ['#ffe66d', '#ff6b6b'], secret: true },
+  { id: 'subject-anglais', category: 'subjects', emoji: '🇬🇧', label: 'English Star', description: 'Terminer 5 missions d’anglais', metric: 'subjectMissionCounts.anglais', target: 5, repeatable: true, gradient: ['#90e0ef', '#4d96ff'] },
+  { id: 'subject-culture-generale', category: 'subjects', emoji: '🌍', label: 'Exploratrice du monde', description: 'Terminer 5 missions de culture générale', metric: 'subjectMissionCounts.culture-generale', target: 5, repeatable: true, gradient: ['#ffd166', '#f4a261'] },
+  { id: 'subject-sciences', category: 'subjects', emoji: '🔬', label: 'Petite scientifique', description: 'Terminer 5 missions de sciences', metric: 'subjectMissionCounts.sciences', target: 5, repeatable: true, gradient: ['#80ed99', '#38b000'] },
+  { id: 'subject-histoire-geographie', category: 'subjects', emoji: '🗺️', label: 'Voyageuse du temps', description: 'Terminer 5 missions d’histoire-géographie', metric: 'subjectMissionCounts.histoire-geographie', target: 5, repeatable: true, gradient: ['#ffadad', '#e76f51'] },
+  { id: 'subject-logique', category: 'subjects', emoji: '🧩', label: 'Reine des énigmes', description: 'Terminer 5 missions de logique', metric: 'subjectMissionCounts.logique', target: 5, repeatable: true, gradient: ['#cdb4db', '#9d4edd'] },
+  { id: 'subject-orthographe', category: 'subjects', emoji: '✍️', label: 'Plume magique', description: 'Terminer 5 missions d’orthographe', metric: 'subjectMissionCounts.orthographe', target: 5, repeatable: true, gradient: ['#ffafcc', '#ef476f'] },
+  { id: 'subject-arts', category: 'subjects', emoji: '🎨', label: 'Artiste aux mille idées', description: 'Terminer 5 missions d’arts et musique', metric: 'subjectMissionCounts.arts', target: 5, repeatable: true, gradient: ['#fbc2eb', '#a6c1ee'] },
 ];
 
 export const BADGE_CATEGORIES = [
@@ -40,6 +47,7 @@ export const BADGE_CATEGORIES = [
   { id: 'parfait', emoji: '💯', label: 'Missions parfaites', description: 'Réussir des missions sans aucune erreur' },
   { id: 'progression', emoji: '🚀', label: 'Grande aventure', description: 'Cumuler les réussites et monter de niveau' },
   { id: 'challenge', emoji: '🎯', label: 'Défis relevés', description: 'Atteindre les objectifs quotidiens et hebdomadaires' },
+  { id: 'subjects', emoji: '📚', label: 'Matières explorées', description: 'Découvrir et pratiquer toutes les matières' },
 ];
 
 export function badgeMedallionData(earnedBadgeIds, badgeCounts = {}) {
@@ -99,6 +107,10 @@ function progressForBadge(badge, profile) {
   if (badge.metric.startsWith('mastery-')) {
     const type = badge.metric.replace('mastery-', '');
     return profile.difficultyLevels?.[type] ?? 1;
+  }
+  if (badge.metric.startsWith('subjectMissionCounts.')) {
+    const subjectId = badge.metric.replace('subjectMissionCounts.', '');
+    return profile.subjectMissionCounts?.[subjectId] ?? 0;
   }
   return profile[badge.metric] ?? 0;
 }

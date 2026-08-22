@@ -16,6 +16,7 @@ import {
 } from '../shared/avatarCustomization.js';
 import { spendCoins, refundCoins } from '../shared/progression.js';
 import { DEFAULT_ENABLED_SUBJECT_IDS, normalizeEnabledSubjects } from '../shared/subjects.js';
+import { normalizeSchoolLevel } from '../shared/learningExperience.js';
 
 // --- Compte parent (une famille = un parent Google, peut avoir plusieurs enfants) ---
 
@@ -116,6 +117,11 @@ export async function createChild(familyId, { childName }) {
     ownedCharacterIds: [],
     focusType: null,
     enabledSubjects: DEFAULT_ENABLED_SUBJECT_IDS,
+    schoolLevel: 'CE2',
+    assignedSubject: null,
+    mistakeNotebook: [],
+    subjectMissionCounts: {},
+    storyProgress: 0,
     weeklyGoalTarget: 0,
     weeklyRewardText: 'Vendredi et samedi soir : tu peux rester debout plus tard !',
     weeklyRewardDays: ['vendredi', 'samedi'],
@@ -210,6 +216,14 @@ export async function setWeeklyGoalTarget(childId, weeklyGoalTarget, weeklyRewar
 
 export async function setEnabledSubjects(childId, enabledSubjects) {
   await setDoc(doc(db, 'children', childId), { enabledSubjects: normalizeEnabledSubjects(enabledSubjects) }, { merge: true });
+}
+
+export async function setLearningPreferences(childId, { schoolLevel, assignedSubject }) {
+  const safeAssignedSubject = assignedSubject && DEFAULT_ENABLED_SUBJECT_IDS.includes(assignedSubject) ? assignedSubject : null;
+  await setDoc(doc(db, 'children', childId), {
+    schoolLevel: normalizeSchoolLevel(schoolLevel),
+    assignedSubject: safeAssignedSubject,
+  }, { merge: true });
 }
 
 export async function setDailyMissionLimit(childId, dailyMissionLimit) {

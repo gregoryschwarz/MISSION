@@ -1,9 +1,10 @@
 import { randomInt, shuffle } from './random.js';
 import { subjectForId } from '../shared/subjects.js';
+import { difficultyForSchoolLevel, surpriseSubjectIds } from '../shared/learningExperience.js';
 
 const q = (prompt, answer, distractorA, distractorB) => ({ prompt, answer, distractors: [distractorA, distractorB] });
 
-export const SUBJECT_QUESTION_BANKS = {
+const BASE_SUBJECT_QUESTION_BANKS = {
   anglais: {
     1: [
       q('🇬🇧 Que veut dire « cat » ?', 'chat', 'chien', 'lapin'),
@@ -146,6 +147,66 @@ export const SUBJECT_QUESTION_BANKS = {
   },
 };
 
+const STANDARD_FORMATS = ['qcm', 'vrai-faux', 'image', 'association', 'saisie'];
+
+function formatsForSubject(subjectId) {
+  if (subjectId === 'histoire-geographie') return ['qcm', 'vrai-faux', 'image', 'association', 'chronologie'];
+  if (subjectId === 'arts') return ['qcm', 'vrai-faux', 'image', 'association', 'classement'];
+  return STANDARD_FORMATS;
+}
+
+function quotedEnglish(prompt, fallback) {
+  return prompt.match(/«\s*([^»]+)\s*»/)?.[1] ?? fallback;
+}
+
+function expandQuestion(subjectId, source, sourceIndex, format, level) {
+  const common = { type: subjectId, level, format };
+  const standardChoices = [source.answer, ...source.distractors];
+  const audioText = subjectId === 'anglais' ? quotedEnglish(source.prompt, source.answer) : null;
+  if (format === 'vrai-faux') {
+    const claimedAnswer = sourceIndex % 2 === 0 ? source.answer : source.distractors[0];
+    return {
+      ...common,
+      prompt: `Vrai ou faux : pour « ${source.prompt} », la réponse est « ${claimedAnswer} ».` ,
+      answer: sourceIndex % 2 === 0 ? 'Vrai' : 'Faux',
+      options: ['Vrai', 'Faux'],
+      audioText,
+    };
+  }
+  if (format === 'image') {
+    return { ...common, prompt: `Observe l’indice puis réponds : ${source.prompt}`, answer: source.answer, options: standardChoices, visual: subjectForId(subjectId).emoji, audioText };
+  }
+  if (format === 'association') {
+    return { ...common, prompt: `Associe la bonne réponse : ${source.prompt}`, answer: source.answer, options: standardChoices, audioText };
+  }
+  if (format === 'chronologie') {
+    return { ...common, prompt: `Retrouve le bon repère dans le temps : ${source.prompt}`, answer: source.answer, options: standardChoices, audioText };
+  }
+  if (format === 'classement') {
+    return { ...common, prompt: `Classe mentalement les choix puis réponds : ${source.prompt}`, answer: source.answer, options: standardChoices, audioText };
+  }
+  if (format === 'saisie') {
+    return { ...common, prompt: `Écris la réponse : ${source.prompt}`, answer: source.answer, inputMode: 'text', audioText };
+  }
+  return { ...common, prompt: source.prompt, answer: source.answer, options: standardChoices, audioText };
+}
+
+export const SUBJECT_QUESTION_BANKS = Object.fromEntries(
+  Object.entries(BASE_SUBJECT_QUESTION_BANKS).map(([subjectId, levels]) => [
+    subjectId,
+    Object.fromEntries(Object.entries(levels).map(([level, questions]) => [
+      level,
+      questions.flatMap((question, sourceIndex) => formatsForSubject(subjectId).map((format) => expandQuestion(subjectId, question, sourceIndex, format, Number(level)))),
+    ])),
+  ])
+);
+
+function materializeQuestion(source) {
+  const question = { ...source };
+  if (Array.isArray(source.options)) question.options = shuffle(source.options);
+  return question;
+}
+
 export function generateSubjectQuestion(subjectId, level = 1) {
   if (!subjectForId(subjectId) || !SUBJECT_QUESTION_BANKS[subjectId]) {
     throw new Error(`Matière inconnue : ${subjectId}`);
@@ -153,15 +214,27 @@ export function generateSubjectQuestion(subjectId, level = 1) {
   const safeLevel = Math.min(3, Math.max(1, Number(level) || 1));
   const bank = SUBJECT_QUESTION_BANKS[subjectId][safeLevel];
   const source = bank[randomInt(0, bank.length - 1)];
-  return {
-    type: subjectId,
-    prompt: source.prompt,
-    answer: source.answer,
-    options: shuffle([source.answer, ...source.distractors]),
-  };
+  return materializeQuestion(source);
 }
 
-export function generateSubjectMission(subjectId, count = 10, difficultyLevels = {}) {
-  const level = difficultyLevels[subjectId] ?? 1;
-  return Array.from({ length: count }, () => generateSubjectQuestion(subjectId, level));
+export function generateSubjectMission(subjectId, count = 10, difficultyLevels = {}, { schoolLevel = 'CE2' } = {}) {
+  if (!subjectForId(subjectId)) throw new Error(`Matière inconnue : ${subjectId}`);
+  const level = difficultyForSchoolLevel(difficultyLevels[subjectId] ?? 1, schoolLevel);
+  const pool = shuffle([...SUBJECT_QUESTION_BANKS[subjectId][level]]);
+  const questions = [];
+  while (questions.length < count) {
+    const nextPool = questions.length ? shuffle([...SUBJECT_QUESTION_BANKS[subjectId][level]]) : pool;
+    for (const source of nextPool) {
+      if (questions.length >= count) break;
+      questions.push(materializeQuestion(source));
+    }
+  }
+  return questions;
+}
+
+export function generateSurpriseMission(enabledSubjectIds, count = 10, difficultyLevels = {}, options = {}) {
+  const subjects = surpriseSubjectIds(enabledSubjectIds, 3);
+  if (!subjects.length) return [];
+  const perSubject = Object.fromEntries(subjects.map((subjectId) => [subjectId, generateSubjectMission(subjectId, count, difficultyLevels, options)]));
+  return shuffle(Array.from({ length: count }, (_, index) => perSubject[subjects[index % subjects.length]][index]));
 }

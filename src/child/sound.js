@@ -50,3 +50,19 @@ export function playLevelUpSound() {
     setTimeout(() => playTone(freq, 220), i * 100);
   });
 }
+
+export function speakEnglish(text, speechApi = typeof window !== 'undefined' ? window : {}) {
+  const synthesis = speechApi.speechSynthesis;
+  const Utterance = speechApi.SpeechSynthesisUtterance;
+  if (!text || !synthesis || !Utterance) return false;
+  try {
+    const utterance = new Utterance(text);
+    utterance.lang = 'en-GB';
+    utterance.rate = 0.82;
+    synthesis.cancel?.();
+    synthesis.speak(utterance);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
