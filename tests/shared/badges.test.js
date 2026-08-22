@@ -211,4 +211,10 @@ describe('emojiForType', () => {
   it('returns the fallback emoji for an unknown type', () => {
     expect(emojiForType('unknown')).toBe('❓');
   });
+
+  it('uses the subject visual for optional learning types', () => {
+    expect(emojiForType('anglais')).toBe('🇬🇧');
+    expect(emojiForType('sciences')).toBe('🔬');
+    expect(emojiForType('arts')).toBe('🎨');
+  });
 });

@@ -106,6 +106,7 @@ describe('createChild', () => {
       totalCorrectCount: 0,
       deviceUid: null,
       ownedPackIds: ['starter-pack'],
+      enabledSubjects: ['anglais', 'culture-generale', 'sciences', 'histoire-geographie', 'logique', 'orthographe', 'arts'],
     });
     expect(payload.pairingCode).toMatch(/^[A-Z2-9]{6}$/);
     expect(batch.set).toHaveBeenCalledTimes(2);
