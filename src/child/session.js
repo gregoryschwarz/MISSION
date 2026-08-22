@@ -48,7 +48,18 @@ export function submitAnswer(session, answer) {
 }
 
 export function normalizeTextAnswer(value) {
-  return String(value ?? '').trim().toLocaleLowerCase('fr-FR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return String(value ?? '')
+    .trim()
+    .toLocaleLowerCase('fr-FR')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replaceAll('œ', 'oe')
+    .replaceAll('æ', 'ae')
+    .replaceAll('’', "'")
+    .replace(/^(?:(?:de\s+)?l'\s*|d'\s*|de\s+la\s+|les\s+|des\s+|une\s+|un\s+|le\s+|la\s+|du\s+|de\s+)/, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 export function answersMatch(submitted, expected) {
