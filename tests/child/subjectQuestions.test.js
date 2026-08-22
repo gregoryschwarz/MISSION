@@ -39,6 +39,14 @@ describe('subject question banks', () => {
     expect(new Set(SUBJECT_QUESTION_BANKS.sciences[2].map((question) => question.sourceId)).size).toBeGreaterThanOrEqual(19);
     expect(new Set(SUBJECT_QUESTION_BANKS.sciences[3].map((question) => question.sourceId)).size).toBeGreaterThanOrEqual(19);
   });
+
+  it('offers at least fifteen genuinely different facts per level in every subject', () => {
+    SUBJECTS.forEach(({ id }) => {
+      Object.values(SUBJECT_QUESTION_BANKS[id]).forEach((questions) => {
+        expect(new Set(questions.map((question) => question.sourceId)).size).toBeGreaterThanOrEqual(15);
+      });
+    });
+  });
 });
 
 describe('generateSubjectMission', () => {

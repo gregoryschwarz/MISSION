@@ -2,6 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { NAMES, OBJECTS, ADDITION_TEMPLATES, SUBTRACTION_TEMPLATES, wordProblemText } from '../../src/child/wordProblems.js';
 
 describe('wordProblemText', () => {
+  it('draws from an enriched manual catalogue of contexts', () => {
+    expect(NAMES.length).toBeGreaterThanOrEqual(12);
+    expect(OBJECTS.length).toBeGreaterThanOrEqual(18);
+    expect(ADDITION_TEMPLATES.length).toBeGreaterThanOrEqual(8);
+    expect(SUBTRACTION_TEMPLATES.length).toBeGreaterThanOrEqual(8);
+  });
   it('produces a non-empty addition statement containing both numbers', () => {
     for (let i = 0; i < 30; i++) {
       const text = wordProblemText('addition', 12, 5);

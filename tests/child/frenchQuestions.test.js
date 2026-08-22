@@ -70,6 +70,14 @@ describe('FRENCH_TYPES', () => {
   });
 });
 
+describe('French manual catalogue', () => {
+  it('contains broad word banks for every difficulty family', () => {
+    expect(REGULAR_WORDS.length).toBeGreaterThanOrEqual(15);
+    expect(X_PLURAL_WORDS.length).toBeGreaterThanOrEqual(15);
+    expect(INVARIABLE_WORDS.length).toBeGreaterThanOrEqual(10);
+  });
+});
+
 describe('generateFrenchMission', () => {
   it('returns the requested number of questions, all of known French types', () => {
     const mission = generateFrenchMission(10);
