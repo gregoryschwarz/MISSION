@@ -33,6 +33,12 @@ describe('subject question banks', () => {
   it('rejects an unknown subject instead of silently generating bad data', () => {
     expect(() => generateSubjectQuestion('inconnue')).toThrow('Matière inconnue');
   });
+
+  it('contains the manually curated human-body pack at every school stage', () => {
+    expect(new Set(SUBJECT_QUESTION_BANKS.sciences[1].map((question) => question.sourceId)).size).toBeGreaterThanOrEqual(25);
+    expect(new Set(SUBJECT_QUESTION_BANKS.sciences[2].map((question) => question.sourceId)).size).toBeGreaterThanOrEqual(19);
+    expect(new Set(SUBJECT_QUESTION_BANKS.sciences[3].map((question) => question.sourceId)).size).toBeGreaterThanOrEqual(19);
+  });
 });
 
 describe('generateSubjectMission', () => {
