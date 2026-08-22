@@ -47,6 +47,25 @@ describe('session flow', () => {
     expect(submitAnswer(session, '  ecole ')).toBe(true);
   });
 
+  it('accepts a correct short answer without its optional French article', () => {
+    const session = createSession([{ type: 'sciences', prompt: 'Quel organe ?', answer: 'le cœur' }], 'sciences');
+    expect(submitAnswer(session, 'coeur')).toBe(true);
+  });
+
+  it('accepts ligatures, punctuation and extra spaces without weakening the meaning', () => {
+    const session = createSession([
+      { type: 'sciences', prompt: 'Que boit-on ?', answer: "de l’eau" },
+      { type: 'sciences', prompt: 'Quel organe ?', answer: 'les poumons' },
+    ], 'sciences');
+    expect(submitAnswer(session, '  eau ! ')).toBe(true);
+    expect(submitAnswer(session, 'poumons')).toBe(true);
+  });
+
+  it('still refuses a different answer after normalization', () => {
+    const session = createSession([{ type: 'sciences', prompt: 'Quel organe ?', answer: 'le cœur' }], 'sciences');
+    expect(submitAnswer(session, 'poumons')).toBe(false);
+  });
+
   it('produces a summary with duration and breakdown', () => {
     vi.useFakeTimers();
     const session = createSession(sampleQuestions);
