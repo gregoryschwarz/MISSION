@@ -204,6 +204,13 @@ export async function setDailyMissionLimit(childId, dailyMissionLimit) {
   await setDoc(doc(db, 'children', childId), { dailyMissionLimit }, { merge: true });
 }
 
+export async function creditChildCoins(childId, currentCoins, amount) {
+  if (!Number.isInteger(amount) || amount < 1 || amount > 10000) return null;
+  const coins = Math.max(0, currentCoins ?? 0) + amount;
+  await setDoc(doc(db, 'children', childId), { coins }, { merge: true });
+  return coins;
+}
+
 export async function fetchSessions(childId) {
   const snapshot = await getDocs(collection(db, 'children', childId, 'sessions'));
   return snapshot.docs.map((d) => d.data()).sort((a, b) => (a.date < b.date ? 1 : -1));

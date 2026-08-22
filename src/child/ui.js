@@ -784,11 +784,30 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
   root.querySelector('#retry-mistakes')?.addEventListener('click', onRetryMistakes);
 }
 
-export function renderRewards(root, { coins, rewards, pendingRewardIds = [], onRequest, onBack, onNavigate }) {
+export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinPacks = [], rewards, pendingRewardIds = [], onRequest, onBuyCoinPack, onBack, onNavigate }) {
   root.innerHTML = `
     <div class="screen rewards-screen with-tabs">
       <h1>🎁 Récompenses</h1>
       <p class="coins-balance">🪙 ${coins} pièces disponibles</p>
+      <section class="xp-coin-shop">
+        <div class="xp-coin-shop-heading">
+          <div><p>BOUTIQUE D’XP</p><h2>✨ Transformer mes XP en pièces</h2></div>
+          <span><strong>${availableXp}</strong> XP disponibles<small>${totalXp} XP gagnés au total</small></span>
+        </div>
+        <p class="xp-coin-explanation">Tes XP dépensés restent comptés pour ton niveau et tes déblocages.</p>
+        <div class="xp-coin-pack-grid">
+          ${coinPacks.map((pack) => {
+            const affordable = availableXp >= pack.xpCost;
+            return `<article class="xp-coin-pack ${affordable ? 'affordable' : ''}">
+              <span class="xp-coin-pack-emoji">${pack.emoji}</span>
+              <strong>${escapeHtml(pack.name)}</strong>
+              <span class="xp-coin-pack-reward">+${pack.coins} 🪙</span>
+              <button class="buy-xp-coin-pack" data-pack-id="${pack.id}" ${affordable ? '' : 'disabled'}>${affordable ? `Échanger ${pack.xpCost} XP` : `Il manque ${pack.xpCost - availableXp} XP`}</button>
+            </article>`;
+          }).join('')}
+        </div>
+      </section>
+      <h2 class="real-rewards-title">🎁 Récompenses proposées par mes parents</h2>
       ${
         rewards.length
           ? rewards
@@ -814,6 +833,9 @@ export function renderRewards(root, { coins, rewards, pendingRewardIds = [], onR
   `;
   root.querySelectorAll('.reward-exchange:not([disabled])').forEach((btn) =>
     btn.addEventListener('click', () => onRequest(btn.dataset.id))
+  );
+  root.querySelectorAll('.buy-xp-coin-pack:not([disabled])').forEach((btn) =>
+    btn.addEventListener('click', () => onBuyCoinPack(btn.dataset.packId))
   );
   root.querySelector('#rewards-back').addEventListener('click', onBack);
   attachBottomTabs(root, onNavigate);

@@ -5,7 +5,7 @@ import { getStoredChildId, storeChildId, clearStoredChildId, resolvePairingCode,
 import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
 import { generateFrenchMission } from './frenchQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
-import { applyProgression, applyDailyChallenge, applyWeeklyGoal, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, coinRewardBreakdown, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
+import { applyProgression, applyDailyChallenge, applyWeeklyGoal, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, coinRewardBreakdown, availableXp, purchaseXpCoinPack, XP_COIN_PACKS, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
@@ -192,9 +192,13 @@ async function showRewards() {
     const pendingRewardIds = requests.filter((r) => r.status === 'pending').map((r) => r.rewardId);
     renderRewards(root, {
       coins: lastProfile?.coins ?? 0,
+      totalXp: lastProfile?.xp ?? 0,
+      availableXp: availableXp(lastProfile ?? {}),
+      coinPacks: XP_COIN_PACKS,
       rewards,
       pendingRewardIds,
       onRequest: (rewardId) => handleRequestReward(rewards.find((r) => r.id === rewardId)),
+      onBuyCoinPack: handleBuyCoinPack,
       onBack: () => renderHomeScreen(lastProfile),
       onNavigate: navigateTo,
     });
@@ -346,6 +350,15 @@ async function handleSelectDecor(decorId) {
   lastProfile = nextProfile;
   await saveProfile(childId, nextProfile).catch(() => {});
   showCustomize();
+}
+
+async function handleBuyCoinPack(packId) {
+  if (!lastProfile) return;
+  const purchase = purchaseXpCoinPack(lastProfile, packId);
+  if (!purchase.success) return;
+  lastProfile = { ...lastProfile, coins: purchase.coins, spentXp: purchase.spentXp };
+  await saveProfile(childId, lastProfile).catch(() => {});
+  await showRewards();
 }
 
 async function handlePurchasePack(packId) {

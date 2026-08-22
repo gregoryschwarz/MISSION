@@ -8,6 +8,12 @@ const MASTERY_LEVEL = 3;
 export const DAILY_CHALLENGE_TARGET = 5;
 const DAILY_CHALLENGE_XP_BONUS = 20;
 const DAILY_CHALLENGE_COIN_BONUS = 10;
+export const XP_COIN_PACKS = [
+  { id: 'xp-coins-small', name: 'Poignée de pièces', emoji: '🪙', xpCost: 100, coins: 10 },
+  { id: 'xp-coins-medium', name: 'Bourse de pièces', emoji: '👛', xpCost: 250, coins: 30 },
+  { id: 'xp-coins-large', name: 'Coffre de pièces', emoji: '🧰', xpCost: 500, coins: 65 },
+  { id: 'xp-coins-treasure', name: 'Trésor de pièces', emoji: '💰', xpCost: 1000, coins: 140 },
+];
 const OPERATION_TYPES = ['addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction', 'geometrie', 'monnaie', 'longueur', 'temps', 'probleme', 'accord-pluriel'];
 
 const STREAK_BADGES = [
@@ -66,6 +72,24 @@ export function spendCoins(currentCoins, amount) {
 export function refundCoins(currentCoins, amount) {
   if (amount < 0) return currentCoins;
   return currentCoins + amount;
+}
+
+export function availableXp(profile) {
+  return Math.max(0, (profile.xp ?? 0) - (profile.spentXp ?? 0));
+}
+
+// Les XP dépensés sont comptabilisés à part : l'XP total continue de définir
+// le niveau, tandis que availableXp représente uniquement le pouvoir d'achat.
+export function purchaseXpCoinPack(profile, packId) {
+  const pack = XP_COIN_PACKS.find((item) => item.id === packId);
+  if (!pack) return { success: false, reason: 'unknown-pack' };
+  if (availableXp(profile) < pack.xpCost) return { success: false, reason: 'insufficient-xp' };
+  return {
+    success: true,
+    coins: (profile.coins ?? 0) + pack.coins,
+    spentXp: (profile.spentXp ?? 0) + pack.xpCost,
+    gainedCoins: pack.coins,
+  };
 }
 
 export function updateStreak(previousStreak, lastSessionDate, today) {

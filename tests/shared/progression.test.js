@@ -5,6 +5,9 @@ import {
   xpProgressForLevel,
   coinsForSession,
   coinRewardBreakdown,
+  XP_COIN_PACKS,
+  availableXp,
+  purchaseXpCoinPack,
   spendCoins,
   refundCoins,
   updateStreak,
@@ -49,6 +52,23 @@ describe('coinsForSession', () => {
   });
   it('adds a bonus of 5 coins for a perfect mission', () => {
     expect(coinsForSession(10, true)).toBe(15);
+  });
+});
+
+describe('XP coin packs', () => {
+  it('keeps total XP intact while spending only the available balance', () => {
+    const profile = { xp: 600, spentXp: 100, coins: 20 };
+    expect(availableXp(profile)).toBe(500);
+    expect(purchaseXpCoinPack(profile, 'xp-coins-large')).toEqual({
+      success: true, coins: 85, spentXp: 600, gainedCoins: 65,
+    });
+    expect(profile.xp).toBe(600);
+  });
+
+  it('rejects unknown or unaffordable packs', () => {
+    expect(XP_COIN_PACKS).toHaveLength(4);
+    expect(purchaseXpCoinPack({ xp: 99 }, 'xp-coins-small')).toEqual({ success: false, reason: 'insufficient-xp' });
+    expect(purchaseXpCoinPack({ xp: 9999 }, 'missing')).toEqual({ success: false, reason: 'unknown-pack' });
   });
 });
 

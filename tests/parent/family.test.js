@@ -52,7 +52,20 @@ import {
   ensureAvatarPackSettings,
   fetchAvatarPackSettings,
   updateAvatarPackSetting,
+  creditChildCoins,
 } from '../../src/parent/family.js';
+
+describe('creditChildCoins', () => {
+  it('adds a parent credit without replacing the existing balance incorrectly', async () => {
+    expect(await creditChildCoins('c1', 35, 25)).toBe(60);
+    expect(setDoc).toHaveBeenCalledWith(expect.anything(), { coins: 60 }, { merge: true });
+  });
+
+  it('rejects invalid or excessive credits', async () => {
+    expect(await creditChildCoins('c1', 35, 0)).toBeNull();
+    expect(await creditChildCoins('c1', 35, 10001)).toBeNull();
+  });
+});
 
 beforeEach(() => {
   setDoc.mockReset();

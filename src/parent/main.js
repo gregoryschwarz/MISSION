@@ -14,6 +14,7 @@ import {
   setFocusType,
   setWeeklyGoalTarget,
   setDailyMissionLimit,
+  creditChildCoins,
   ensureDefaultRewards,
   fetchRewards,
   fetchRewardRequests,
@@ -24,7 +25,7 @@ import {
   fetchAvatarPackSettings,
   updateAvatarPackSetting,
 } from './family.js';
-import { renderDashboard, renderChildrenList, renderPairingRequestsSection } from './dashboard.js';
+import { renderDashboard, renderParentShop, renderChildrenList, renderPairingRequestsSection } from './dashboard.js';
 
 const root = document.getElementById('app');
 let pairingRefreshTimer = null;
@@ -155,6 +156,7 @@ async function loadDashboard(familyId, childId) {
     avatarPacks,
     onBack: () => loadChildrenList(familyId),
     onSignOut: logOut,
+    onOpenShop: () => loadParentShop(familyId, childId),
     onCopyCode: copyChildCode,
     onShareCode: shareChildCode,
     onSetFocus: async (focusType) => {
@@ -167,6 +169,10 @@ async function loadDashboard(familyId, childId) {
     },
     onSetDailyLimit: async (limit) => {
       await setDailyMissionLimit(childId, limit);
+      await loadDashboard(familyId, childId);
+    },
+    onCreditCoins: async (amount) => {
+      await creditChildCoins(childId, profile.coins ?? 0, amount);
       await loadDashboard(familyId, childId);
     },
     onCreateReward: async ({ name, cost, emoji }) => {
@@ -206,6 +212,51 @@ async function loadDashboard(familyId, childId) {
       // Une coupure réseau sera retentée au prochain passage.
     }
   }, 10000);
+}
+
+async function loadParentShop(familyId, childId) {
+  stopRewardRefresh();
+  await Promise.all([ensureDefaultRewards(familyId), ensureAvatarPackSettings(familyId)]);
+  const [profile, rewards, rewardRequests, avatarPacks] = await Promise.all([
+    fetchChildProfile(childId),
+    fetchRewards(familyId),
+    fetchRewardRequests(childId),
+    fetchAvatarPackSettings(familyId),
+  ]);
+  if (!profile) return loadChildrenList(familyId);
+  renderParentShop(root, {
+    profile,
+    rewards,
+    rewardRequests,
+    avatarPacks,
+    onBack: () => loadDashboard(familyId, childId),
+    onCreditCoins: async (amount) => {
+      await creditChildCoins(childId, profile.coins ?? 0, amount);
+      await loadParentShop(familyId, childId);
+    },
+    onCreateReward: async ({ name, cost, emoji }) => {
+      await createReward(familyId, { name, cost, emoji });
+      await loadParentShop(familyId, childId);
+    },
+    onUpdateReward: async (rewardId, changes) => {
+      await updateReward(familyId, rewardId, changes);
+      await loadParentShop(familyId, childId);
+    },
+    onResolveRequest: async (requestId, decision) => {
+      const request = rewardRequests.find((item) => item.id === requestId);
+      if (!request) return;
+      await resolveRewardRequest(childId, profile, request, decision);
+      await loadParentShop(familyId, childId);
+    },
+    onUpdateAvatarPack: async (packId, changes) => {
+      await updateAvatarPackSetting(familyId, packId, changes);
+      await loadParentShop(familyId, childId);
+    },
+    onSyncAvatarPacks: async () => {
+      await ensureAvatarPackSettings(familyId);
+      await loadParentShop(familyId, childId);
+    },
+  });
 }
 
 watchAuthState(async (user) => {

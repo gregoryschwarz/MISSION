@@ -399,7 +399,17 @@ function rewardsSectionHtml(rewards, rewardRequests, coins) {
   return `
     <section class="rewards">
       <h2>🎁 Récompenses réelles</h2>
-      <p class="setup-hint">Solde de l'enfant : <strong>${coins ?? 0} 🪙</strong></p>
+      <div class="parent-coin-wallet">
+        <div><span>SOLDE DE L’ENFANT</span><strong>${coins ?? 0} 🪙</strong></div>
+        <div class="coin-credit-quick" aria-label="Ajout rapide de pièces">
+          ${[10, 25, 50, 100].map((amount) => `<button type="button" class="coin-credit-quick-button" data-amount="${amount}">+${amount}</button>`).join('')}
+        </div>
+        <form id="coin-credit-form">
+          <label>Montant personnalisé<input id="coin-credit-amount" type="number" min="1" max="10000" step="1" placeholder="Ex. 30" required /></label>
+          <button type="submit">Ajouter les pièces</button>
+        </form>
+        <small>Les pièces sont ajoutées immédiatement au compte de l’enfant.</small>
+      </div>
 
       <h3>Créer une récompense</h3>
       <form id="reward-form">
@@ -748,7 +758,7 @@ function breakdownBarsHtml(breakdown, difficultyLevels) {
   `;
 }
 
-export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onSetFocus, onSetWeeklyGoal, onSetDailyLimit, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
+export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onOpenShop, onSetFocus, onSetWeeklyGoal, onSetDailyLimit, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
   const breakdown = aggregateBreakdown(sessions);
   const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const dailyBreakdown = dailyBreakdownByType(sessions);
@@ -767,6 +777,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
           <button id="share-code" class="link-button">Partager</button>
         </p>
         <button id="sign-out">Se déconnecter</button>
+        <button id="open-parent-shop" type="button">🛍️ Ouvrir la boutique</button>
       </header>
       <section class="progress-summary">
         <p>Niveau ${profile.avatarLevel} — ${profile.xp} XP</p>
@@ -870,12 +881,16 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
             .join('')}
         </ul>
       </section>
-      ${avatarPacksSectionHtml(avatarPacks)}
-      ${rewardsSectionHtml(rewards, rewardRequests, profile.coins)}
+      <section class="shop-callout">
+        <div><h2>🛍️ Boutique et pièces</h2><p>La gestion des pièces, des récompenses et des packs se trouve maintenant dans une page dédiée.</p></div>
+        <button type="button" class="open-shop-secondary">Ouvrir la boutique</button>
+      </section>
     </div>
   `;
   root.querySelector('#child-name').textContent = profile.childName;
   root.querySelector('#sign-out').addEventListener('click', onSignOut);
+  root.querySelector('#open-parent-shop').addEventListener('click', onOpenShop);
+  root.querySelector('.open-shop-secondary').addEventListener('click', onOpenShop);
   root.querySelector('#back-to-children').addEventListener('click', onBack);
   root.querySelector('#copy-code').addEventListener('click', () => onCopyCode(child.pairingCode));
   root.querySelector('#share-code').addEventListener('click', () => onShareCode(child.pairingCode, profile.childName));
@@ -902,7 +917,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
     if (!Number.isInteger(limit) || limit < 0 || limit > 20) return;
     onSetDailyLimit(limit);
   });
-  root.querySelector('#reward-form').addEventListener('submit', (event) => {
+  root.querySelector('#reward-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
     const name = root.querySelector('#reward-name').value.trim();
     const emoji = root.querySelector('#reward-emoji').value.trim() || '🎁';
@@ -910,6 +925,15 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
     if (!name || !cost || cost < 1) return;
     onCreateReward({ name, cost, emoji });
   });
+  root.querySelector('#coin-credit-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const amount = Number(root.querySelector('#coin-credit-amount').value);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 10000) return;
+    onCreditCoins(amount);
+  });
+  root.querySelectorAll('.coin-credit-quick-button').forEach((button) =>
+    button.addEventListener('click', () => onCreditCoins(Number(button.dataset.amount)))
+  );
   root.querySelectorAll('.reward-update').forEach((button) => button.addEventListener('click', () => {
     const row = button.closest('.reward-edit-row');
     const name = row.querySelector('.reward-edit-name').value.trim();
@@ -944,4 +968,58 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
     const card = button.closest('.parent-pack-card');
     onUpdateAvatarPack(card.dataset.packId, { active: button.dataset.active !== 'true' });
   }));
+}
+
+export function renderParentShop(root, { profile, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks }) {
+  root.innerHTML = `
+    <div class="dashboard parent-shop-page">
+      <header class="parent-shop-header">
+        <button id="back-to-dashboard" class="link-button">← Retour au suivi</button>
+        <div><p>BOUTIQUE PARENTALE</p><h1>🛍️ Boutique de ${escapeHtml(profile.childName)}</h1></div>
+      </header>
+      <section class="parent-shop-intro">
+        <strong>Gérez toute l’économie de l’application au même endroit.</strong>
+        <span>Créditez des pièces, créez des récompenses et choisissez les packs visibles par votre enfant.</span>
+      </section>
+      ${rewardsSectionHtml(rewards, rewardRequests, profile.coins)}
+      ${avatarPacksSectionHtml(avatarPacks)}
+    </div>`;
+  root.querySelector('#back-to-dashboard').addEventListener('click', onBack);
+  root.querySelector('#coin-credit-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const amount = Number(root.querySelector('#coin-credit-amount').value);
+    if (Number.isInteger(amount) && amount >= 1 && amount <= 10000) onCreditCoins(amount);
+  });
+  root.querySelectorAll('.coin-credit-quick-button').forEach((button) => button.addEventListener('click', () => onCreditCoins(Number(button.dataset.amount))));
+  root.querySelector('#reward-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const name = root.querySelector('#reward-name').value.trim();
+    const emoji = root.querySelector('#reward-emoji').value.trim() || '🎁';
+    const cost = Number(root.querySelector('#reward-cost').value);
+    if (name && Number.isInteger(cost) && cost >= 1) onCreateReward({ name, cost, emoji });
+  });
+  root.querySelectorAll('.reward-update').forEach((button) => button.addEventListener('click', () => {
+    const row = button.closest('.reward-edit-row');
+    const name = row.querySelector('.reward-edit-name').value.trim();
+    const emoji = row.querySelector('.reward-edit-emoji').value.trim() || '🎁';
+    const cost = Number(row.querySelector('.reward-edit-cost').value);
+    if (name && Number.isInteger(cost) && cost >= 1) onUpdateReward(button.dataset.id, { name, cost, emoji });
+  }));
+  root.querySelectorAll('.reward-toggle').forEach((button) => button.addEventListener('click', () => onUpdateReward(button.dataset.id, { active: button.dataset.active !== 'true' })));
+  root.querySelectorAll('.reward-archive').forEach((button) => button.addEventListener('click', () => {
+    const restore = button.dataset.archived === 'true';
+    onUpdateReward(button.dataset.id, { active: restore, archived: !restore });
+  }));
+  root.querySelectorAll('.reward-approve').forEach((button) => button.addEventListener('click', () => onResolveRequest(button.dataset.id, 'approved')));
+  root.querySelectorAll('.reward-reject').forEach((button) => button.addEventListener('click', () => onResolveRequest(button.dataset.id, 'rejected')));
+  root.querySelector('#sync-avatar-packs')?.addEventListener('click', onSyncAvatarPacks);
+  root.querySelectorAll('.parent-pack-card').forEach((card) => {
+    const packId = card.dataset.packId;
+    card.querySelector('.pack-save').addEventListener('click', () => {
+      const requiredLevel = Number(card.querySelector('.pack-level').value);
+      const cost = Number(card.querySelector('.pack-cost').value);
+      if (Number.isInteger(requiredLevel) && requiredLevel >= 1 && Number.isInteger(cost) && cost >= 0) onUpdateAvatarPack(packId, { requiredLevel, cost });
+    });
+    card.querySelector('.pack-toggle').addEventListener('click', (event) => onUpdateAvatarPack(packId, { active: event.currentTarget.dataset.active !== 'true' }));
+  });
 }
