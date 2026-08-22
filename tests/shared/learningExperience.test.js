@@ -81,9 +81,9 @@ describe('mistake notebook', () => {
 
 describe('learning retention', () => {
   const sessions = [
-    { missionKind: 'standard', breakdown: { addition: { correct: 4, total: 5 }, soustraction: { correct: 1, total: 5 } } },
-    { missionKind: 'mistake-review', correctCount: 4, questionsTotal: 5, breakdown: { addition: { correct: 4, total: 5 } } },
-    { missionKind: 'personalized', correctCount: 3, questionsTotal: 5, breakdown: { soustraction: { correct: 3, total: 5 } } },
+    { date: '2026-08-21', missionKind: 'standard', breakdown: { addition: { correct: 4, total: 5 }, soustraction: { correct: 1, total: 5 } } },
+    { date: '2026-08-22', missionKind: 'mistake-review', correctCount: 4, questionsTotal: 5, breakdown: { addition: { correct: 4, total: 5 } } },
+    { date: '2026-08-22', missionKind: 'personalized', correctCount: 3, questionsTotal: 5, breakdown: { soustraction: { correct: 3, total: 5 } } },
   ];
 
   it('labels every attempted notion as acquired, progressing or needing review', () => {
@@ -91,6 +91,14 @@ describe('learning retention', () => {
       expect.objectContaining({ type: 'addition', status: 'acquis', percent: 80 }),
       expect.objectContaining({ type: 'soustraction', status: 'a-revoir', percent: 40 }),
     ]);
+  });
+
+  it('requires successful attempts on two different days before showing acquired', () => {
+    const sameDay = [
+      { date: '2026-08-22', breakdown: { addition: { correct: 5, total: 5 } } },
+      { date: '2026-08-22', breakdown: { addition: { correct: 5, total: 5 } } },
+    ];
+    expect(notionLearningStatuses(sameDay)[0]).toMatchObject({ status: 'en-progres', successfulDayCount: 1 });
   });
 
   it('summarizes what was reviewed and retained for the parent', () => {
