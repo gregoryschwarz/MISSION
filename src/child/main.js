@@ -6,8 +6,9 @@ import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './qu
 import { generateFrenchMission } from './frenchQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression, applyDailyChallenge, applyWeeklyGoal, newlyEarnedChallengeBadges, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, coinRewardBreakdown, availableXp, purchaseXpCoinPack, XP_COIN_PACKS, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
-import { badgeCollectionData } from '../shared/badges.js';
+import { badgeCollectionData, badgeCountsAfterAwards } from '../shared/badges.js';
 import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '../shared/dailyAdventure.js';
+import { seasonForDate } from '../shared/seasons.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
@@ -43,6 +44,7 @@ import {
 } from '../shared/avatarCustomization.js';
 
 const root = document.getElementById('app');
+document.body.dataset.season = seasonForDate();
 const MISSION_LENGTH = 10;
 const PAUSE_REMINDER_MS = 15 * 60 * 1000;
 
@@ -86,6 +88,7 @@ async function loadProfile(targetChildId) {
         avatarLevel: 1,
         badges: [],
         badgeDates: {},
+        badgeCounts: {},
         dailyChallengeDate: null,
         dailyChallengeProgress: 0,
         dailyChallengeCompleted: false,
@@ -170,6 +173,7 @@ function renderHomeScreen(profile) {
     dailyMissionLimit: profile.dailyMissionLimit ?? 3,
     dailyMissionCount: profile.dailyMissionCountDate === today ? profile.dailyMissionCount ?? 0 : 0,
     badges: profile.badges,
+    badgeCounts: profile.badgeCounts ?? {},
     auraClass: auraClassForLevel(profile.avatarLevel),
     characterId: profile.selectedCharacter ?? DEFAULT_CHARACTER,
     hatId: profile.selectedHat ?? DEFAULT_HAT,
@@ -645,10 +649,16 @@ async function finishMission() {
   const rareTreasureIds = chestReward.success ? chestReward.rareTreasureIds : profileBefore.rareTreasureIds ?? [];
   const challengeBadges = newlyEarnedChallengeBadges(
     { dailyChallengeCompletions, weeklyGoalCompletions, rareTreasureCount: rareTreasureIds.length },
-    progressionResult.badges
+    progressionResult.badges,
+    {
+      dailyChallengeCompletions: dailyChallenge.justCompletedDailyChallenge,
+      weeklyGoalCompletions: justCompletedWeeklyGoal,
+      rareTreasureCount: !!chestReward.treasure,
+    }
   );
   const newBadges = [...progressionResult.newBadges, ...challengeBadges];
-  const badges = [...progressionResult.badges, ...challengeBadges];
+  const badges = [...new Set([...progressionResult.badges, ...challengeBadges])];
+  const badgeCounts = badgeCountsAfterAwards(progressionResult.badgeCounts, progressionResult.badges, challengeBadges);
   const badgeDates = { ...progressionResult.badgeDates };
   challengeBadges.forEach((id) => { badgeDates[id] = summary.date; });
   const finalXp = progressionResult.xp + dailyChallenge.bonusXp;
@@ -667,6 +677,7 @@ async function finishMission() {
     streakDays: progressionResult.streakDays,
     badges,
     badgeDates,
+    badgeCounts,
     perfectMissionsCount: progressionResult.perfectMissionsCount,
     totalCorrectCount: progressionResult.totalCorrectCount,
     coins: finalCoins,
@@ -708,6 +719,7 @@ async function finishMission() {
     coinGoal: nextCoinPurchaseGoal({ ...nextProfile, coins: finalCoins }, avatarPackSettings),
     leveledUp: finalLeveledUp,
     newBadges,
+    badgeCounts,
     justCompletedDailyChallenge: dailyChallenge.justCompletedDailyChallenge,
     justCompletedWeeklyGoal,
     dailyChestReward: chestReward.success ? chestReward : null,

@@ -14,6 +14,15 @@ body {
   font-family: var(--font-body);
 }
 
+body[data-season]::before,
+body[data-season]::after { position:fixed; z-index:0; left:0; top:-16vh; width:100vw; overflow:hidden; color:var(--season-color); font-size:22px; line-height:1; letter-spacing:7vw; white-space:nowrap; content:var(--season-particles); pointer-events:none; opacity:.34; filter:drop-shadow(0 2px 3px rgba(20,18,35,.12)); animation:seasonFall 15s linear infinite; }
+body[data-season]::after { top:-28vh; font-size:16px; opacity:.22; animation-duration:22s; animation-delay:-9s; }
+body[data-season="winter"] { --season-particles:'❄  ❅  ❆  ❄  ❅  ❆  ❄  ❅'; --season-color:#dff6ff; }
+body[data-season="spring"] { --season-particles:'🌸  ❀  🌷  ❀  🌸  ❀  🌷'; --season-color:#ffb7cf; }
+body[data-season="summer"] { --season-particles:'✨  ☀  ✦  ✨  ☀  ✦  ✨'; --season-color:#ffd166; }
+body[data-season="autumn"] { --season-particles:'🍂  🍁  🍃  🍂  🍁  🍃  🍂'; --season-color:#e98b43; }
+@keyframes seasonFall { from { transform:translate3d(-3vw,0,0) rotate(0deg); } to { transform:translate3d(3vw,128vh,0) rotate(16deg); } }
+
 h1, h2, h3 {
   font-family: var(--font-display);
   font-weight: 600;
@@ -268,6 +277,7 @@ h1, h2, h3 {
 .result-level-up { animation:eventReveal .48s cubic-bezier(.22,1,.36,1) both; }
 .daily-chest-celebration { display:grid; justify-items:center; gap:var(--space-2); margin:var(--space-4) 0; padding:var(--space-4); border:2px solid var(--color-sun); border-radius:var(--radius-xl); background:linear-gradient(145deg,color-mix(in srgb,var(--color-sun) 22%,var(--color-card)),color-mix(in srgb,var(--color-pink) 12%,var(--color-card))); overflow:hidden; }.daily-chest-celebration p,.daily-chest-celebration strong { margin:0; }.daily-chest-celebration p { font-size:var(--text-xs); font-weight:900; letter-spacing:.08em; }.opening-chest { font-size:64px; animation:chestOpen .65s cubic-bezier(.22,1,.36,1) both; }.rare-treasure-reveal { display:flex; align-items:center; gap:var(--space-3); width:100%; padding:var(--space-3); box-sizing:border-box; border-radius:var(--radius-lg); background:var(--color-card); text-align:left; animation:eventReveal .5s .25s cubic-bezier(.22,1,.36,1) both; }.rare-treasure-reveal > span { font-size:44px; }.rare-treasure-reveal div { display:grid; }.rare-treasure-reveal small { color:var(--color-pink); font-weight:900; letter-spacing:.05em; }
 .new-badge-reveals { display:grid; gap:var(--space-2); }.new-badge-reveal { display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3); border:1px solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-card); text-align:left; animation:badgeReveal .48s cubic-bezier(.22,1,.36,1) both; }.new-badge-reveal > span { display:grid; place-items:center; width:52px; height:52px; flex:0 0 auto; border-radius:50%; background:linear-gradient(135deg,var(--badge-from),var(--badge-to)); font-size:27px; }.new-badge-reveal div { display:grid; }.new-badge-reveal small { color:var(--color-text-muted); }
+.new-badge-reveal em { color:var(--color-pink); font-family:var(--font-body); font-size:var(--text-sm); font-style:normal; }
 .unlock-celebration-screen { display:grid; place-items:center; align-content:center; min-height:100vh; max-width:720px; text-align:center; }.unlock-celebration-screen p { color:var(--color-pink); font-size:var(--text-xs); font-weight:900; letter-spacing:.1em; }.unlock-celebration-screen h1,.unlock-celebration-screen > span { margin:0; }.unlock-item-reveal { display:grid; place-items:center; width:160px; height:160px; margin:var(--space-4); border-radius:50%; background:radial-gradient(circle,var(--color-card) 40%,color-mix(in srgb,var(--color-sun) 42%,transparent)); font-size:82px; box-shadow:0 0 50px color-mix(in srgb,var(--color-sun) 38%,transparent); animation:unlockReveal .65s cubic-bezier(.22,1,.36,1) both; }.unlock-sparkles { font-size:34px; animation:eventReveal .5s ease both; }.unlock-celebration-screen .big-button { max-width:520px; }
 @keyframes messageReveal { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 @keyframes chestReady { from { opacity:.6; transform:scale(.75); } to { opacity:1; transform:scale(1); } }
@@ -890,6 +900,7 @@ input {
 }
 
 .badge-medallion {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -1171,6 +1182,8 @@ input {
   background: var(--color-card);
   box-shadow: var(--shadow-card);
 }
+
+.badge-copy-count { position:absolute; right:-7px; bottom:-5px; display:grid; place-items:center; min-width:22px; height:20px; padding:0 3px; box-sizing:border-box; border:2px solid var(--color-card); border-radius:var(--radius-pill); background:var(--color-pink); color:#fff; font-family:var(--font-body); font-size:9px; line-height:1; box-shadow:var(--shadow-card); }
 
 .results-panel h2,
 .result-notion-group h3 {
@@ -1855,6 +1868,8 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  body[data-season]::before,
+  body[data-season]::after { display:none; }
   .avatar-companion,
   .home-avatar-stage .avatar-wrapper,
   .customize-preview-stage,

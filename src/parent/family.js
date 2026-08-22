@@ -88,6 +88,7 @@ export async function createChild(familyId, { childName }) {
     avatarLevel: 1,
     badges: [],
     badgeDates: {},
+    badgeCounts: {},
     dailyChallengeDate: null,
     dailyChallengeProgress: 0,
     dailyChallengeCompleted: false,

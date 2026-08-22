@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType, formatDateFr, badgeAlbumData, badgeCollectionData } from '../../src/shared/badges.js';
+import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType, formatDateFr, badgeAlbumData, badgeCollectionData, badgeCountsAfterAwards } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
   it('defines all 31 badges with a category, in a fixed order', () => {
@@ -62,6 +62,11 @@ describe('badgeMedallionData', () => {
     const result = badgeMedallionData(['perfect-50', 'streak-3']);
     expect(result.map((b) => b.id)).toEqual(BADGES.map((b) => b.id));
   });
+
+  it('includes the persistent number of times a badge was earned', () => {
+    const result = badgeMedallionData(['daily-1'], { 'daily-1': 4 });
+    expect(result.find((badge) => badge.id === 'daily-1')).toMatchObject({ earned: true, count: 4 });
+  });
 });
 
 describe('renderBadgeMedallionsHtml', () => {
@@ -69,6 +74,11 @@ describe('renderBadgeMedallionsHtml', () => {
     const html = renderBadgeMedallionsHtml(['streak-3']);
     expect(html).toContain('badge-medallion earned');
     expect(html).toContain('🔥');
+  });
+
+  it('shows a counter when the same badge was earned several times', () => {
+    const html = renderBadgeMedallionsHtml(['daily-1'], { 'daily-1': 4 });
+    expect(html).toContain('×4');
   });
 
   it('renders a locked badge with a lock icon and the locked class', () => {
@@ -155,12 +165,13 @@ describe('badgeCollectionData', () => {
     const result = badgeCollectionData({
       badges: ['streak-3'],
       badgeDates: { 'streak-3': '2026-08-07' },
+      badgeCounts: { 'streak-3': 3 },
       streakDays: 3,
       totalCorrectCount: 125,
       avatarLevel: 4,
     });
     expect(result).toHaveLength(31);
-    expect(result.find((badge) => badge.id === 'streak-3')).toMatchObject({ earned: true, progressPercent: 100, unlockedAtLabel: '7 août 2026' });
+    expect(result.find((badge) => badge.id === 'streak-3')).toMatchObject({ earned: true, count: 3, progressPercent: 100, unlockedAtLabel: '7 août 2026' });
     expect(result.find((badge) => badge.id === 'answers-250')).toMatchObject({ earned: false, progress: 125, progressPercent: 50 });
     expect(result.find((badge) => badge.id === 'level-5')).toMatchObject({ progressLabel: '4/5' });
   });
@@ -168,6 +179,16 @@ describe('badgeCollectionData', () => {
   it('uses notion difficulty as mastery progress', () => {
     const result = badgeCollectionData({ difficultyLevels: { monnaie: 2 } });
     expect(result.find((badge) => badge.id === 'mastery-monnaie')).toMatchObject({ progress: 2, progressLabel: '2/3' });
+  });
+});
+
+describe('badgeCountsAfterAwards', () => {
+  it('migrates old earned badges to one copy and increments new awards', () => {
+    expect(badgeCountsAfterAwards({}, ['daily-1'], ['daily-1'])).toEqual({ 'daily-1': 2 });
+  });
+
+  it('preserves existing counts while adding a first copy', () => {
+    expect(badgeCountsAfterAwards({ 'daily-1': 4 }, ['daily-1'], ['weekly-1'])).toEqual({ 'daily-1': 4, 'weekly-1': 1 });
   });
 });
 

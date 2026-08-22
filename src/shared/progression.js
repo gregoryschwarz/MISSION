@@ -1,4 +1,5 @@
 import { DEFAULT_DIFFICULTY_LEVELS } from './difficulty.js';
+import { badgeCountsAfterAwards } from './badges.js';
 
 const XP_PER_CORRECT = 10;
 const XP_PER_LEVEL = 100;
@@ -184,9 +185,10 @@ export function applyWeeklyGoal(profile, sessionSummary) {
   };
 }
 
-export function newlyEarnedBadges(streakDays, existingBadges) {
+export function newlyEarnedBadges(streakDays, existingBadges, { streakAdvanced = true } = {}) {
   return STREAK_BADGES.filter(
-    (b) => streakDays >= b.days && !existingBadges.includes(b.id)
+    (badge) => (!existingBadges.includes(badge.id) && streakDays >= badge.days)
+      || (existingBadges.includes(badge.id) && streakAdvanced && streakDays === badge.days)
   ).map((b) => b.id);
 }
 
@@ -198,7 +200,8 @@ export function newlyMasteredTypes(previousLevels, nextLevels) {
 
 export function newlyEarnedPerfectBadges(perfectMissionsCount, existingBadges) {
   return PERFECT_MISSION_BADGES.filter(
-    (b) => perfectMissionsCount >= b.count && !existingBadges.includes(b.id)
+    (badge) => (!existingBadges.includes(badge.id) && perfectMissionsCount >= badge.count)
+      || (existingBadges.includes(badge.id) && perfectMissionsCount > 0 && perfectMissionsCount % badge.count === 0)
   ).map((b) => b.id);
 }
 
@@ -208,9 +211,13 @@ export function newlyEarnedProgressionBadges(stats, existingBadges) {
   ).map((badge) => badge.id);
 }
 
-export function newlyEarnedChallengeBadges(stats, existingBadges) {
+export function newlyEarnedChallengeBadges(stats, existingBadges, completedMetrics = {}) {
   return CHALLENGE_BADGES.filter(
-    (badge) => (stats[badge.metric] ?? 0) >= badge.target && !existingBadges.includes(badge.id)
+    (badge) => (!existingBadges.includes(badge.id) && (stats[badge.metric] ?? 0) >= badge.target)
+      || (existingBadges.includes(badge.id)
+        && completedMetrics[badge.metric] === true
+        && (stats[badge.metric] ?? 0) > 0
+        && (stats[badge.metric] ?? 0) % badge.target === 0)
   ).map((badge) => badge.id);
 }
 
@@ -220,7 +227,7 @@ export function applyProgression(profile, sessionSummary, nextDifficultyLevels) 
   const xp = profile.xp + gainedXp;
   const avatarLevel = levelForXp(xp);
   const streakDays = updateStreak(profile.streakDays, profile.lastSessionDate, today);
-  const streakBadges = newlyEarnedBadges(streakDays, profile.badges);
+  const streakBadges = newlyEarnedBadges(streakDays, profile.badges, { streakAdvanced: profile.lastSessionDate !== today });
 
   const previousDifficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const masteredTypes = newlyMasteredTypes(previousDifficultyLevels, nextDifficultyLevels ?? previousDifficultyLevels);
@@ -237,7 +244,8 @@ export function applyProgression(profile, sessionSummary, nextDifficultyLevels) 
   const badgesBeforeProgressCheck = [...badgesBeforePerfectCheck, ...perfectBadges];
   const progressionBadges = newlyEarnedProgressionBadges({ avatarLevel, totalCorrectCount }, badgesBeforeProgressCheck);
   const newBadges = [...streakBadges, ...masteryBadges, ...perfectBadges, ...progressionBadges];
-  const badges = [...profile.badges, ...newBadges];
+  const badges = [...new Set([...profile.badges, ...newBadges])];
+  const badgeCounts = badgeCountsAfterAwards(profile.badgeCounts, profile.badges, newBadges);
   const badgeDates = { ...(profile.badgeDates ?? {}) };
   newBadges.forEach((id) => {
     badgeDates[id] = today;
@@ -250,6 +258,7 @@ export function applyProgression(profile, sessionSummary, nextDifficultyLevels) 
     avatarLevel,
     streakDays,
     badges,
+    badgeCounts,
     badgeDates,
     perfectMissionsCount,
     totalCorrectCount,

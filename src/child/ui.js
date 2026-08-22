@@ -334,9 +334,10 @@ function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, badgeCounts = {}, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onStartFrenchMission, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
   const mainGoal = priorityGoal ?? { kind: 'mission', emoji: '🗺️', label: 'Continuer mon aventure', detail: 'Une nouvelle mission m’attend', action: 'Jouer' };
+  const totalBadgeWins = Object.values(badgeCounts).reduce((total, count) => total + count, 0) || (badges ?? []).length;
   root.innerHTML = `
     <div class="screen home-screen with-tabs">
       <div class="home-header decor-scene decor-${decorId ?? 'menthe'}" style="background:${decorGradient ?? ''}">
@@ -360,7 +361,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
         <div class="stat-pills">
           ${statPillHtml('🪙', coins ?? 0, 'Pièces')}
           ${statPillHtml('🔥', streakDays ?? 0, 'Série de jours')}
-          ${statPillHtml('🏅', (badges ?? []).length, 'Badges')}
+          ${statPillHtml('🏅', totalBadgeWins, 'Badges gagnés')}
           ${statPillHtml('✅', totalCorrectCount ?? 0, 'Bonnes réponses')}
         </div>
         ${coinGoalHtml(coinGoal, true, true)}
@@ -378,7 +379,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
             ${dailyAdventureHtml(dailyAdventure)}
             ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
             ${rareTreasures.length ? `<div class="rare-treasure-shelf"><strong>✨ Mes trésors rares</strong><div>${rareTreasures.map((treasure) => `<span title="${escapeHtml(treasure.name)}">${treasure.emoji}<small>${escapeHtml(treasure.name)}</small></span>`).join('')}</div></div>` : ''}
-            <div class="home-badges">${renderBadgeMedallionsHtml(badges)}</div>
+            <div class="home-badges">${renderBadgeMedallionsHtml(badges, badgeCounts)}</div>
           </section>
           <div class="home-actions" aria-label="Actions principales">
             <button id="start-mission" class="big-button home-primary-action">✨ Mission du jour</button>
@@ -760,7 +761,7 @@ function resultNotionsHtml(breakdown) {
     </div>`;
 }
 
-export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, coinBreakdown, coinGoal, leveledUp, newBadges, justCompletedDailyChallenge, justCompletedWeeklyGoal, dailyChestReward = null, companionId = 'none-companion', weeklyRewardText, breakdown = {}, incorrectQuestions = [], onRetryMistakes = null, onContinue }) {
+export function renderResults(root, { correctCount, questionsTotal, gainedXp, gainedCoins, coinBreakdown, coinGoal, leveledUp, newBadges, badgeCounts = {}, justCompletedDailyChallenge, justCompletedWeeklyGoal, dailyChestReward = null, companionId = 'none-companion', weeklyRewardText, breakdown = {}, incorrectQuestions = [], onRetryMistakes = null, onContinue }) {
   const earnedBadgesData = newBadges.map((id) => BADGES.find((b) => b.id === id)).filter(Boolean);
   const companion = companionForId(companionId);
   const chestsBeforeRare = dailyChestReward ? 3 - (dailyChestReward.dailyChestCount % 3) : 0;
@@ -809,7 +810,7 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
           ${justCompletedWeeklyGoal ? `<div class="weekly-bonus-celebration"><div>🎊 🎁 🎊</div><h2>SUPER BONUS DÉBLOQUÉ !</h2><strong>${escapeHtml(weeklyRewardText ?? 'Ta récompense de la semaine')}</strong></div>` : ''}
           ${dailyChestReward ? `<div class="daily-chest-celebration"><div class="opening-chest">🎁</div><p>COFFRE DU JOUR OUVERT</p><strong>+${dailyChestReward.bonusCoins} pièces</strong>${dailyChestReward.treasure ? `<div class="rare-treasure-reveal"><span>${dailyChestReward.treasure.emoji}</span><div><small>OBJET RARE DÉCOUVERT</small><strong>${escapeHtml(dailyChestReward.treasure.name)}</strong></div></div>` : `<small>Encore ${chestsBeforeRare} coffre${chestsBeforeRare > 1 ? 's' : ''} avant le prochain objet rare !</small>`}</div>` : ''}
           ${earnedBadgesData.length
-            ? `<p class="badge-earned">🏅 Nouveau badge !</p><div class="new-badge-reveals">${earnedBadgesData.map((b, i) => `<article class="new-badge-reveal" style="--badge-from:${b.gradient[0]};--badge-to:${b.gradient[1]};animation-delay:${0.25 + i * 0.08}s"><span>${b.emoji}</span><div><strong>${escapeHtml(b.label)}</strong><small>${escapeHtml(b.description)}</small></div></article>`).join('')}</div>`
+            ? `<p class="badge-earned">🏅 Badge gagné !</p><div class="new-badge-reveals">${earnedBadgesData.map((b, i) => `<article class="new-badge-reveal" style="--badge-from:${b.gradient[0]};--badge-to:${b.gradient[1]};animation-delay:${0.25 + i * 0.08}s"><span>${b.emoji}</span><div><strong>${escapeHtml(b.label)}${(badgeCounts[b.id] ?? 1) > 1 ? ` <em>×${badgeCounts[b.id]}</em>` : ''}</strong><small>${escapeHtml(b.description)}</small></div></article>`).join('')}</div>`
             : ''}
         </section>
       </div>
@@ -915,6 +916,7 @@ export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinP
 export function renderBadgeAlbum(root, { profile, onBack }) {
   const collection = badgeCollectionData(profile);
   const earnedCount = collection.filter((badge) => badge.earned).length;
+  const totalBadgeWins = collection.reduce((total, badge) => total + badge.count, 0);
   const percent = Math.round((earnedCount / collection.length) * 100);
   const nextBadge = collection
     .filter((badge) => !badge.earned)
@@ -923,7 +925,7 @@ export function renderBadgeAlbum(root, { profile, onBack }) {
     <div class="screen badge-album-screen">
       <header class="badge-album-hero">
         <div><p>MON ALBUM D’EXPLOITS</p><h1>🏅 Mes badges</h1><span>Chaque badge raconte une victoire différente.</span></div>
-        <div class="badge-album-total"><strong>${earnedCount}</strong><span>sur ${collection.length}</span><small>${percent}% complété</small></div>
+        <div class="badge-album-total"><strong>${earnedCount}</strong><span>sur ${collection.length} différents</span><small>${totalBadgeWins} gagnés en tout</small></div>
       </header>
       <div class="xp-bar badge-album-progress" role="progressbar" aria-label="Album complété à ${percent}%" aria-valuenow="${earnedCount}" aria-valuemin="0" aria-valuemax="${collection.length}">
         <div class="xp-bar-fill" style="width:${percent}%"></div>
@@ -937,14 +939,15 @@ export function renderBadgeAlbum(root, { profile, onBack }) {
         ${BADGE_CATEGORIES.map((category) => {
           const badges = collection.filter((badge) => badge.category === category.id);
           const categoryEarned = badges.filter((badge) => badge.earned).length;
+          const categoryWins = badges.reduce((total, badge) => total + badge.count, 0);
           return `<section class="badge-album-category">
-            <div class="badge-album-category-heading"><div><h2>${category.emoji} ${category.label}</h2><p>${escapeHtml(category.description)}</p></div><strong>${categoryEarned}/${badges.length}</strong></div>
+            <div class="badge-album-category-heading"><div><h2>${category.emoji} ${category.label}</h2><p>${escapeHtml(category.description)}</p></div><strong>${categoryEarned}/${badges.length}${categoryWins > categoryEarned ? ` · ${categoryWins} gagnés` : ''}</strong></div>
             <div class="badge-album-grid">${badges.map((badge) => `
               <article class="badge-album-card ${badge.earned ? 'earned' : 'locked'}">
                 <div class="badge-album-medallion" style="--badge-from:${badge.gradient[0]};--badge-to:${badge.gradient[1]}">${badge.earned ? badge.emoji : `<span>${badge.secret ? '❔' : badge.emoji}</span><i>🔒</i>`}</div>
                 <div class="badge-album-card-copy"><h3>${escapeHtml(badge.secret && !badge.earned ? 'Badge secret' : badge.label)}</h3><p>${escapeHtml(badge.secret && !badge.earned ? 'Une surprise rare révélera ce badge…' : badge.description)}</p></div>
                 ${badge.earned
-                  ? `<span class="badge-earned-date">✓ Gagné${badge.unlockedAtLabel ? ` le ${badge.unlockedAtLabel}` : ''}</span>`
+                  ? `<span class="badge-earned-date">✓ Gagné ${badge.count} fois${badge.unlockedAtLabel ? ` · dernier le ${badge.unlockedAtLabel}` : ''}</span>`
                   : `<div class="badge-card-progress"><span><i style="width:${badge.progressPercent}%"></i></span><small>${badge.progressLabel}</small></div>`}
               </article>`).join('')}</div>
           </section>`;

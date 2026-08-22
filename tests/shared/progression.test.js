@@ -239,8 +239,12 @@ describe('newlyEarnedBadges', () => {
   it('awards a badge once the streak threshold is reached', () => {
     expect(newlyEarnedBadges(3, [])).toEqual(['streak-3']);
   });
-  it('does not re-award an existing badge', () => {
-    expect(newlyEarnedBadges(3, ['streak-3'])).toEqual([]);
+  it('counts the streak badge again when a new streak reaches its threshold', () => {
+    expect(newlyEarnedBadges(3, ['streak-3'])).toEqual(['streak-3']);
+  });
+
+  it('does not count the streak badge twice during the same day', () => {
+    expect(newlyEarnedBadges(3, ['streak-3'], { streakAdvanced: false })).toEqual([]);
   });
 });
 
@@ -299,8 +303,9 @@ describe('newlyEarnedPerfectBadges', () => {
     expect(newlyEarnedPerfectBadges(1, [])).toEqual(['perfect-1']);
   });
 
-  it('does not re-award an existing perfect badge', () => {
-    expect(newlyEarnedPerfectBadges(1, ['perfect-1'])).toEqual([]);
+  it('counts repeatable perfect badges again at each matching milestone', () => {
+    expect(newlyEarnedPerfectBadges(2, ['perfect-1'])).toEqual(['perfect-1']);
+    expect(newlyEarnedPerfectBadges(20, ['perfect-1', 'perfect-10'])).toEqual(['perfect-1', 'perfect-10']);
   });
 
   it('awards multiple thresholds at once if count jumps past several', () => {
@@ -321,6 +326,12 @@ describe('new progression and challenge badges', () => {
   it('awards the secret treasure badge after the first rare discovery', () => {
     expect(newlyEarnedChallengeBadges({ rareTreasureCount: 1 }, [])).toEqual(['secret-treasure']);
   });
+
+  it('counts a challenge badge again only when a new objective has just completed', () => {
+    const stats = { dailyChallengeCompletions: 2 };
+    expect(newlyEarnedChallengeBadges(stats, ['daily-1'], { dailyChallengeCompletions: true })).toEqual(['daily-1']);
+    expect(newlyEarnedChallengeBadges(stats, ['daily-1'], { dailyChallengeCompletions: false })).toEqual([]);
+  });
 });
 
 describe('applyProgression', () => {
@@ -334,6 +345,7 @@ describe('applyProgression', () => {
     expect(result.streakDays).toBe(3);
     expect(result.newBadges).toEqual(['streak-3']);
     expect(result.badges).toEqual(['streak-3']);
+    expect(result.badgeCounts).toEqual({ 'streak-3': 1 });
     expect(result.totalCorrectCount).toBe(3);
     expect(result.gainedCoins).toBe(3);
     expect(result.coins).toBe(3);
@@ -352,6 +364,7 @@ describe('applyProgression', () => {
     const summary = { date: '2026-08-02', correctCount: 1 };
     const result = applyProgression(profile, summary);
     expect(result.badgeDates).toEqual({ 'streak-3': '2026-08-01', 'streak-7': '2026-08-02' });
+    expect(result.badgeCounts).toEqual({ 'streak-3': 1, 'streak-7': 1 });
   });
 
   it('carries over the existing coin balance and adds the perfect-mission bonus', () => {

@@ -106,6 +106,7 @@ button:active {
 }
 
 .badge-medallion {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -116,6 +117,8 @@ button:active {
   background: linear-gradient(160deg, var(--color-sun), #ffb84d);
   box-shadow: var(--shadow-card);
 }
+
+.badge-copy-count { position:absolute; right:-7px; bottom:-5px; display:grid; place-items:center; min-width:22px; height:20px; padding:0 3px; box-sizing:border-box; border:2px solid var(--color-card); border-radius:var(--radius-pill); background:var(--color-pink); color:#fff; font-size:9px; line-height:1; }
 
 .badge-medallion.locked {
   background: #e4e2dc;

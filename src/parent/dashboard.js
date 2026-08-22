@@ -801,7 +801,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
       <section class="progress-summary">
         <p>Niveau ${profile.avatarLevel} — ${profile.xp} XP</p>
         <p>Série actuelle : ${profile.streakDays} jour${profile.streakDays > 1 ? 's' : ''}</p>
-        ${renderBadgeMedallionsHtml(profile.badges)}
+        ${renderBadgeMedallionsHtml(profile.badges, profile.badgeCounts)}
       </section>
       ${weeklyWatchHtml(weeklyWatch)}
       <div class="dashboard-columns">
