@@ -57,6 +57,15 @@ describe('mistake notebook', () => {
     expect(learningStatusForEntry(retained[0]).id).toBe('acquis');
   });
 
+  it('never validates two consolidation stages on the same day', () => {
+    const failed = updateLearningNotebook([], [{ ...mistake, isCorrect: false }], '2026-08-22');
+    const firstSuccess = updateLearningNotebook(failed, [{ ...mistake, isCorrect: true }], '2026-08-22');
+    const repeatedSameDay = updateLearningNotebook(firstSuccess, [{ ...mistake, isCorrect: true }], '2026-08-22');
+    expect(firstSuccess[0].retentionStage).toBe(1);
+    expect(repeatedSameDay[0].retentionStage).toBe(1);
+    expect(learningStatusForEntry(repeatedSameDay[0]).id).toBe('en-progres');
+  });
+
   it('selects only due reviews and prioritizes repeated errors', () => {
     const notebook = [
       { ...mistake, errorCount: 1, nextReviewDate: '2026-08-24' },
