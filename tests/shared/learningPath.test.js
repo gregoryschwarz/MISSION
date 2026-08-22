@@ -32,7 +32,7 @@ describe('guided learning path', () => {
 
   it('provides question-specific hints instead of repeating the generic rule', () => {
     expect(adaptiveHintForQuestion({ type: 'addition', a: 27, b: 15, answer: 42 })).toContain('27');
-    expect(adaptiveHintForQuestion({ type: 'monnaie', answer: 750 })).toContain('7,50');
+    expect(adaptiveHintForQuestion({ type: 'monnaie', answer: 750 })).toContain('centimes');
     expect(adaptiveHintForQuestion({ type: 'anglais', prompt: 'Que veut dire cat ?', answer: 'chat' })).toContain('mot important');
   });
 

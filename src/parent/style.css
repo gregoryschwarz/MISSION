@@ -448,6 +448,7 @@ button:active {
 .retention-grid b { font-family:var(--font-display); font-size:var(--text-2xl); }
 .retention-grid span { color:var(--color-text-muted); font-size:var(--text-sm); }
 .retention-acquired b { color:var(--color-mint); }.retention-progress b { color:#b38200; }.retention-due b { color:var(--color-coral); }
+.parent-learned-lessons { display:grid; gap:var(--space-3); }.parent-learned-lessons h3 { margin:0; }.parent-lesson-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--space-3); }.parent-lesson-card { display:grid; gap:var(--space-2); padding:var(--space-3); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface-soft); }.parent-lesson-card div { display:grid; gap:3px; }.parent-lesson-card small,.parent-lesson-card > span { color:var(--color-text-muted); font-size:var(--text-xs); }.parent-lesson-card p { margin:0; line-height:1.45; }.parent-lesson-trap { padding:var(--space-2); border-radius:var(--radius-sm); background:color-mix(in srgb,var(--color-coral) 10%,var(--color-card)); }
 @media (max-width:800px) { .retention-heading { display:grid; }.retention-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
 .daily-chart-svg {

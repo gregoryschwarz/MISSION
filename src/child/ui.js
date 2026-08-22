@@ -2,6 +2,7 @@ import { emojiForType, renderBadgeMedallionsHtml, badgeCollectionData, BADGE_CAT
 import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { DIFFICULTY_LABELS } from '../shared/difficulty.js';
 import { learningTypeLabel } from '../shared/subjects.js';
+import { adaptiveHintForQuestion } from '../shared/learningPath.js';
 import { dynamicHintSteps, shortAnswerExplanation } from './hints.js';
 import { shapeSvg } from './shapes.js';
 import { coinSvg, formatEuroCents, parseEuroInput } from './money.js';
@@ -372,13 +373,40 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, sch
   attachBottomTabs(root, onNavigate);
 }
 
+function lessonVisualHtml(model = {}) {
+  const a = Number(model.a) || 0;
+  const b = Number(model.b) || 0;
+  const answer = typeof model.answer === 'object' ? '' : model.answer ?? '';
+  if (model.kind === 'number-line') {
+    const jumpLabel = model.type === 'soustraction' ? `−${b}` : `+${b}`;
+    return `<div class="lesson-visual lesson-number-line" role="img" aria-label="Ligne de nombres de ${a} vers ${escapeHtml(answer)}"><svg viewBox="0 0 520 100"><line x1="45" y1="55" x2="475" y2="55"/><circle cx="90" cy="55" r="9"/><circle cx="430" cy="55" r="9"/><path d="M100 45 Q260 2 420 45"/><text x="90" y="86">${a}</text><text x="430" y="86">${escapeHtml(answer)}</text><text x="250" y="24">${b ? jumpLabel : ''}</text></svg></div>`;
+  }
+  if (model.kind === 'groups' || model.kind === 'sharing') {
+    const groupCount = Math.max(2, Math.min(5, a || b || 3));
+    return `<div class="lesson-visual lesson-groups" role="img" aria-label="Groupes égaux">${Array.from({ length: groupCount }, (_, index) => `<span><i>●</i><i>●</i><small>${index + 1}</small></span>`).join('')}</div>`;
+  }
+  if (model.kind === 'fraction') {
+    const fraction = model.a?.numerator ? model.a : { numerator: 1, denominator: 4 };
+    return `<div class="lesson-visual lesson-fraction" role="img" aria-label="Fraction ${fraction.numerator} sur ${fraction.denominator}">${Array.from({ length: fraction.denominator }, (_, index) => `<span class="${index < fraction.numerator ? 'filled' : ''}"></span>`).join('')}<b>${fraction.numerator}/${fraction.denominator}</b></div>`;
+  }
+  if (model.kind === 'money') return `<div class="lesson-visual lesson-symbol-visual"><span>💶</span><b>${(Number(answer) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</b></div>`;
+  if (model.kind === 'clock') return `<div class="lesson-visual lesson-symbol-visual"><span>🕒</span><b>${escapeHtml(answer)}</b></div>`;
+  if (model.kind === 'shape') return `<div class="lesson-visual lesson-symbol-visual"><span>🔷</span><b>${escapeHtml(model.shape ?? 'Observe le contour')}</b></div>`;
+  if (model.kind === 'bars' || model.kind === 'comparison') return `<div class="lesson-visual lesson-bars"><span style="width:45%"></span><span style="width:78%"></span><b>Comparer</b></div>`;
+  if (model.kind === 'words') return `<div class="lesson-visual lesson-symbol-visual"><span>📝</span><b>un mot → des mots</b></div>`;
+  if (model.kind === 'problem') return `<div class="lesson-visual lesson-symbol-visual"><span>🔎</span><b>Données → opération → réponse</b></div>`;
+  return `<div class="lesson-visual lesson-symbol-visual"><span>🧠</span><b>Observer · comprendre · retenir</b></div>`;
+}
+
 export function renderMiniLesson(root, { lesson, onStart, onBack }) {
   root.innerHTML = `
     <div class="screen mini-lesson-screen">
       <header class="mini-lesson-heading"><span>🎓 MINI-LEÇON · ENVIRON 20 SECONDES</span><h1>${escapeHtml(lesson.title)}</h1></header>
       <section class="mini-lesson-card">
         <div class="mini-lesson-rule"><strong>💡 La règle</strong><p>${escapeHtml(lesson.rule)}</p></div>
+        ${lessonVisualHtml(lesson.visualModel)}
         <div class="mini-lesson-example"><strong>✏️ Exemple guidé</strong><p>${escapeHtml(lesson.examplePrompt)}</p><ol>${lesson.exampleSteps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol></div>
+        <div class="mini-lesson-trap"><strong>⚠️ Erreur fréquente</strong><p>${escapeHtml(lesson.commonMistake)}</p></div>
         <div class="mini-lesson-path"><span>1️⃣ Facile</span><i>→</i><span>2️⃣ Guidé</span><i>→</i><span>3️⃣ Autonome</span></div>
         <button id="mini-lesson-start" class="big-button">J’ai compris, je m’entraîne !</button>
         <button id="mini-lesson-back" class="link-button">Choisir autre chose</button>
@@ -386,6 +414,22 @@ export function renderMiniLesson(root, { lesson, onStart, onBack }) {
     </div>`;
   root.querySelector('#mini-lesson-start').addEventListener('click', onStart);
   root.querySelector('#mini-lesson-back').addEventListener('click', onBack);
+}
+
+export function renderLearningRecap(root, { recap, onStart, onBack }) {
+  root.innerHTML = `
+    <div class="screen mini-lesson-screen recap-screen">
+      <header class="mini-lesson-heading"><span>🧠 CARTE MÉMOIRE</span><h1>${escapeHtml(recap.title)}</h1><p>Tu as appris cette règle le ${escapeHtml(recap.completedDate)}. Relis-la avant ta révision.</p></header>
+      <section class="mini-lesson-card">
+        <div class="mini-lesson-rule"><strong>💡 À retenir</strong><p>${escapeHtml(recap.rule)}</p></div>
+        ${lessonVisualHtml(recap.visualModel)}
+        <div class="mini-lesson-trap"><strong>⚠️ Le piège à éviter</strong><p>${escapeHtml(recap.commonMistake)}</p></div>
+        <button id="learning-recap-start" class="big-button">Je révise maintenant</button>
+        <button id="learning-recap-back" class="link-button">Plus tard</button>
+      </section>
+    </div>`;
+  root.querySelector('#learning-recap-start').addEventListener('click', onStart);
+  root.querySelector('#learning-recap-back').addEventListener('click', onBack);
 }
 
 function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
@@ -666,7 +710,7 @@ function learningStageHtml(stage) {
 
 function adaptiveHintHtml(question, visible) {
   if (!visible) return '';
-  const hint = dynamicHintSteps(question)?.[0] ?? helpTextForType(question.type);
+  const hint = adaptiveHintForQuestion(question);
   return `<aside class="adaptive-hint" role="status"><strong>🌱 Petit indice</strong><span>${escapeHtml(hint)}</span></aside>`;
 }
 

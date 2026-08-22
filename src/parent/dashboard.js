@@ -849,6 +849,20 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
           <article class="retention-due"><b>${learningPath.fragileCount}</b><span>notions encore fragiles</span></article>
           <article class="retention-due"><b>${learningPath.dueCount}</b><span>à revoir maintenant</span></article>
         </div>
+        <div class="parent-learned-lessons">
+          <h3>📚 Dernières règles apprises</h3>
+          ${(profile.learnedLessons ?? []).length
+            ? `<div class="parent-lesson-grid">${(profile.learnedLessons ?? []).slice(0, 6).map((lesson) => {
+                const currentErrors = (profile.mistakeNotebook ?? []).filter((entry) => entry.type === lesson.type).reduce((sum, entry) => sum + (entry.errorCount ?? 0), 0);
+                return `<article class="parent-lesson-card">
+                  <div><strong>${escapeHtml(lesson.title ?? displayTypeLabel(lesson.type))}</strong><small>${escapeHtml(lesson.schoolLevel ?? profile.schoolLevel ?? '')} · vue ${lesson.lessonCount ?? 1} fois · ${escapeHtml(lesson.lastLearnedDate ?? '')}</small></div>
+                  <p>${escapeHtml(lesson.rule)}</p>
+                  <p class="parent-lesson-trap">⚠️ ${escapeHtml(lesson.commonMistake)}</p>
+                  <span>${currentErrors ? `🔁 ${currentErrors} erreur${currentErrors > 1 ? 's' : ''} encore enregistrée${currentErrors > 1 ? 's' : ''}` : '✅ Aucun piège enregistré sur cette notion'}</span>
+                </article>`;
+              }).join('')}</div>`
+            : '<p class="setup-hint">Les mini-leçons terminées apparaîtront ici avec la règle et les difficultés rencontrées.</p>'}
+        </div>
       </section>
       <section class="focus-selector">
         <h2>Missions ciblées &amp; objectif hebdomadaire</h2>

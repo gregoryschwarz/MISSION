@@ -120,6 +120,8 @@ export async function createChild(familyId, { childName }) {
     schoolLevel: 'CE2',
     assignedSubject: null,
     mistakeNotebook: [],
+    learningRecaps: [],
+    learnedLessons: [],
     subjectMissionCounts: {},
     storyProgress: 0,
     weeklyGoalTarget: 0,

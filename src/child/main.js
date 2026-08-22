@@ -12,9 +12,9 @@ import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '.
 import { seasonForDate } from '../shared/seasons.js';
 import { SUBJECTS, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
 import { newlyEarnedSubjectBadges, notionLearningStatuses, personalizedLearningPlan, reviewQuestionsFromNotebook, storyChapter, storyProgressAfterMission, subjectMissionCountsAfter, updateLearningNotebook, weeklyLearningTheme } from '../shared/learningExperience.js';
-import { diagnosticPlanForSchoolLevel, learningLessonForType, progressiveQuestionLevels, weakestLearningType } from '../shared/learningPath.js';
+import { diagnosticPlanForSchoolLevel, dueLearningRecap, learnedLessonsAfterLesson, learningLessonForType, progressiveQuestionLevels, scheduleLearningRecap, weakestLearningType } from '../shared/learningPath.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderMiniLesson, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
+import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderMiniLesson, renderLearningRecap, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound, speakEnglish } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
@@ -74,6 +74,7 @@ let cachedChoicesIndex = -1;
 let currentMissionKind = 'standard';
 let adaptiveHintTimer = null;
 let adaptiveHintVisible = false;
+let currentLearningLesson = null;
 
 async function ensureAuth() {
   await ensureDeviceAuth(auth);
@@ -134,6 +135,8 @@ async function loadProfile(targetChildId) {
         assignedSubject: null,
         mistakeNotebook: [],
         learningStats: {},
+        learningRecaps: [],
+        learnedLessons: [],
         subjectMissionCounts: {},
         storyProgress: 0,
       };
@@ -426,12 +429,14 @@ async function handleSelectDecor(decorId) {
 
 function showSubjectPicker() {
   const enabledSubjectIds = new Set(normalizeEnabledSubjects(lastProfile?.enabledSubjects));
+  const dueRecap = dueLearningRecap(lastProfile?.learningRecaps ?? []);
+  const dueNotebookCount = personalizedLearningPlan(lastProfile?.mistakeNotebook ?? []).reviewQuestions.length;
   renderSubjectPicker(root, {
     subjects: SUBJECTS.filter((subject) => enabledSubjectIds.has(subject.id)),
     difficultyLevels: lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS,
     schoolLevel: lastProfile?.schoolLevel ?? 'CE2',
     mistakeCount: lastProfile?.mistakeNotebook?.length ?? 0,
-    dueReviewCount: personalizedLearningPlan(lastProfile?.mistakeNotebook ?? []).reviewQuestions.length,
+    dueReviewCount: dueNotebookCount + (dueRecap ? 1 : 0),
     weeklyTheme: weeklyLearningTheme(),
     assignedSubject: lastProfile?.assignedSubject ?? null,
     learningTarget: weakestLearningType(lastProfile ?? {}),
@@ -543,6 +548,7 @@ function startMissionWithQuestions(questions, forcedMode = null, subject = null,
   session = createSession(questions, subject);
   session.adaptiveRetriesEnabled = missionKind !== 'diagnostic';
   currentMissionKind = missionKind;
+  if (missionKind !== 'learning') currentLearningLesson = null;
   lastFeedback = null;
   answerReview = null;
   helpVisible = false;
@@ -599,7 +605,25 @@ function startWeeklyThemeMission() {
 }
 
 function startMistakeReview() {
-  const questions = reviewQuestionsFromNotebook(lastProfile?.mistakeNotebook ?? [], MISSION_LENGTH);
+  const dueRecap = dueLearningRecap(lastProfile?.learningRecaps ?? []);
+  let questions = reviewQuestionsFromNotebook(lastProfile?.mistakeNotebook ?? [], MISSION_LENGTH);
+  if (dueRecap) {
+    const recapQuestions = questions.filter((question) => question.type === dueRecap.type);
+    const otherQuestions = questions.filter((question) => question.type !== dueRecap.type);
+    if (!recapQuestions.length) recapQuestions.push(...freshQuestionsForType(dueRecap.type, 3));
+    questions = [...recapQuestions, ...otherQuestions].slice(0, MISSION_LENGTH);
+    if (!questions.length) questions = generateMission(3, lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS);
+    renderLearningRecap(root, {
+      recap: dueRecap,
+      onStart: async () => {
+        lastProfile = { ...lastProfile, learningRecaps: (lastProfile.learningRecaps ?? []).filter((entry) => entry.type !== dueRecap.type) };
+        await saveProfile(childId, lastProfile).catch(() => {});
+        startMissionWithQuestions(questions, 'quiz', 'revision', 'mistake-review');
+      },
+      onBack: showSubjectPicker,
+    });
+    return;
+  }
   if (!questions.length) return showSubjectPicker();
   startMissionWithQuestions(questions, 'quiz', 'revision', 'mistake-review');
 }
@@ -660,8 +684,10 @@ function startLearningPath() {
     type = 'addition';
     questions = progressiveQuestionsForType(type);
   }
+  const previousLesson = (lastProfile?.learnedLessons ?? []).find((entry) => entry.type === type);
+  currentLearningLesson = learningLessonForType(type, questions[0], lastProfile?.schoolLevel ?? 'CE2', previousLesson?.lessonCount ?? 0);
   renderMiniLesson(root, {
-    lesson: learningLessonForType(type, questions[0]),
+    lesson: currentLearningLesson,
     onStart: () => startMissionWithQuestions(questions, 'quiz', type, 'learning'),
     onBack: showSubjectPicker,
   });
@@ -891,6 +917,12 @@ async function finishMission() {
       stats[type] = { correct: previous.correct + current.correct, total: previous.total + current.total, successDates: [...successDates].slice(-30) };
       return stats;
     }, { ...(profileBefore.learningStats ?? {}) }),
+    learningRecaps: currentMissionKind === 'learning' && currentLearningLesson
+      ? scheduleLearningRecap(profileBefore.learningRecaps ?? [], currentLearningLesson, summary.date)
+      : profileBefore.learningRecaps ?? [],
+    learnedLessons: currentMissionKind === 'learning' && currentLearningLesson
+      ? learnedLessonsAfterLesson(profileBefore.learnedLessons ?? [], currentLearningLesson, summary.date, summary.incorrectQuestions.length)
+      : profileBefore.learnedLessons ?? [],
     diagnosticCompletedForLevel: currentMissionKind === 'diagnostic' ? profileBefore.schoolLevel ?? 'CE2' : profileBefore.diagnosticCompletedForLevel ?? null,
     diagnosticPercent: currentMissionKind === 'diagnostic' ? Math.round((summary.correctCount / summary.questionsTotal) * 100) : profileBefore.diagnosticPercent ?? null,
     diagnosticDate: currentMissionKind === 'diagnostic' ? summary.date : profileBefore.diagnosticDate ?? null,
@@ -913,6 +945,7 @@ async function finishMission() {
     }
   }
   pairsRound = null;
+  currentLearningLesson = null;
   renderResults(root, {
     correctCount: summary.correctCount,
     questionsTotal: summary.questionsTotal,
