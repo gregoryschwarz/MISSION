@@ -625,6 +625,29 @@ button:active {
   border-left: 4px solid #9b8ec4;
 }
 
+/* Les cartes s'adaptent à la largeur réellement disponible. */
+.parent-curriculum {
+  min-width: 0;
+}
+
+.parent-competency-grid {
+  grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+}
+
+.parent-competency-card {
+  min-width: 0;
+}
+
+.parent-competency-card > div {
+  min-width: 0;
+}
+
+.parent-competency-card strong,
+.parent-competency-card small,
+.parent-competency-card p {
+  overflow-wrap: anywhere;
+}
+
 @media (min-width: 920px) {
   .dashboard {
     display: grid;
@@ -635,6 +658,9 @@ button:active {
 
   .dashboard > header,
   .dashboard > .progress-summary,
+  .dashboard > .parent-weekly-report,
+  .dashboard > .parent-curriculum,
+  .dashboard > .retention-summary,
   .dashboard > .weekly-watch,
   .dashboard > .focus-selector,
   .dashboard > .subject-settings,

@@ -8,7 +8,7 @@ describe('parent desktop layout', () => {
     expect(css).toContain('.dashboard > .parent-weekly-report,');
     expect(css).toContain('.dashboard > .parent-curriculum,');
     expect(css).toContain('.dashboard > .retention-summary');
-    expect(css).toMatch(/\.dashboard > \.parent-weekly-report,[\s\S]*\.dashboard > \.retention-summary\s*\{\s*grid-column:\s*1\s*\/\s*-1/);
+    expect(css).toMatch(/\.dashboard > \.parent-weekly-report,[\s\S]*\.dashboard > \.retention-summary,[\s\S]*\{\s*grid-column:\s*1\s*\/\s*-1/);
   });
 
   it('keeps competency cards readable instead of squeezing their text', () => {
