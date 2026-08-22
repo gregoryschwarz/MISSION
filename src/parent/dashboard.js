@@ -391,6 +391,19 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+const REWARD_CATEGORIES = [
+  { id: 'surprise', emoji: '✨', label: 'Petites surprises' },
+  { id: 'treat', emoji: '🍰', label: 'Petits plaisirs' },
+  { id: 'privilege', emoji: '⭐', label: 'Privilèges' },
+  { id: 'treasure', emoji: '🎁', label: 'Grands trésors' },
+];
+
+function rewardCategoryOptions(selected = 'surprise') {
+  return REWARD_CATEGORIES.map((category) =>
+    `<option value="${category.id}" ${category.id === selected ? 'selected' : ''}>${category.emoji} ${category.label}</option>`
+  ).join('');
+}
+
 function rewardsSectionHtml(rewards, rewardRequests, coins) {
   const pending = rewardRequests.filter((r) => r.status === 'pending');
   const resolved = rewardRequests
@@ -398,7 +411,10 @@ function rewardsSectionHtml(rewards, rewardRequests, coins) {
     .slice(0, 5);
   return `
     <section class="rewards">
-      <h2>🎁 Récompenses réelles</h2>
+      <div class="rewards-heading">
+        <div><p>CADEAUX ET PRIVILÈGES</p><h2>🎁 Une boutique qui donne envie</h2></div>
+        <span>Des petits plaisirs accessibles aux grands trésors à économiser.</span>
+      </div>
       <div class="parent-coin-wallet">
         <div><span>SOLDE DE L’ENFANT</span><strong>${coins ?? 0} 🪙</strong></div>
         <div class="coin-credit-quick" aria-label="Ajout rapide de pièces">
@@ -411,23 +427,26 @@ function rewardsSectionHtml(rewards, rewardRequests, coins) {
         <small>Les pièces sont ajoutées immédiatement au compte de l’enfant.</small>
       </div>
 
-      <h3>Créer une récompense</h3>
-      <form id="reward-form">
+      <h3>Créer un cadeau ou un privilège</h3>
+      <form id="reward-form" class="reward-create-form">
         <label>Icône<input id="reward-emoji" maxlength="4" value="🎁" /></label>
-        <label>Nom<input id="reward-name" required /></label>
+        <label>Contenu ou nom<input id="reward-name" maxlength="80" placeholder="Ex. Une petite figurine" required /></label>
+        <label>Catégorie<select id="reward-category">${rewardCategoryOptions()}</select></label>
         <label>Coût en pièces<input id="reward-cost" type="number" min="1" step="1" required /></label>
+        <label class="reward-mystery-choice"><input id="reward-mystery" type="checkbox" /> Masquer le contenu à l’enfant</label>
         <button type="submit">Ajouter</button>
       </form>
 
-      <h3>Récompenses disponibles</h3>
+      <h3>Catalogue disponible</h3>
       ${
         rewards.length
           ? `<ul class="reward-list editable-reward-list">${rewards
               .map((r) => `<li class="reward-edit-row ${r.active === false ? 'reward-inactive' : ''}" data-id="${r.id}">
                 <input class="reward-edit-emoji" value="${escapeHtml(r.emoji ?? '🎁')}" maxlength="4" aria-label="Icône" />
                 <input class="reward-edit-name" value="${escapeHtml(r.name)}" maxlength="80" aria-label="Nom de la récompense" />
+                <select class="reward-edit-category" aria-label="Catégorie">${rewardCategoryOptions(r.category)}</select>
                 <input class="reward-edit-cost" type="number" min="1" step="1" value="${r.cost}" aria-label="Coût en pièces" />
-                <span>🪙</span><button class="reward-update" data-id="${r.id}">Enregistrer</button>
+                <span>🪙</span><label class="reward-mystery-toggle"><input class="reward-edit-mystery" type="checkbox" ${r.mystery ? 'checked' : ''} /> Mystère</label><button class="reward-update" data-id="${r.id}">Enregistrer</button>
                 <button class="reward-toggle" data-id="${r.id}" data-active="${r.active !== false}">${r.active === false ? 'Réactiver' : 'Désactiver'}</button>
                 <button class="reward-archive ${r.archived ? '' : 'button-danger'}" data-id="${r.id}" data-archived="${!!r.archived}">${r.archived ? 'Restaurer' : 'Archiver'}</button>
               </li>`)
@@ -922,8 +941,10 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
     const name = root.querySelector('#reward-name').value.trim();
     const emoji = root.querySelector('#reward-emoji').value.trim() || '🎁';
     const cost = Number(root.querySelector('#reward-cost').value);
+    const category = root.querySelector('#reward-category').value;
+    const mystery = root.querySelector('#reward-mystery').checked;
     if (!name || !cost || cost < 1) return;
-    onCreateReward({ name, cost, emoji });
+    onCreateReward({ name, cost, emoji, category, mystery });
   });
   root.querySelector('#coin-credit-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -939,8 +960,10 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
     const name = row.querySelector('.reward-edit-name').value.trim();
     const emoji = row.querySelector('.reward-edit-emoji').value.trim() || '🎁';
     const cost = Number(row.querySelector('.reward-edit-cost').value);
+    const category = row.querySelector('.reward-edit-category').value;
+    const mystery = row.querySelector('.reward-edit-mystery').checked;
     if (!name || !Number.isInteger(cost) || cost < 1) return;
-    onUpdateReward(button.dataset.id, { name, cost, emoji });
+    onUpdateReward(button.dataset.id, { name, cost, emoji, category, mystery });
   }));
   root.querySelectorAll('.reward-toggle').forEach((button) => button.addEventListener('click', () => {
     onUpdateReward(button.dataset.id, { active: button.dataset.active !== 'true' });
@@ -996,14 +1019,18 @@ export function renderParentShop(root, { profile, rewards = [], rewardRequests =
     const name = root.querySelector('#reward-name').value.trim();
     const emoji = root.querySelector('#reward-emoji').value.trim() || '🎁';
     const cost = Number(root.querySelector('#reward-cost').value);
-    if (name && Number.isInteger(cost) && cost >= 1) onCreateReward({ name, cost, emoji });
+    const category = root.querySelector('#reward-category').value;
+    const mystery = root.querySelector('#reward-mystery').checked;
+    if (name && Number.isInteger(cost) && cost >= 1) onCreateReward({ name, cost, emoji, category, mystery });
   });
   root.querySelectorAll('.reward-update').forEach((button) => button.addEventListener('click', () => {
     const row = button.closest('.reward-edit-row');
     const name = row.querySelector('.reward-edit-name').value.trim();
     const emoji = row.querySelector('.reward-edit-emoji').value.trim() || '🎁';
     const cost = Number(row.querySelector('.reward-edit-cost').value);
-    if (name && Number.isInteger(cost) && cost >= 1) onUpdateReward(button.dataset.id, { name, cost, emoji });
+    const category = row.querySelector('.reward-edit-category').value;
+    const mystery = row.querySelector('.reward-edit-mystery').checked;
+    if (name && Number.isInteger(cost) && cost >= 1) onUpdateReward(button.dataset.id, { name, cost, emoji, category, mystery });
   }));
   root.querySelectorAll('.reward-toggle').forEach((button) => button.addEventListener('click', () => onUpdateReward(button.dataset.id, { active: button.dataset.active !== 'true' })));
   root.querySelectorAll('.reward-archive').forEach((button) => button.addEventListener('click', () => {

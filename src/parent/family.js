@@ -255,57 +255,86 @@ export async function updateAvatarPackSetting(familyId, packId, changes) {
   return true;
 }
 
-// --- Récompenses réelles ---
-// Le catalogue de récompenses est partagé par famille (le parent le crée une
-// fois) ; les demandes sont propres à chaque enfant.
+// --- Cadeaux et privilèges ---
+// Le catalogue est partagé par famille ; les demandes restent propres à
+// chaque enfant. Les catégories rendent la boutique plus facile à parcourir.
 
 export const DEFAULT_REWARDS = [
-  { id: 'dessert-choice', emoji: '🍰', name: 'Choisir le dessert', cost: 15 },
-  { id: 'music-choice', emoji: '🎵', name: 'Choisir la musique en voiture', cost: 15 },
-  { id: 'family-game', emoji: '🎲', name: 'Choisir le jeu de société', cost: 20 },
-  { id: 'meal-choice', emoji: '🍕', name: 'Choisir le repas du soir', cost: 25 },
-  { id: 'extra-story', emoji: '📖', name: 'Une histoire supplémentaire', cost: 25 },
-  { id: 'screen-time', emoji: '🎮', name: '20 minutes d’écran en plus', cost: 30 },
-  { id: 'parent-activity', emoji: '🎨', name: 'Choisir une activité avec papa ou maman', cost: 35 },
-  { id: 'baking-time', emoji: '🧁', name: 'Faire un gâteau ensemble', cost: 40 },
-  { id: 'movie-night', emoji: '🎬', name: 'Choisir le film de la soirée', cost: 45 },
-  { id: 'park-trip', emoji: '🌳', name: 'Une sortie au parc', cost: 50 },
-  { id: 'small-surprise', emoji: '🎁', name: 'Une petite surprise', cost: 70 },
-  { id: 'pajama-party', emoji: '🌙', name: 'Une soirée pyjama', cost: 100 },
+  { id: 'sticker-surprise', emoji: '🌟', name: 'Une planche de stickers', cost: 30, category: 'surprise' },
+  { id: 'temporary-tattoo', emoji: '🦋', name: 'Un tatouage temporaire', cost: 40, category: 'surprise' },
+  { id: 'dessert-choice', emoji: '🍰', name: 'Mon dessert préféré', cost: 50, category: 'treat' },
+  { id: 'special-snack', emoji: '🍓', name: 'Un goûter spécial', cost: 60, category: 'treat' },
+  { id: 'small-surprise', emoji: '❓', name: 'Le contenu secret choisi par le parent', cost: 75, category: 'surprise', mystery: true },
+  { id: 'music-choice', emoji: '🎵', name: 'Choisir la musique', cost: 80, category: 'privilege' },
+  { id: 'family-game', emoji: '🎲', name: 'Choisir le jeu de société', cost: 100, category: 'privilege' },
+  { id: 'screen-time', emoji: '🎮', name: '20 minutes d’écran en plus', cost: 100, category: 'privilege' },
+  { id: 'movie-night', emoji: '🎬', name: 'Choisir le film', cost: 100, category: 'privilege' },
+  { id: 'meal-choice', emoji: '🍕', name: 'Choisir le repas', cost: 120, category: 'treat' },
+  { id: 'baking-time', emoji: '✏️', name: 'Un joli crayon ou une petite fourniture', cost: 150, category: 'surprise' },
+  { id: 'parent-activity', emoji: '🎨', name: 'Choisir une activité en famille', cost: 160, category: 'privilege' },
+  { id: 'pajama-party', emoji: '🌙', name: 'Une soirée pyjama', cost: 180, category: 'privilege' },
+  { id: 'extra-story', emoji: '📖', name: 'Un petit magazine', cost: 250, category: 'treasure' },
+  { id: 'park-trip', emoji: '📚', name: 'Un petit livre choisi', cost: 300, category: 'treasure' },
+  { id: 'small-toy', emoji: '🧸', name: 'Un petit jouet', cost: 400, category: 'treasure' },
+  { id: 'grand-treasure', emoji: '🎁', name: 'Le grand trésor familial', cost: 600, category: 'treasure' },
 ];
+
+const LEGACY_REWARDS = new Map([
+  ['dessert-choice', ['Choisir le dessert', 15]],
+  ['music-choice', ['Choisir la musique en voiture', 15]],
+  ['family-game', ['Choisir le jeu de société', 20]],
+  ['meal-choice', ['Choisir le repas du soir', 25]],
+  ['extra-story', ['Une histoire supplémentaire', 25]],
+  ['screen-time', ['20 minutes d’écran en plus', 30]],
+  ['parent-activity', ['Choisir une activité avec papa ou maman', 35]],
+  ['baking-time', ['Faire un gâteau ensemble', 40]],
+  ['movie-night', ['Choisir le film de la soirée', 45]],
+  ['park-trip', ['Une sortie au parc', 50]],
+  ['small-surprise', ['Une petite surprise', 70]],
+  ['pajama-party', ['Une soirée pyjama', 100]],
+]);
 
 export async function ensureDefaultRewards(familyId) {
   const rewardsRef = collection(db, 'families', familyId, 'rewards');
   const snapshot = await getDocs(rewardsRef);
   const batch = writeBatch(db);
-  if (!snapshot.empty) {
-    let migratedCount = 0;
-    snapshot.docs.forEach((rewardDoc) => {
-      const data = rewardDoc.data();
-      const preset = DEFAULT_REWARDS.find((reward) => reward.id === rewardDoc.id);
-      const changes = {};
-      if (!data.emoji) changes.emoji = preset?.emoji ?? '🎁';
-      if (typeof data.active !== 'boolean') changes.active = true;
-      if (Object.keys(changes).length > 0) {
-        batch.update(doc(rewardsRef, rewardDoc.id), changes);
-        migratedCount += 1;
-      }
-    });
-    if (migratedCount > 0) await batch.commit();
-    return migratedCount > 0;
-  }
-  DEFAULT_REWARDS.forEach((reward) => {
-    batch.set(doc(rewardsRef, reward.id), { name: reward.name, cost: reward.cost, emoji: reward.emoji, active: true, createdAt: serverTimestamp() });
+  const existingIds = new Set(snapshot.docs.map((rewardDoc) => rewardDoc.id));
+  let changeCount = 0;
+  snapshot.docs.forEach((rewardDoc) => {
+    const data = rewardDoc.data();
+    const preset = DEFAULT_REWARDS.find((reward) => reward.id === rewardDoc.id);
+    const changes = {};
+    if (!data.emoji) changes.emoji = preset?.emoji ?? '🎁';
+    if (typeof data.active !== 'boolean') changes.active = true;
+    if (!data.category) changes.category = preset?.category ?? 'surprise';
+    if (preset?.mystery === true && typeof data.mystery !== 'boolean') changes.mystery = true;
+    const legacy = LEGACY_REWARDS.get(rewardDoc.id);
+    if (preset && legacy && data.name === legacy[0] && data.cost === legacy[1]) {
+      changes.name = preset.name;
+      changes.cost = preset.cost;
+      changes.emoji = preset.emoji;
+    }
+    if (Object.keys(changes).length > 0) {
+      batch.update(doc(rewardsRef, rewardDoc.id), changes);
+      changeCount += 1;
+    }
   });
+  DEFAULT_REWARDS.filter((reward) => !existingIds.has(reward.id)).forEach(({ id, ...reward }) => {
+    batch.set(doc(rewardsRef, id), { ...reward, active: true, createdAt: serverTimestamp() });
+    changeCount += 1;
+  });
+  if (changeCount === 0) return false;
   await batch.commit();
   return true;
 }
 
-export async function createReward(familyId, { name, cost, emoji = '🎁' }) {
+export async function createReward(familyId, { name, cost, emoji = '🎁', category = 'surprise', mystery = false }) {
   const ref = await addDoc(collection(db, 'families', familyId, 'rewards'), {
     name,
     cost,
     emoji,
+    category,
+    mystery,
     active: true,
     createdAt: serverTimestamp(),
   });

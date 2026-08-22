@@ -785,6 +785,16 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
 }
 
 export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinPacks = [], rewards, pendingRewardIds = [], onRequest, onBuyCoinPack, onBack, onNavigate }) {
+  const rewardCategories = [
+    { id: 'surprise', emoji: '✨', label: 'Petites surprises' },
+    { id: 'treat', emoji: '🍰', label: 'Petits plaisirs' },
+    { id: 'privilege', emoji: '⭐', label: 'Privilèges' },
+    { id: 'treasure', emoji: '🎁', label: 'Grands trésors' },
+  ];
+  const rewardCatalogue = rewardCategories.map((category) => ({
+    ...category,
+    rewards: rewards.filter((reward) => (reward.category ?? 'surprise') === category.id),
+  })).filter((category) => category.rewards.length > 0);
   root.innerHTML = `
     <div class="screen rewards-screen with-tabs">
       <h1>🎁 Récompenses</h1>
@@ -807,25 +817,33 @@ export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinP
           }).join('')}
         </div>
       </section>
-      <h2 class="real-rewards-title">🎁 Récompenses proposées par mes parents</h2>
+      <div class="real-rewards-heading">
+        <div><p>MA BOUTIQUE</p><h2 class="real-rewards-title">🎁 Cadeaux et privilèges</h2></div>
+        <span>Je choisis maintenant ou j’économise pour un grand trésor.</span>
+      </div>
       ${
         rewards.length
-          ? rewards
-              .map((r) => {
-                const pending = pendingRewardIds.includes(r.id);
-                const affordable = coins >= r.cost;
-                const disabled = pending || !affordable;
-                return `
-                  <div class="reward-card">
-                    <span class="reward-card-name"><span class="reward-card-emoji">${escapeHtml(r.emoji ?? '🎁')}</span>${escapeHtml(r.name)}</span>
+          ? `<div class="reward-category-list">${rewardCatalogue.map((category) => `
+              <section class="reward-category-section">
+                <h3>${category.emoji} ${category.label}</h3>
+                <div class="reward-category-grid">${category.rewards.map((r) => {
+                  const pending = pendingRewardIds.includes(r.id);
+                  const affordable = coins >= r.cost;
+                  const disabled = pending || !affordable;
+                  const displayName = r.mystery ? 'Surprise mystère' : r.name;
+                  const displayEmoji = r.mystery ? '❓' : (r.emoji ?? '🎁');
+                  return `<article class="reward-card ${affordable ? 'reward-affordable' : ''} ${r.mystery ? 'reward-mystery' : ''}">
+                    <span class="reward-card-emoji">${escapeHtml(displayEmoji)}</span>
+                    <span class="reward-card-name">${escapeHtml(displayName)}</span>
+                    ${r.mystery ? '<small>Le contenu reste secret jusqu’à la validation.</small>' : ''}
                     <span class="reward-card-cost">${r.cost} 🪙</span>
                     <button class="big-button reward-exchange" data-id="${r.id}" ${disabled ? 'disabled' : ''}>
-                      ${pending ? 'Demande envoyée ⏳' : 'Échanger'}
+                      ${pending ? 'Demande envoyée ⏳' : affordable ? 'Je le veux !' : `Encore ${r.cost - coins} 🪙`}
                     </button>
-                  </div>`;
-              })
-              .join('')
-          : "<p>Ton parent n'a pas encore ajouté de récompense.</p>"
+                  </article>`;
+                }).join('')}</div>
+              </section>`).join('')}</div>`
+          : "<p>Ton parent n'a pas encore ajouté de cadeau ou de privilège.</p>"
       }
       <button id="rewards-back" class="big-button">Retour</button>
     </div>

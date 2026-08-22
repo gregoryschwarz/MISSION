@@ -175,8 +175,8 @@ async function loadDashboard(familyId, childId) {
       await creditChildCoins(childId, profile.coins ?? 0, amount);
       await loadDashboard(familyId, childId);
     },
-    onCreateReward: async ({ name, cost, emoji }) => {
-      await createReward(familyId, { name, cost, emoji });
+    onCreateReward: async ({ name, cost, emoji, category, mystery }) => {
+      await createReward(familyId, { name, cost, emoji, category, mystery });
       await loadDashboard(familyId, childId);
     },
     onUpdateReward: async (rewardId, changes) => {
@@ -234,8 +234,8 @@ async function loadParentShop(familyId, childId) {
       await creditChildCoins(childId, profile.coins ?? 0, amount);
       await loadParentShop(familyId, childId);
     },
-    onCreateReward: async ({ name, cost, emoji }) => {
-      await createReward(familyId, { name, cost, emoji });
+    onCreateReward: async ({ name, cost, emoji, category, mystery }) => {
+      await createReward(familyId, { name, cost, emoji, category, mystery });
       await loadParentShop(familyId, childId);
     },
     onUpdateReward: async (rewardId, changes) => {

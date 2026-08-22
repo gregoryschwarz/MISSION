@@ -113,14 +113,16 @@ describe('createChild', () => {
 });
 
 describe('DEFAULT_REWARDS', () => {
-  it('provides a varied starter catalogue including the pajama party', () => {
-    expect(DEFAULT_REWARDS).toHaveLength(12);
-    expect(DEFAULT_REWARDS.find((reward) => reward.id === 'pajama-party')).toMatchObject({ cost: 100 });
+  it('provides a progressive catalogue with four categories and a mystery reward', () => {
+    expect(DEFAULT_REWARDS).toHaveLength(17);
+    expect(new Set(DEFAULT_REWARDS.map((reward) => reward.category))).toEqual(new Set(['surprise', 'treat', 'privilege', 'treasure']));
+    expect(DEFAULT_REWARDS.find((reward) => reward.id === 'pajama-party')).toMatchObject({ cost: 180, category: 'privilege' });
+    expect(DEFAULT_REWARDS.find((reward) => reward.mystery)).toMatchObject({ id: 'small-surprise', cost: 75 });
   });
 });
 
 describe('ensureDefaultRewards', () => {
-  it('adds missing icons and active state to an existing catalogue', async () => {
+  it('migrates legacy presets and adds the new rewards missing from an existing catalogue', async () => {
     const batch = { set: vi.fn(), update: vi.fn(), commit: vi.fn() };
     writeBatch.mockReturnValueOnce(batch);
     getDocs.mockResolvedValueOnce({
@@ -128,7 +130,14 @@ describe('ensureDefaultRewards', () => {
       docs: [{ id: 'pajama-party', data: () => ({ name: 'Une soirée pyjama', cost: 100 }) }],
     });
     expect(await ensureDefaultRewards('family-abc')).toBe(true);
-    expect(batch.update).toHaveBeenCalledWith(expect.anything(), { emoji: '🌙', active: true });
+    expect(batch.update).toHaveBeenCalledWith(expect.anything(), {
+      active: true,
+      category: 'privilege',
+      cost: 180,
+      emoji: '🌙',
+      name: 'Une soirée pyjama',
+    });
+    expect(batch.set).toHaveBeenCalledTimes(16);
     expect(batch.commit).toHaveBeenCalledOnce();
   });
 });
