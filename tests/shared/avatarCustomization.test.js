@@ -286,7 +286,7 @@ describe('Avatar packs', () => {
     expect(fairyPack.itemIds).toEqual(expect.arrayContaining([
       'fairy-braid', 'fairy-dress', 'griffin-companion', 'pet-fairy-crown', 'fairy-village', 'magic-waterfall',
     ]));
-    expect(AVATAR_PACKS.find((pack) => pack.id === 'champions-pack')?.name).toBe('Les Championnes');
+    expect(AVATAR_PACKS.find((pack) => pack.id === 'champions-pack')?.name).toBe('Les championnes');
   });
 
   it('separates the required level from permanent ownership', () => {
@@ -338,7 +338,7 @@ describe('Avatar packs', () => {
 
 describe('visualForCharacter', () => {
   it('returns a complete block-avatar palette and falls back safely', () => {
-    expect(visualForCharacter('panda')).toMatchObject({ id: 'panda', name: 'Aya magicienne' });
+    expect(visualForCharacter('panda')).toMatchObject({ id: 'panda', name: 'Aya la magicienne' });
     expect(visualForCharacter('panda').skin).toMatch(/^#/);
     expect(visualForCharacter('unknown').id).toBe(DEFAULT_CHARACTER);
   });
