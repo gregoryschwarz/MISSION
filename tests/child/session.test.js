@@ -76,17 +76,17 @@ describe('session flow', () => {
     expect(submitAnswer(session, 'bars')).toBe(false);
   });
 
-  it('replays a mistake only after two different questions', () => {
+  it('replays a similar exercise only after two different questions', () => {
     const questions = [
-      { type: 'addition', prompt: '1 + 1', answer: 2 },
-      { type: 'addition', prompt: '2 + 2', answer: 4 },
-      { type: 'addition', prompt: '3 + 3', answer: 6 },
-      { type: 'addition', prompt: '4 + 4', answer: 8 },
+      { type: 'addition', a: 1, b: 1, prompt: '1 + 1', answer: 2 },
+      { type: 'addition', a: 2, b: 2, prompt: '2 + 2', answer: 4 },
+      { type: 'addition', a: 3, b: 3, prompt: '3 + 3', answer: 6 },
+      { type: 'addition', a: 4, b: 4, prompt: '4 + 4', answer: 8 },
     ];
     const session = createSession(questions);
     submitAnswer(session, 99);
-    expect(session.questions.map((question) => question.prompt)).toEqual(['1 + 1', '2 + 2', '3 + 3', '1 + 1', '4 + 4']);
-    expect(session.questions[3]._adaptiveRetry).toBe(true);
+    expect(session.questions.map((question) => question.prompt)).toEqual(['1 + 1', '2 + 2', '3 + 3', '2 + 1 ?', '4 + 4']);
+    expect(session.questions[3]).toMatchObject({ answer: 3, _adaptiveRetry: true });
   });
 
   it('defers a late mistake to another day instead of replaying it immediately', () => {
