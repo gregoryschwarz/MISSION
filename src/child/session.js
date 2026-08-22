@@ -1,3 +1,5 @@
+import { correctionCoach } from '../shared/smartLearning.js';
+
 const CORE_BREAKDOWN_TYPES = [
   'addition', 'soustraction', 'multiplication', 'comparaison', 'division', 'fraction',
   'geometrie', 'monnaie', 'longueur', 'temps', 'probleme', 'accord-pluriel',
@@ -44,7 +46,7 @@ function scheduleAdaptiveRetry(session, question) {
   const remainingQuestions = session.questions.length - session.index - 1;
   if (remainingQuestions < 2) return;
   const retryIndex = session.index + 3;
-  session.questions.splice(retryIndex, 0, { ...question, _adaptiveRetry: true });
+  session.questions.splice(retryIndex, 0, { ...correctionCoach(question).retry, _adaptiveRetry: true });
 }
 
 export function submitAnswer(session, answer) {

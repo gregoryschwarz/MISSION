@@ -17,6 +17,7 @@ import {
 import { spendCoins, refundCoins } from '../shared/progression.js';
 import { DEFAULT_ENABLED_SUBJECT_IDS, normalizeEnabledSubjects } from '../shared/subjects.js';
 import { normalizeSchoolLevel } from '../shared/learningExperience.js';
+import { normalizeAccessibilityPreferences, normalizeFamilyLearningPlan } from '../shared/smartLearning.js';
 
 // --- Compte parent (une famille = un parent Google, peut avoir plusieurs enfants) ---
 
@@ -124,6 +125,10 @@ export async function createChild(familyId, { childName }) {
     learnedLessons: [],
     subjectMissionCounts: {},
     storyProgress: 0,
+    seasonalMissionCounts: {},
+    wishlistItemIds: [],
+    familyLearningPlan: normalizeFamilyLearningPlan(),
+    accessibilityPreferences: normalizeAccessibilityPreferences(),
     weeklyGoalTarget: 0,
     weeklyRewardText: 'Vendredi et samedi soir : tu peux rester debout plus tard !',
     weeklyRewardDays: ['vendredi', 'samedi'],
@@ -220,12 +225,15 @@ export async function setEnabledSubjects(childId, enabledSubjects) {
   await setDoc(doc(db, 'children', childId), { enabledSubjects: normalizeEnabledSubjects(enabledSubjects) }, { merge: true });
 }
 
-export async function setLearningPreferences(childId, { schoolLevel, assignedSubject }) {
+export async function setLearningPreferences(childId, { schoolLevel, assignedSubject, familyLearningPlan, accessibilityPreferences }) {
   const safeAssignedSubject = assignedSubject && DEFAULT_ENABLED_SUBJECT_IDS.includes(assignedSubject) ? assignedSubject : null;
-  await setDoc(doc(db, 'children', childId), {
+  const changes = {
     schoolLevel: normalizeSchoolLevel(schoolLevel),
     assignedSubject: safeAssignedSubject,
-  }, { merge: true });
+  };
+  if (familyLearningPlan) changes.familyLearningPlan = normalizeFamilyLearningPlan(familyLearningPlan);
+  if (accessibilityPreferences) changes.accessibilityPreferences = normalizeAccessibilityPreferences(accessibilityPreferences);
+  await setDoc(doc(db, 'children', childId), changes, { merge: true });
 }
 
 export async function setDailyMissionLimit(childId, dailyMissionLimit) {

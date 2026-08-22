@@ -10,13 +10,14 @@ import { applyProgression, applyDailyChallenge, applyWeeklyGoal, newlyEarnedChal
 import { badgeCollectionData, badgeCountsAfterAwards } from '../shared/badges.js';
 import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '../shared/dailyAdventure.js';
 import { seasonForDate } from '../shared/seasons.js';
+import { adaptiveMissionPlan, companionMood, normalizeAccessibilityPreferences, offlineSyncState, seasonalEventState, toggleWishlistItem } from '../shared/smartLearning.js';
 import { SUBJECTS, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
 import { newlyEarnedSubjectBadges, notionLearningStatuses, personalizedLearningPlan, reviewQuestionsFromNotebook, storyChapter, storyProgressAfterMission, subjectMissionCountsAfter, updateLearningNotebook, weeklyLearningTheme } from '../shared/learningExperience.js';
 import { diagnosticPlanForSchoolLevel, dueLearningRecap, learnedLessonsAfterLesson, learningLessonForType, progressiveQuestionLevels, scheduleLearningRecap, weakestLearningType } from '../shared/learningPath.js';
-import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
+import { enqueueSession, flushQueue, readQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderMiniLesson, renderLearningRecap, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
-import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound, speakEnglish } from './sound.js';
+import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound, speakText } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
 import { adjustDifficultyLevels, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { pickMissionMode, getLastMissionMode, storeLastMissionMode } from './missionMode.js';
@@ -75,6 +76,7 @@ let currentMissionKind = 'standard';
 let adaptiveHintTimer = null;
 let adaptiveHintVisible = false;
 let currentLearningLesson = null;
+let lastSpokenQuestionIndex = -1;
 
 async function ensureAuth() {
   await ensureDeviceAuth(auth);
@@ -139,6 +141,10 @@ async function loadProfile(targetChildId) {
         learnedLessons: [],
         subjectMissionCounts: {},
         storyProgress: 0,
+        seasonalMissionCounts: {},
+        wishlistItemIds: [],
+        familyLearningPlan: { dailyMinutes: 15, schoolDays: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'], preferredSubjects: [] },
+        accessibilityPreferences: { textSize: 'normal', dyslexiaMode: false, reducedMotion: false, readInstructions: false },
       };
 }
 
@@ -176,6 +182,7 @@ function renderHomeScreen(profile) {
   const dailyChallengeIsToday = profile.dailyChallengeDate === today;
   const weeklyGoalIsThisWeek = profile.weeklyGoalWeekStart === weekStartKey(today);
   const coinGoal = nextCoinPurchaseGoal(profile, avatarPackSettings);
+  const syncState = offlineSyncState(readQueue().length, navigator.onLine);
   renderHome(root, {
     childName: profile.childName,
     avatarLevel: profile.avatarLevel,
@@ -189,6 +196,11 @@ function renderHomeScreen(profile) {
     dailyAdventure: dailyAdventureState(profile, today),
     weeklyTheme: weeklyLearningTheme(today),
     story: { progress: profile.storyProgress ?? 0, chapter: storyChapter(profile.storyProgress ?? 0) },
+    seasonalEvent: seasonalEventState(profile),
+    companionMoodState: companionMood(profile, today),
+    syncState,
+    adaptivePlan: adaptiveMissionPlan(profile),
+    familyLearningPlan: profile.familyLearningPlan,
     rareTreasures: RARE_TREASURES.filter((treasure) => (profile.rareTreasureIds ?? []).includes(treasure.id)),
     dailyChallengeProgress: dailyChallengeIsToday ? profile.dailyChallengeProgress ?? 0 : 0,
     dailyChallengeCompleted: dailyChallengeIsToday ? !!profile.dailyChallengeCompleted : false,
@@ -263,7 +275,13 @@ async function showRewards() {
       coinPacks: XP_COIN_PACKS,
       rewards,
       pendingRewardIds,
+      wishlistItemIds: lastProfile?.wishlistItemIds ?? [],
       onRequest: (rewardId) => handleRequestReward(rewards.find((r) => r.id === rewardId)),
+      onToggleWishlist: async (rewardId) => {
+        lastProfile = { ...lastProfile, wishlistItemIds: toggleWishlistItem(lastProfile?.wishlistItemIds ?? [], rewardId) };
+        await saveProfile(childId, lastProfile).catch(() => {});
+        await showRewards();
+      },
       onBuyCoinPack: handleBuyCoinPack,
       onBack: () => renderHomeScreen(lastProfile),
       onNavigate: navigateTo,
@@ -521,12 +539,18 @@ async function showHome() {
     await ensureAuth();
     const profile = await loadProfile(childId);
     lastProfile = profile;
+    const accessibility = normalizeAccessibilityPreferences(profile.accessibilityPreferences);
+    document.body.dataset.textSize = accessibility.textSize;
+    document.body.dataset.dyslexia = accessibility.dyslexiaMode ? 'true' : 'false';
+    document.body.dataset.reducedMotion = accessibility.reducedMotion ? 'true' : 'false';
     childFamilyId = profile.familyId ?? childFamilyId;
     avatarPackSettings = childFamilyId
       ? await fetchAvatarPackSettings(childFamilyId).catch(() => [])
       : [];
     renderHomeScreen(profile);
-    flushQueue((summary) => writeSession(childId, summary)).catch(() => {});
+    flushQueue((summary) => writeSession(childId, summary))
+      .then(() => { if (lastProfile === profile) renderHomeScreen(profile); })
+      .catch(() => {});
   } catch (err) {
     if (err?.code === 'permission-denied') {
       clearStoredChildId();
@@ -554,6 +578,7 @@ function startMissionWithQuestions(questions, forcedMode = null, subject = null,
   helpVisible = false;
   cachedChoicesIndex = -1;
   adaptiveHintVisible = false;
+  lastSpokenQuestionIndex = -1;
   if (missionMode === 'pairs') {
     pairsRound = createPairsRound(session.questions);
     showPairsRound();
@@ -565,9 +590,14 @@ function startMissionWithQuestions(questions, forcedMode = null, subject = null,
 function startMission(notionType = null) {
   if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  const adaptivePlan = adaptiveMissionPlan(lastProfile ?? {});
   const questions = notionType
     ? generateSingleTypeMission(MISSION_LENGTH, notionType, difficultyLevels[notionType] ?? 1)
-    : generateMission(MISSION_LENGTH, difficultyLevels, lastProfile?.focusType ?? null);
+    : generateMission(
+        MISSION_LENGTH,
+        { ...difficultyLevels, [adaptivePlan.targetType]: adaptivePlan.difficulty },
+        lastProfile?.focusType ?? adaptivePlan.targetType
+      );
   startMissionWithQuestions(questions, null, 'mathematiques');
 }
 
@@ -723,7 +753,8 @@ function showQuestion() {
   const question = answerReview?.question ?? currentQuestion(session);
   const questionIndex = answerReview?.index ?? session.index;
   const elapsedMs = Date.now() - session.startedAt;
-  const showPauseReminder = elapsedMs >= PAUSE_REMINDER_MS;
+  const plannedMinutes = Number(lastProfile?.familyLearningPlan?.dailyMinutes) || (PAUSE_REMINDER_MS / 60000);
+  const showPauseReminder = elapsedMs >= plannedMinutes * 60 * 1000;
   if (missionMode === 'qcm') {
     renderQuestionQcm(root, {
       question,
@@ -739,7 +770,7 @@ function showQuestion() {
       showHelp: helpVisible,
       onOpenHelp: openHelp,
       onCloseHelp: closeHelp,
-      onSpeak: question.audioText ? () => speakEnglish(question.audioText) : null,
+      onSpeak: (text, language) => speakText(text, language),
     });
   } else {
     renderQuestion(root, {
@@ -755,8 +786,12 @@ function showQuestion() {
       showHelp: helpVisible,
       onOpenHelp: openHelp,
       onCloseHelp: closeHelp,
-      onSpeak: question.audioText ? () => speakEnglish(question.audioText) : null,
+      onSpeak: (text, language) => speakText(text, language),
     });
+  }
+  if (!answerReview && lastProfile?.accessibilityPreferences?.readInstructions && lastSpokenQuestionIndex !== questionIndex) {
+    lastSpokenQuestionIndex = questionIndex;
+    speakText(question.audioText ?? question.prompt, question.audioText ? 'en-GB' : 'fr-FR');
   }
   if (adaptiveHintTimer) clearTimeout(adaptiveHintTimer);
   if (currentMissionKind === 'learning' && !answerReview && question.learningStage !== 'guide' && !adaptiveHintVisible) {
@@ -877,12 +912,16 @@ async function finishMission() {
   additionalBadges.forEach((id) => { badgeDates[id] = summary.date; });
   const finalXp = progressionResult.xp + dailyChallenge.bonusXp;
   const themeBonus = currentMissionKind === 'weekly-theme' ? 5 : 0;
-  const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins + (chestReward.success ? chestReward.bonusCoins : 0) + themeBonus;
+  const activeSeason = seasonForDate(new Date(`${summary.date}T12:00:00`));
+  const previousSeasonalCount = profileBefore.seasonalMissionCounts?.[activeSeason] ?? 0;
+  const nextSeasonalCount = previousSeasonalCount + 1;
+  const seasonalBonus = previousSeasonalCount < 8 && nextSeasonalCount >= 8 ? 25 : 0;
+  const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins + (chestReward.success ? chestReward.bonusCoins : 0) + themeBonus + seasonalBonus;
   const rewardBreakdown = { ...coinRewardBreakdown(
     summary.correctCount,
     summary.correctCount === summary.questionsTotal,
     dailyChallenge.justCompletedDailyChallenge
-  ), chestBonus: chestReward.success ? chestReward.bonusCoins : 0, themeBonus };
+  ), chestBonus: chestReward.success ? chestReward.bonusCoins : 0, themeBonus, seasonalBonus };
   const finalAvatarLevel = levelForXp(finalXp);
   const finalLeveledUp = finalAvatarLevel > profileBefore.avatarLevel;
   const nextProfile = {
@@ -928,6 +967,10 @@ async function finishMission() {
     diagnosticDate: currentMissionKind === 'diagnostic' ? summary.date : profileBefore.diagnosticDate ?? null,
     subjectMissionCounts,
     storyProgress: storyProgressAfterMission(profileBefore),
+    seasonalMissionCounts: {
+      ...(profileBefore.seasonalMissionCounts ?? {}),
+      [activeSeason]: nextSeasonalCount,
+    },
     assignedSubject: profileBefore.assignedSubject === summary.subject ? null : profileBefore.assignedSubject ?? null,
     lastSessionDate: progressionResult.lastSessionDate,
     difficultyLevels: nextDifficultyLevels,
@@ -1042,6 +1085,8 @@ async function handlePairing({ childId: candidateId }) {
 }
 
 function start() {
+  window.addEventListener('online', () => { if (childId && lastProfile) showHome(); });
+  window.addEventListener('offline', () => { if (lastProfile) renderHomeScreen(lastProfile); });
   if (childId) {
     showHome();
   } else {

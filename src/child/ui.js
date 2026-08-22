@@ -3,6 +3,7 @@ import { HELP_TEXT, helpTextForType } from '../shared/helpContent.js';
 import { DIFFICULTY_LABELS } from '../shared/difficulty.js';
 import { learningTypeLabel } from '../shared/subjects.js';
 import { adaptiveHintForQuestion } from '../shared/learningPath.js';
+import { correctionCoach } from '../shared/smartLearning.js';
 import { dynamicHintSteps, shortAnswerExplanation } from './hints.js';
 import { shapeSvg } from './shapes.js';
 import { coinSvg, formatEuroCents, parseEuroInput } from './money.js';
@@ -91,10 +92,10 @@ function dailyAdventureHtml(adventure = { progress: 0, target: 3, completed: fal
   </section>`;
 }
 
-function companionMessageHtml(companionId, { adventure, coinGoal, streakDays }) {
+function companionMessageHtml(companionId, { adventure, coinGoal, streakDays, mood }) {
   const companion = companionForId(companionId);
   if (!companion.emoji) return '';
-  const message = coinGoal?.affordable
+  const message = mood?.message ?? (coinGoal?.affordable
     ? `On peut débloquer ${coinGoal.name} !`
     : adventure?.completed
       ? 'Bravo, le coffre du jour est à toi !'
@@ -102,8 +103,8 @@ function companionMessageHtml(companionId, { adventure, coinGoal, streakDays }) 
         ? `Encore ${adventure.target - adventure.progress} mission${adventure.target - adventure.progress > 1 ? 's' : ''} avant le coffre !`
         : streakDays > 1
           ? `Notre série de ${streakDays} jours continue !`
-          : 'Je suis prêt pour notre prochaine aventure !';
-  return `<aside class="companion-message" aria-live="polite"><span>${companion.emoji}</span><div><strong>${escapeHtml(companion.name)}</strong><p>${escapeHtml(message)}</p></div></aside>`;
+          : 'Je suis prêt pour notre prochaine aventure !');
+  return `<aside class="companion-message mood-${mood?.id ?? 'ready'}" aria-live="polite"><span>${mood?.emoji ?? companion.emoji}</span><div><strong>${escapeHtml(companion.name)} · ${escapeHtml(mood?.label ?? 'Motivé')}</strong><p>${escapeHtml(message)}</p></div></aside>`;
 }
 
 // Navigation par onglets persistante, affichée uniquement sur les 4 écrans
@@ -164,7 +165,7 @@ function visualDisplayHtml(q) {
 const FORMAT_LABELS = { qcm: 'Choix multiple', 'vrai-faux': 'Vrai ou faux', image: 'Question en image', association: 'Association', saisie: 'Réponse à écrire', chronologie: 'Chronologie', classement: 'Classement' };
 
 function questionToolsHtml(question) {
-  return `<div class="question-tools">${question.format ? `<span>${FORMAT_LABELS[question.format] ?? question.format}</span>` : ''}${question.audioText ? '<button type="button" class="speak-question" aria-label="Écouter le mot anglais">🔊 Écouter</button>' : ''}</div>`;
+  return `<div class="question-tools">${question.format ? `<span>${FORMAT_LABELS[question.format] ?? question.format}</span>` : ''}<button type="button" class="speak-question" aria-label="Lire la consigne">🔊 Lire</button></div>`;
 }
 
 function answerLabel(question, choice) {
@@ -195,10 +196,11 @@ function answerReviewHtml(question, feedback, index, total) {
   if (!feedback) return '';
   const isCorrect = feedback === 'correct';
   const correctLabel = answerLabel(question, question.answer);
+  const coach = !isCorrect ? correctionCoach(question) : null;
   return `
     <div class="answer-review answer-review-${feedback}" role="status" aria-live="polite">
       <strong>${isCorrect ? '🌟 Bravo, bonne réponse !' : '🤔 Presque !'}</strong>
-      ${isCorrect ? '' : `<span>La bonne réponse était <b>${correctLabel}</b>.</span><small class="answer-explanation">💡 ${escapeHtml(shortAnswerExplanation(question))}<br />Tu la reverras un peu plus tard pour mieux la retenir.</small>`}
+      ${isCorrect ? '' : `<span>La bonne réponse était <b>${correctLabel}</b>.</span><small class="answer-explanation">💡 ${escapeHtml(shortAnswerExplanation(question))}</small><ol class="correction-coach">${coach.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol><p class="similar-retry">🔁 Prochain entraînement similaire : ${escapeHtml(coach.retry.prompt)}</p>`}
       <button id="next-question" type="button" class="big-button">
         ${index + 1 >= total ? 'Voir mes résultats' : 'Question suivante'} →
       </button>
@@ -449,7 +451,7 @@ function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, weeklyTheme, story, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, badgeCounts = {}, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onStartWeeklyTheme, onStartStory, onToggleSound, onCustomize, onChooseNotion, onChooseSubject, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, weeklyTheme, story, seasonalEvent, companionMoodState, syncState, adaptivePlan, familyLearningPlan, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, badgeCounts = {}, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onStartWeeklyTheme, onStartStory, onToggleSound, onCustomize, onChooseNotion, onChooseSubject, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
   const mainGoal = priorityGoal ?? { kind: 'mission', emoji: '🗺️', label: 'Continuer mon aventure', detail: 'Une nouvelle mission m’attend', action: 'Jouer' };
   const totalBadgeWins = Object.values(badgeCounts).reduce((total, count) => total + count, 0) || (badges ?? []).length;
@@ -463,7 +465,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
             <div class="avatar ${auraClass}">${blockAvatarHtml(characterId, hatId, capeId, false, hairstyleId, outfitId, companionId, companionAccessoryId)}</div>
           </div>
         </div>
-        ${companionMessageHtml(companionId, { adventure: dailyAdventure, coinGoal, streakDays })}
+        ${companionMessageHtml(companionId, { adventure: dailyAdventure, coinGoal, streakDays, mood: companionMoodState })}
         <h1><span id="child-name"></span><span class="home-level">Niveau ${avatarLevel}</span></h1>
         ${
           xpProgress
@@ -482,6 +484,10 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
         ${coinGoalHtml(coinGoal, true, true)}
       </div>
       <main class="home-content">
+        ${syncState ? `<p class="sync-status sync-${syncState.id}">☁️ ${escapeHtml(syncState.label)}</p>` : ''}
+        ${seasonalEvent ? `<section class="seasonal-event event-${seasonalEvent.id}" data-effect="${seasonalEvent.effect}"><div class="seasonal-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><span>${seasonalEvent.emoji}</span><div><small>ÉVÉNEMENT DE SAISON</small><strong>${escapeHtml(seasonalEvent.title)}</strong><p>${seasonalEvent.progress}/${seasonalEvent.target} missions · récompense ${seasonalEvent.rewardCoins} 🪙</p><div><i style="width:${Math.min(100, Math.round(seasonalEvent.progress / seasonalEvent.target * 100))}%"></i></div></div></section>` : ''}
+        ${adaptivePlan ? `<p class="adaptive-plan-banner">🧠 Mission adaptée : ${escapeHtml(learningTypeLabel(adaptivePlan.targetType))} · ${escapeHtml(adaptivePlan.reason)}</p>` : ''}
+        ${familyLearningPlan ? `<p class="family-plan-banner">⏱️ Mon rythme : ${Number(familyLearningPlan.dailyMinutes) || 15} minutes · ${familyLearningPlan.schoolDays?.length ?? 0} jour${familyLearningPlan.schoolDays?.length > 1 ? 's' : ''} choisi${familyLearningPlan.schoolDays?.length > 1 ? 's' : ''}</p>` : ''}
         ${streakBannerHtml(streakStatus, streakDays)}
         ${weeklyTheme ? `<button id="home-weekly-theme" class="weekly-learning-theme"><span>${weeklyTheme.emoji}</span><div><small>DÉFI THÉMATIQUE DE LA SEMAINE</small><strong>${escapeHtml(weeklyTheme.label)}</strong><p>${escapeHtml(weeklyTheme.description)}</p></div><em>Jouer ›</em></button>` : ''}
         <div class="home-goals">
@@ -766,7 +772,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, onConti
     });
   }
   root.querySelector('#help-button').addEventListener('click', onOpenHelp);
-  root.querySelector('.speak-question')?.addEventListener('click', () => onSpeak?.(question.audioText));
+  root.querySelector('.speak-question')?.addEventListener('click', () => onSpeak?.(question.audioText ?? question.prompt, question.audioText ? 'en-GB' : 'fr-FR'));
   if (showHelp) {
     root.querySelector('#help-close').addEventListener('click', onCloseHelp);
   }
@@ -812,7 +818,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
     );
   }
   root.querySelector('#help-button').addEventListener('click', onOpenHelp);
-  root.querySelector('.speak-question')?.addEventListener('click', () => onSpeak?.(question.audioText));
+  root.querySelector('.speak-question')?.addEventListener('click', () => onSpeak?.(question.audioText ?? question.prompt, question.audioText ? 'en-GB' : 'fr-FR'));
   if (showHelp) {
     root.querySelector('#help-close').addEventListener('click', onCloseHelp);
   }
@@ -942,6 +948,7 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
             ${coinBreakdown.perfectBonus ? `<span><strong>+${coinBreakdown.perfectBonus}</strong> mission parfaite</span>` : ''}
             ${coinBreakdown.dailyBonus ? `<span><strong>+${coinBreakdown.dailyBonus}</strong> défi du jour</span>` : ''}
             ${coinBreakdown.themeBonus ? `<span><strong>+${coinBreakdown.themeBonus}</strong> défi de la semaine</span>` : ''}
+            ${coinBreakdown.seasonalBonus ? `<span><strong>+${coinBreakdown.seasonalBonus}</strong> événement de saison</span>` : ''}
             ${coinBreakdown.chestBonus ? `<span><strong>+${coinBreakdown.chestBonus}</strong> coffre du jour</span>` : ''}
           </div>` : ''}
           ${coinGoalHtml(coinGoal)}
@@ -979,7 +986,7 @@ export function renderUnlockCelebration(root, { emoji, title, description, actio
   root.querySelector('#unlock-continue').focus();
 }
 
-export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinPacks = [], rewards, pendingRewardIds = [], onRequest, onBuyCoinPack, onBack, onNavigate }) {
+export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinPacks = [], rewards, pendingRewardIds = [], wishlistItemIds = [], onRequest, onBuyCoinPack, onToggleWishlist, onBack, onNavigate }) {
   const rewardCategories = [
     { id: 'surprise', emoji: '✨', label: 'Petites surprises' },
     { id: 'treat', emoji: '🍰', label: 'Petits plaisirs' },
@@ -1028,6 +1035,7 @@ export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinP
                   const displayName = r.mystery ? 'Surprise mystère' : r.name;
                   const displayEmoji = r.mystery ? '❓' : (r.emoji ?? '🎁');
                   return `<article class="reward-card ${affordable ? 'reward-affordable' : ''} ${r.mystery ? 'reward-mystery' : ''}">
+                    <button type="button" class="reward-wishlist ${wishlistItemIds.includes(r.id) ? 'selected' : ''}" data-id="${r.id}" aria-label="${wishlistItemIds.includes(r.id) ? 'Retirer de mes envies' : 'Ajouter à mes envies'}">${wishlistItemIds.includes(r.id) ? '💖' : '🤍'}</button>
                     <span class="reward-card-emoji">${escapeHtml(displayEmoji)}</span>
                     <span class="reward-card-name">${escapeHtml(displayName)}</span>
                     ${r.mystery ? '<small>Le contenu reste secret jusqu’à la validation.</small>' : ''}
@@ -1050,6 +1058,7 @@ export function renderRewards(root, { coins, totalXp = 0, availableXp = 0, coinP
   root.querySelectorAll('.buy-xp-coin-pack:not([disabled])').forEach((btn) =>
     btn.addEventListener('click', () => onBuyCoinPack(btn.dataset.packId))
   );
+  root.querySelectorAll('.reward-wishlist').forEach((btn) => btn.addEventListener('click', () => onToggleWishlist?.(btn.dataset.id)));
   root.querySelector('#rewards-back').addEventListener('click', onBack);
   attachBottomTabs(root, onNavigate);
 }

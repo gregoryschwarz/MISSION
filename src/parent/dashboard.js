@@ -4,6 +4,7 @@ import { weekStartKey } from '../shared/progression.js';
 import { SUBJECTS, learningTypeLabel, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
 import { notionLearningStatuses, retentionSummary, SCHOOL_LEVELS, subjectSummary } from '../shared/learningExperience.js';
 import { learningPathSummary } from '../shared/learningPath.js';
+import { normalizeAccessibilityPreferences, normalizeFamilyLearningPlan, weeklyParentReport } from '../shared/smartLearning.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -798,6 +799,9 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   const retention = retentionSummary(sessions, profile.mistakeNotebook ?? []);
   const learningPath = learningPathSummary(profile, sessions);
   const enabledSubjects = normalizeEnabledSubjects(profile.enabledSubjects);
+  const weeklyReport = weeklyParentReport(sessions, profile);
+  const familyPlan = normalizeFamilyLearningPlan(profile.familyLearningPlan);
+  const accessibility = normalizeAccessibilityPreferences(profile.accessibilityPreferences);
   root.innerHTML = `
     <div class="dashboard">
       <header>
@@ -815,6 +819,11 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
         <p>Niveau ${profile.avatarLevel} — ${profile.xp} XP</p>
         <p>Série actuelle : ${profile.streakDays} jour${profile.streakDays > 1 ? 's' : ''}</p>
         ${renderBadgeMedallionsHtml(profile.badges, profile.badgeCounts)}
+      </section>
+      <section class="parent-weekly-report">
+        <div><p>BILAN HEBDOMADAIRE</p><h2>📨 L’essentiel de la semaine</h2></div>
+        <div class="weekly-report-stats"><span><strong>${weeklyReport.missions}</strong> missions</span><span><strong>${weeklyReport.percent}%</strong> de réussite</span><span><strong>${weeklyReport.minutes}</strong> minutes</span><span><strong>${weeklyReport.learnedRules}</strong> règles apprises</span></div>
+        <p>${weeklyReport.priorityType ? `Priorité conseillée : <strong>${escapeHtml(displayTypeLabel(weeklyReport.priorityType))}</strong>.` : 'Pas encore assez de missions cette semaine pour définir une priorité.'}</p>
       </section>
       ${weeklyWatchHtml(weeklyWatch)}
       <div class="dashboard-columns">
@@ -909,6 +918,16 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
           <label>Mission proposée par le parent
             <select id="assigned-subject"><option value="">Aucune mission imposée</option>${SUBJECTS.filter((subject) => enabledSubjects.includes(subject.id)).map((subject) => `<option value="${subject.id}" ${profile.assignedSubject === subject.id ? 'selected' : ''}>${subject.emoji} ${escapeHtml(subject.label)}</option>`).join('')}</select>
           </label>
+          <label>Durée quotidienne souhaitée
+            <select id="daily-minutes">${[10, 15, 20, 30, 45].map((minutes) => `<option value="${minutes}" ${familyPlan.dailyMinutes === minutes ? 'selected' : ''}>${minutes} minutes</option>`).join('')}</select>
+          </label>
+          <fieldset class="school-days"><legend>Jours d’entraînement</legend>${['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'].map((day) => `<label><input type="checkbox" name="school-day" value="${day}" ${familyPlan.schoolDays.includes(day) ? 'checked' : ''} /> ${capitalize(day)}</label>`).join('')}</fieldset>
+          <fieldset class="accessibility-settings"><legend>Confort de lecture</legend>
+            <label>Taille du texte<select id="text-size"><option value="normal" ${accessibility.textSize === 'normal' ? 'selected' : ''}>Normale</option><option value="large" ${accessibility.textSize === 'large' ? 'selected' : ''}>Grande</option><option value="extra-large" ${accessibility.textSize === 'extra-large' ? 'selected' : ''}>Très grande</option></select></label>
+            <label><input id="dyslexia-mode" type="checkbox" ${accessibility.dyslexiaMode ? 'checked' : ''} /> Police plus espacée</label>
+            <label><input id="reduced-motion" type="checkbox" ${accessibility.reducedMotion ? 'checked' : ''} /> Réduire les animations</label>
+            <label><input id="read-instructions" type="checkbox" ${accessibility.readInstructions ? 'checked' : ''} /> Lire les consignes automatiquement</label>
+          </fieldset>
           <button type="submit">Enregistrer le parcours</button>
         </form>
         <form id="subject-settings-form">
@@ -994,6 +1013,17 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
     onSetLearningPreferences({
       schoolLevel: root.querySelector('#school-level').value,
       assignedSubject: root.querySelector('#assigned-subject').value || null,
+      familyLearningPlan: {
+        dailyMinutes: Number(root.querySelector('#daily-minutes').value),
+        schoolDays: [...root.querySelectorAll('input[name="school-day"]:checked')].map((input) => input.value),
+        preferredSubjects: enabledSubjects,
+      },
+      accessibilityPreferences: {
+        textSize: root.querySelector('#text-size').value,
+        dyslexiaMode: root.querySelector('#dyslexia-mode').checked,
+        reducedMotion: root.querySelector('#reduced-motion').checked,
+        readInstructions: root.querySelector('#read-instructions').checked,
+      },
     });
   });
   root.querySelectorAll('.assign-subject-button').forEach((button) => button.addEventListener('click', () => {
@@ -1087,6 +1117,15 @@ export function renderParentShop(root, { profile, rewards = [], rewardRequests =
       <section class="parent-shop-intro">
         <strong>Gérez toute l’économie de l’application au même endroit.</strong>
         <span>Créditez des pièces, créez des récompenses et choisissez les packs visibles par votre enfant.</span>
+      </section>
+      <section class="parent-wishlist">
+        <h2>💖 Liste d’envies de l’enfant</h2>
+        ${(profile.wishlistItemIds ?? []).length
+          ? `<div>${(profile.wishlistItemIds ?? []).map((id) => {
+              const reward = rewards.find((item) => item.id === id);
+              return reward ? `<span>${escapeHtml(reward.emoji ?? '🎁')} ${escapeHtml(reward.mystery ? 'Surprise mystère' : reward.name)} · ${reward.cost} 🪙</span>` : '';
+            }).join('')}</div>`
+          : '<p class="setup-hint">Aucune envie enregistrée pour le moment.</p>'}
       </section>
       ${rewardsSectionHtml(rewards, rewardRequests, profile.coins)}
       ${avatarPacksSectionHtml(avatarPacks)}

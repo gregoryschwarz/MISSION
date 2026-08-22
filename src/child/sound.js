@@ -51,17 +51,18 @@ export function playLevelUpSound() {
   });
 }
 
-export function speakEnglish(text, speechApi = typeof window !== 'undefined' ? window : {}) {
+export function speakText(text, language = 'fr-FR', speechApi = typeof window !== 'undefined' ? window : {}) {
   const synthesis = speechApi.speechSynthesis;
   const Utterance = speechApi.SpeechSynthesisUtterance;
   if (!text || !synthesis || !Utterance) return false;
   try {
     const utterance = new Utterance(text);
-    utterance.lang = 'en-GB';
+    utterance.lang = language;
     utterance.rate = 0.82;
     const voices = synthesis.getVoices?.() ?? [];
-    utterance.voice = voices.find((voice) => String(voice.lang).toLowerCase().startsWith('en-gb'))
-      ?? voices.find((voice) => String(voice.lang).toLowerCase().startsWith('en'))
+    const languagePrefix = language.toLowerCase().split('-')[0];
+    utterance.voice = voices.find((voice) => String(voice.lang).toLowerCase() === language.toLowerCase())
+      ?? voices.find((voice) => String(voice.lang).toLowerCase().startsWith(languagePrefix))
       ?? null;
     if (synthesis.speaking) synthesis.cancel?.();
     synthesis.resume?.();
@@ -70,4 +71,8 @@ export function speakEnglish(text, speechApi = typeof window !== 'undefined' ? w
   } catch (err) {
     return false;
   }
+}
+
+export function speakEnglish(text, speechApi = typeof window !== 'undefined' ? window : {}) {
+  return speakText(text, 'en-GB', speechApi);
 }
