@@ -876,6 +876,7 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
         </section>
       </div>
       <div class="results-actions">
+        ${incorrectQuestions.length ? `<p class="result-review-scheduled">🧠 ${incorrectQuestions.length} notion${incorrectQuestions.length > 1 ? 's' : ''} programmée${incorrectQuestions.length > 1 ? 's' : ''} pour une prochaine révision, au bon moment.</p>` : ''}
         ${incorrectQuestions.length && onRetryMistakes ? `<button id="retry-mistakes" class="big-button result-retry">🔁 Refaire mes ${incorrectQuestions.length} erreur${incorrectQuestions.length > 1 ? 's' : ''}</button>` : ''}
         <button id="continue" class="big-button">Retour à l'accueil</button>
       </div>

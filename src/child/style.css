@@ -802,6 +802,7 @@ input {
 }
 
 .answer-explanation { display:block; max-width:620px; padding:var(--space-2) var(--space-3); border-radius:var(--radius-md); background:color-mix(in srgb,currentColor 8%,transparent); line-height:1.45; }
+.result-review-scheduled { margin:var(--space-3) 0; padding:var(--space-3); border:1px solid color-mix(in srgb,var(--color-mint) 55%,var(--color-border)); border-radius:var(--radius-md); background:color-mix(in srgb,var(--color-mint) 10%,var(--color-card)); color:var(--color-text); }
 
 .answer-form input:disabled {
   border-color: var(--color-border);

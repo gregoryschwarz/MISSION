@@ -851,13 +851,7 @@ async function finishMission() {
     weeklyRewardText: profileBefore.weeklyRewardText,
     breakdown: summary.breakdown,
     incorrectQuestions: summary.incorrectQuestions,
-    onRetryMistakes: summary.incorrectQuestions.length
-      ? () => startMissionWithQuestions(
-          summary.incorrectQuestions.map(({ submittedAnswer, ...question }) => question),
-          'quiz',
-          summary.subject ?? null
-        )
-      : null,
+    onRetryMistakes: null,
     onContinue: showHome,
   });
 }
