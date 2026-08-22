@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BADGES, BADGE_CATEGORIES, badgeMedallionData, renderBadgeMedallionsHtml, emojiForType, formatDateFr, badgeAlbumData, badgeCollectionData, badgeCountsAfterAwards } from '../../src/shared/badges.js';
 
 describe('BADGES', () => {
-  it('defines all 31 badges with a category, in a fixed order', () => {
+  it('defines the full badge catalogue with subject achievements', () => {
     expect(BADGES.map((b) => b.id)).toEqual([
       'streak-3',
       'streak-7',
@@ -35,10 +35,17 @@ describe('BADGES', () => {
       'weekly-5',
       'weekly-10',
       'secret-treasure',
+      'subject-anglais',
+      'subject-culture-generale',
+      'subject-sciences',
+      'subject-histoire-geographie',
+      'subject-logique',
+      'subject-orthographe',
+      'subject-arts',
     ]);
   });
 
-  it('assigns every badge to one of the 5 known categories', () => {
+  it('assigns every badge to a known category', () => {
     const categoryIds = BADGE_CATEGORIES.map((c) => c.id);
     BADGES.forEach((badge) => expect(categoryIds).toContain(badge.category));
   });
@@ -47,7 +54,7 @@ describe('BADGES', () => {
 describe('badgeMedallionData', () => {
   it('marks badges as earned when their id is present', () => {
     const result = badgeMedallionData(['streak-3', 'mastery-division']);
-    expect(result).toHaveLength(31);
+    expect(result).toHaveLength(38);
     expect(result.find((b) => b.id === 'streak-3')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'mastery-division')).toMatchObject({ earned: true });
     expect(result.find((b) => b.id === 'streak-7')).toMatchObject({ earned: false });
@@ -87,13 +94,14 @@ describe('renderBadgeMedallionsHtml', () => {
     expect(html).toContain('🔒');
   });
 
-  it('groups badges into 5 compact category summaries', () => {
+  it('groups badges into compact category summaries', () => {
     const html = renderBadgeMedallionsHtml([]);
     expect(html).toContain('Régularité');
     expect(html).toContain('Talents maîtrisés');
     expect(html).toContain('Missions parfaites');
     expect(html).toContain('Grande aventure');
     expect(html).toContain('Défis relevés');
+    expect(html).toContain('Matières explorées');
   });
 
   it('renders the new division and fraction mastery badges when earned', () => {
@@ -170,7 +178,7 @@ describe('badgeCollectionData', () => {
       totalCorrectCount: 125,
       avatarLevel: 4,
     });
-    expect(result).toHaveLength(31);
+    expect(result).toHaveLength(38);
     expect(result.find((badge) => badge.id === 'streak-3')).toMatchObject({ earned: true, count: 3, progressPercent: 100, unlockedAtLabel: '7 août 2026' });
     expect(result.find((badge) => badge.id === 'answers-250')).toMatchObject({ earned: false, progress: 125, progressPercent: 50 });
     expect(result.find((badge) => badge.id === 'level-5')).toMatchObject({ progressLabel: '4/5' });

@@ -3,6 +3,7 @@ import {
   SUBJECT_QUESTION_BANKS,
   generateSubjectMission,
   generateSubjectQuestion,
+  generateSurpriseMission,
 } from '../../src/child/subjectQuestions.js';
 import { SUBJECTS } from '../../src/shared/subjects.js';
 
@@ -10,7 +11,7 @@ describe('subject question banks', () => {
   it('provides content at all three difficulty levels for every subject', () => {
     SUBJECTS.forEach(({ id }) => {
       expect(Object.keys(SUBJECT_QUESTION_BANKS[id])).toEqual(['1', '2', '3']);
-      Object.values(SUBJECT_QUESTION_BANKS[id]).forEach((questions) => expect(questions.length).toBeGreaterThanOrEqual(4));
+      Object.values(SUBJECT_QUESTION_BANKS[id]).forEach((questions) => expect(questions.length).toBeGreaterThanOrEqual(20));
     });
   });
 
@@ -19,9 +20,13 @@ describe('subject question banks', () => {
       const question = generateSubjectQuestion(id, 2);
       expect(question).toMatchObject({ type: id });
       expect(question.prompt).toBeTruthy();
-      expect(question.options).toHaveLength(3);
-      expect(new Set(question.options).size).toBe(3);
-      expect(question.options).toContain(question.answer);
+      expect(['qcm', 'vrai-faux', 'image', 'association', 'saisie', 'chronologie', 'classement']).toContain(question.format);
+      if (question.format === 'saisie') {
+        expect(question.options).toBeUndefined();
+      } else {
+        expect(question.options.length).toBeGreaterThanOrEqual(2);
+        expect(question.options).toContain(question.answer);
+      }
     });
   });
 
@@ -41,5 +46,28 @@ describe('generateSubjectMission', () => {
     const levelOnePrompts = new Set(SUBJECT_QUESTION_BANKS.anglais[1].map((question) => question.prompt));
     const mission = generateSubjectMission('anglais', 12, {});
     expect(mission.every((question) => levelOnePrompts.has(question.prompt))).toBe(true);
+  });
+
+  it('does not repeat an exercise inside one ten-question mission', () => {
+    const mission = generateSubjectMission('sciences', 10, { sciences: 3 }, { schoolLevel: 'CM2' });
+    expect(new Set(mission.map((question) => question.prompt)).size).toBe(10);
+  });
+
+  it('honours the school-level difficulty cap', () => {
+    const mission = generateSubjectMission('sciences', 10, { sciences: 3 }, { schoolLevel: 'CP' });
+    expect(mission.every((question) => question.level === 1)).toBe(true);
+  });
+
+  it('builds a mixed surprise mission from several enabled subjects', () => {
+    const mission = generateSurpriseMission(['anglais', 'sciences', 'arts'], 10, {}, { schoolLevel: 'CE2' });
+    expect(mission).toHaveLength(10);
+    expect(new Set(mission.map((question) => question.type)).size).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('exercise formats', () => {
+  it('covers all seven visible formats across the catalogue', () => {
+    const formats = new Set(Object.values(SUBJECT_QUESTION_BANKS).flatMap((levels) => Object.values(levels).flatMap((questions) => questions.map((question) => question.format))));
+    expect(formats).toEqual(new Set(['qcm', 'vrai-faux', 'image', 'association', 'saisie', 'chronologie', 'classement']));
   });
 });

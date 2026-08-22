@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { isSoundEnabled, setSoundEnabled } from '../../src/child/sound.js';
+import { describe, it, expect, vi } from 'vitest';
+import { isSoundEnabled, setSoundEnabled, speakEnglish } from '../../src/child/sound.js';
 
 function createFakeStorage() {
   const store = new Map();
@@ -26,5 +26,18 @@ describe('isSoundEnabled', () => {
     setSoundEnabled(false, storage);
     setSoundEnabled(true, storage);
     expect(isSoundEnabled(storage)).toBe(true);
+  });
+});
+
+describe('speakEnglish', () => {
+  it('uses an English voice without failing when speech synthesis is available', () => {
+    const speak = vi.fn();
+    class Utterance { constructor(text) { this.text = text; } }
+    expect(speakEnglish('hello', { speechSynthesis: { speak }, SpeechSynthesisUtterance: Utterance })).toBe(true);
+    expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'hello', lang: 'en-GB' }));
+  });
+
+  it('returns false when the browser has no speech synthesis', () => {
+    expect(speakEnglish('hello', {})).toBe(false);
   });
 });

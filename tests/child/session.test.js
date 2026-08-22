@@ -42,6 +42,11 @@ describe('session flow', () => {
     expect(() => submitAnswer(session, 5)).toThrow();
   });
 
+  it('accepts a text answer regardless of case, accents and surrounding spaces', () => {
+    const session = createSession([{ type: 'anglais', prompt: 'Traduis', answer: 'École' }], 'anglais');
+    expect(submitAnswer(session, '  ecole ')).toBe(true);
+  });
+
   it('produces a summary with duration and breakdown', () => {
     vi.useFakeTimers();
     const session = createSession(sampleQuestions);

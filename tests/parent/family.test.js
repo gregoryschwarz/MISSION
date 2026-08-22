@@ -44,6 +44,7 @@ import {
   approvePairingRequest,
   setFocusType,
   setEnabledSubjects,
+  setLearningPreferences,
   createReward,
   updateReward,
   fetchRewards,
@@ -244,6 +245,18 @@ describe('setEnabledSubjects', () => {
   it('stores only known unique subjects in catalogue order', async () => {
     await setEnabledSubjects('c1', ['arts', 'anglais', 'unknown', 'arts']);
     expect(setDoc).toHaveBeenCalledWith(expect.anything(), { enabledSubjects: ['anglais', 'arts'] }, { merge: true });
+  });
+});
+
+describe('setLearningPreferences', () => {
+  it('stores a valid school level and an assigned subject', async () => {
+    await setLearningPreferences('c1', { schoolLevel: 'CM1', assignedSubject: 'sciences' });
+    expect(setDoc).toHaveBeenCalledWith(expect.anything(), { schoolLevel: 'CM1', assignedSubject: 'sciences' }, { merge: true });
+  });
+
+  it('normalizes invalid values safely', async () => {
+    await setLearningPreferences('c1', { schoolLevel: 'lycée', assignedSubject: 'unknown' });
+    expect(setDoc).toHaveBeenCalledWith(expect.anything(), { schoolLevel: 'CE2', assignedSubject: null }, { merge: true });
   });
 });
 
