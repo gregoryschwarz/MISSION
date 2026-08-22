@@ -4,17 +4,18 @@ import { ensureDeviceAuth } from './authSession.js';
 import { getStoredChildId, storeChildId, clearStoredChildId, resolvePairingCode, requestPairing, pairingStatus } from './pairing.js';
 import { generateMission, generateSingleTypeMission, QUESTION_TYPES } from './questions.js';
 import { generateFrenchMission } from './frenchQuestions.js';
-import { generateSubjectMission } from './subjectQuestions.js';
+import { generateSubjectMission, generateSurpriseMission } from './subjectQuestions.js';
 import { createSession, currentQuestion, submitAnswer, recordAnswer, isSessionComplete, finishSession } from './session.js';
 import { applyProgression, applyDailyChallenge, applyWeeklyGoal, newlyEarnedChallengeBadges, weekStartKey, levelForXp, xpProgressForLevel, streakStatus, spendCoins, coinRewardBreakdown, availableXp, purchaseXpCoinPack, XP_COIN_PACKS, DAILY_CHALLENGE_TARGET } from '../shared/progression.js';
 import { badgeCollectionData, badgeCountsAfterAwards } from '../shared/badges.js';
 import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '../shared/dailyAdventure.js';
 import { seasonForDate } from '../shared/seasons.js';
-import { SUBJECTS, normalizeEnabledSubjects } from '../shared/subjects.js';
+import { SUBJECTS, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
+import { newlyEarnedSubjectBadges, reviewQuestionsFromNotebook, storyChapter, storyProgressAfterMission, subjectMissionCountsAfter, updateMistakeNotebook, weeklyLearningTheme } from '../shared/learningExperience.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
 import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
-import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound } from './sound.js';
+import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound, speakEnglish } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
 import { adjustDifficultyLevels, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { pickMissionMode, getLastMissionMode, storeLastMissionMode } from './missionMode.js';
@@ -68,6 +69,7 @@ let avatarPackSettings = [];
 let helpVisible = false;
 let cachedChoices = null;
 let cachedChoicesIndex = -1;
+let currentMissionKind = 'standard';
 
 async function ensureAuth() {
   await ensureDeviceAuth(auth);
@@ -124,6 +126,11 @@ async function loadProfile(targetChildId) {
         ownedPackIds: DEFAULT_OWNED_PACK_IDS,
         ownedCharacterIds: [],
         enabledSubjects: normalizeEnabledSubjects(),
+        schoolLevel: 'CE2',
+        assignedSubject: null,
+        mistakeNotebook: [],
+        subjectMissionCounts: {},
+        storyProgress: 0,
       };
 }
 
@@ -133,6 +140,10 @@ async function saveProfile(targetChildId, profile) {
 }
 
 function priorityGoalForProfile(profile, today, coinGoal) {
+  const assigned = subjectForId(profile.assignedSubject);
+  if (assigned) {
+    return { kind: 'assigned-subject', emoji: assigned.emoji, label: `Mission ${assigned.label}`, detail: 'Ton parent te propose cette matière', action: 'Commencer' };
+  }
   const adventure = dailyAdventureState(profile, today);
   if (!adventure.completed) {
     return { kind: 'mission', emoji: '🗺️', label: 'Terminer l’aventure du jour', detail: `${adventure.progress}/3 missions avant le coffre`, action: 'Continuer' };
@@ -165,6 +176,8 @@ function renderHomeScreen(profile) {
     coinGoal,
     priorityGoal: priorityGoalForProfile(profile, today, coinGoal),
     dailyAdventure: dailyAdventureState(profile, today),
+    weeklyTheme: weeklyLearningTheme(today),
+    story: { progress: profile.storyProgress ?? 0, chapter: storyChapter(profile.storyProgress ?? 0) },
     rareTreasures: RARE_TREASURES.filter((treasure) => (profile.rareTreasureIds ?? []).includes(treasure.id)),
     dailyChallengeProgress: dailyChallengeIsToday ? profile.dailyChallengeProgress ?? 0 : 0,
     dailyChallengeCompleted: dailyChallengeIsToday ? !!profile.dailyChallengeCompleted : false,
@@ -194,12 +207,15 @@ function renderHomeScreen(profile) {
     onCustomize: showCustomize,
     onChooseNotion: showNotionPicker,
     onChooseSubject: showSubjectPicker,
+    onStartWeeklyTheme: startWeeklyThemeMission,
+    onStartStory: startSurpriseMission,
     onShowRewards: showRewards,
     onShowBadgeAlbum: showBadgeAlbum,
     onCoinGoalAction: handleHomeCoinGoal,
     onPriorityAction: (kind) => {
       if (kind === 'purchase') return handleHomeCoinGoal();
       if (kind === 'badge') return showBadgeAlbum();
+      if (kind === 'assigned-subject' && subjectForId(profile.assignedSubject)) return startSubjectMission(profile.assignedSubject);
       return startMission();
     },
     onNavigate: navigateTo,
@@ -402,8 +418,15 @@ function showSubjectPicker() {
   renderSubjectPicker(root, {
     subjects: SUBJECTS.filter((subject) => enabledSubjectIds.has(subject.id)),
     difficultyLevels: lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS,
+    schoolLevel: lastProfile?.schoolLevel ?? 'CE2',
+    mistakeCount: lastProfile?.mistakeNotebook?.length ?? 0,
+    weeklyTheme: weeklyLearningTheme(),
+    assignedSubject: lastProfile?.assignedSubject ?? null,
     onSelect: startSubjectMission,
     onStartFrench: startFrenchMission,
+    onStartSurprise: startSurpriseMission,
+    onReviewMistakes: startMistakeReview,
+    onStartWeeklyTheme: startWeeklyThemeMission,
     onBack: () => renderHomeScreen(lastProfile),
     onNavigate: navigateTo,
   });
@@ -497,10 +520,11 @@ async function showHome() {
   }
 }
 
-function startMissionWithQuestions(questions, forcedMode = null, subject = null) {
+function startMissionWithQuestions(questions, forcedMode = null, subject = null, missionKind = 'standard') {
   missionMode = forcedMode ?? pickMissionMode(getLastMissionMode());
   if (!forcedMode) storeLastMissionMode(missionMode);
   session = createSession(questions, subject);
+  currentMissionKind = missionKind;
   lastFeedback = null;
   answerReview = null;
   helpVisible = false;
@@ -533,7 +557,32 @@ function startSubjectMission(subjectId) {
   const enabledSubjectIds = normalizeEnabledSubjects(lastProfile?.enabledSubjects);
   if (!enabledSubjectIds.includes(subjectId)) return showSubjectPicker();
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
-  startMissionWithQuestions(generateSubjectMission(subjectId, MISSION_LENGTH, difficultyLevels), 'qcm', subjectId);
+  startMissionWithQuestions(generateSubjectMission(subjectId, MISSION_LENGTH, difficultyLevels, { schoolLevel: lastProfile?.schoolLevel }), 'quiz', subjectId);
+}
+
+function startSurpriseMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const enabledSubjectIds = normalizeEnabledSubjects(lastProfile?.enabledSubjects);
+  const questions = generateSurpriseMission(enabledSubjectIds, MISSION_LENGTH, lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS, { schoolLevel: lastProfile?.schoolLevel });
+  if (!questions.length) return showSubjectPicker();
+  startMissionWithQuestions(questions, 'quiz', 'surprise', 'surprise');
+}
+
+function startWeeklyThemeMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const theme = weeklyLearningTheme();
+  const enabled = normalizeEnabledSubjects(lastProfile?.enabledSubjects);
+  const themedSubjects = theme.subjectIds.filter((subjectId) => enabled.includes(subjectId));
+  const candidates = themedSubjects.length ? themedSubjects : enabled;
+  const questions = generateSurpriseMission(candidates, MISSION_LENGTH, lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS, { schoolLevel: lastProfile?.schoolLevel });
+  if (!questions.length) return showSubjectPicker();
+  startMissionWithQuestions(questions, 'quiz', 'theme', 'weekly-theme');
+}
+
+function startMistakeReview() {
+  const questions = reviewQuestionsFromNotebook(lastProfile?.mistakeNotebook ?? [], MISSION_LENGTH);
+  if (!questions.length) return showSubjectPicker();
+  startMissionWithQuestions(questions, 'quiz', 'revision', 'mistake-review');
 }
 
 function dailyMissionLimitReached() {
@@ -571,6 +620,7 @@ function showQuestion() {
       showHelp: helpVisible,
       onOpenHelp: openHelp,
       onCloseHelp: closeHelp,
+      onSpeak: question.audioText ? () => speakEnglish(question.audioText) : null,
     });
   } else {
     renderQuestion(root, {
@@ -585,6 +635,7 @@ function showQuestion() {
       showHelp: helpVisible,
       onOpenHelp: openHelp,
       onCloseHelp: closeHelp,
+      onSpeak: question.audioText ? () => speakEnglish(question.audioText) : null,
     });
   }
 }
@@ -656,6 +707,7 @@ async function handlePairsMatch(calcTileId, resultTileId) {
 
 async function finishMission() {
   const summary = finishSession(session);
+  summary.missionKind = currentMissionKind;
   const profileBefore = await loadProfile(childId);
   const currentDifficultyLevels = profileBefore.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const nextDifficultyLevels = adjustDifficultyLevels(currentDifficultyLevels, summary.breakdown);
@@ -670,6 +722,11 @@ async function finishMission() {
   const dailyMissionCount = previousDailyMissionCount + 1;
   const chestReward = claimDailyAdventureChest(profileBefore, { date: summary.date, completedMissions: dailyMissionCount });
   const rareTreasureIds = chestReward.success ? chestReward.rareTreasureIds : profileBefore.rareTreasureIds ?? [];
+  let subjectMissionCounts = { ...(profileBefore.subjectMissionCounts ?? {}) };
+  Object.entries(summary.breakdown).forEach(([type, stats]) => {
+    if (stats.total > 0 && subjectForId(type)) subjectMissionCounts = subjectMissionCountsAfter(subjectMissionCounts, type);
+  });
+  const subjectBadges = newlyEarnedSubjectBadges(subjectMissionCounts, progressionResult.badges);
   const challengeBadges = newlyEarnedChallengeBadges(
     { dailyChallengeCompletions, weeklyGoalCompletions, rareTreasureCount: rareTreasureIds.length },
     progressionResult.badges,
@@ -679,18 +736,20 @@ async function finishMission() {
       rareTreasureCount: !!chestReward.treasure,
     }
   );
-  const newBadges = [...progressionResult.newBadges, ...challengeBadges];
-  const badges = [...new Set([...progressionResult.badges, ...challengeBadges])];
-  const badgeCounts = badgeCountsAfterAwards(progressionResult.badgeCounts, progressionResult.badges, challengeBadges);
+  const additionalBadges = [...subjectBadges, ...challengeBadges];
+  const newBadges = [...progressionResult.newBadges, ...additionalBadges];
+  const badges = [...new Set([...progressionResult.badges, ...additionalBadges])];
+  const badgeCounts = badgeCountsAfterAwards(progressionResult.badgeCounts, progressionResult.badges, additionalBadges);
   const badgeDates = { ...progressionResult.badgeDates };
-  challengeBadges.forEach((id) => { badgeDates[id] = summary.date; });
+  additionalBadges.forEach((id) => { badgeDates[id] = summary.date; });
   const finalXp = progressionResult.xp + dailyChallenge.bonusXp;
-  const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins + (chestReward.success ? chestReward.bonusCoins : 0);
+  const themeBonus = currentMissionKind === 'weekly-theme' ? 5 : 0;
+  const finalCoins = progressionResult.coins + dailyChallenge.bonusCoins + (chestReward.success ? chestReward.bonusCoins : 0) + themeBonus;
   const rewardBreakdown = { ...coinRewardBreakdown(
     summary.correctCount,
     summary.correctCount === summary.questionsTotal,
     dailyChallenge.justCompletedDailyChallenge
-  ), chestBonus: chestReward.success ? chestReward.bonusCoins : 0 };
+  ), chestBonus: chestReward.success ? chestReward.bonusCoins : 0, themeBonus };
   const finalAvatarLevel = levelForXp(finalXp);
   const finalLeveledUp = finalAvatarLevel > profileBefore.avatarLevel;
   const nextProfile = {
@@ -717,6 +776,10 @@ async function finishMission() {
     dailyChestDate: chestReward.success ? chestReward.dailyChestDate : profileBefore.dailyChestDate ?? null,
     dailyChestCount: chestReward.success ? chestReward.dailyChestCount : profileBefore.dailyChestCount ?? 0,
     rareTreasureIds,
+    mistakeNotebook: updateMistakeNotebook(profileBefore.mistakeNotebook ?? [], summary.incorrectQuestions, summary.date),
+    subjectMissionCounts,
+    storyProgress: storyProgressAfterMission(profileBefore),
+    assignedSubject: profileBefore.assignedSubject === summary.subject ? null : profileBefore.assignedSubject ?? null,
     lastSessionDate: progressionResult.lastSessionDate,
     difficultyLevels: nextDifficultyLevels,
   };
@@ -753,7 +816,7 @@ async function finishMission() {
     onRetryMistakes: summary.incorrectQuestions.length
       ? () => startMissionWithQuestions(
           summary.incorrectQuestions.map(({ submittedAnswer, ...question }) => question),
-          'qcm',
+          'quiz',
           summary.subject ?? null
         )
       : null,

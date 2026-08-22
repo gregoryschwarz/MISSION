@@ -239,8 +239,18 @@ button:active {
 .parent-subject-card { display:grid; grid-template-columns:auto auto 1fr; align-items:center; gap:var(--space-2); min-height:84px; margin:0; padding:var(--space-3); box-sizing:border-box; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface-soft); cursor:pointer; }
 .parent-subject-card:has(input:checked) { border-color:var(--color-mint); background:color-mix(in srgb,var(--color-mint) 12%,var(--color-card)); }
 .parent-subject-card input { width:auto; margin:0; }.parent-subject-card > span { font-size:28px; }.parent-subject-card > div { display:grid; gap:2px; }.parent-subject-card small { color:var(--color-text-muted); line-height:1.25; }
+.learning-preferences-form { display:grid; grid-template-columns:minmax(150px,.45fr) minmax(240px,1fr) auto; align-items:end; gap:var(--space-3); margin-bottom:var(--space-5); padding:var(--space-4); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface-soft); }
+.learning-preferences-form label { margin:0; }.learning-preferences-form button { margin-bottom:0; }
+.subject-progress-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--space-3); margin-top:var(--space-5); padding-top:var(--space-5); border-top:1px solid var(--color-border); }
+.subject-progress-card { display:grid; gap:var(--space-3); padding:var(--space-3); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface-soft); }
+.subject-progress-card.is-assigned { border-color:var(--color-sun); box-shadow:0 0 0 2px color-mix(in srgb,var(--color-sun) 20%,transparent); }
+.subject-progress-heading { display:flex; align-items:center; gap:var(--space-2); }.subject-progress-heading > span { display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:50%; background:var(--color-card); font-size:24px; }.subject-progress-heading div { display:grid; }.subject-progress-heading small { color:var(--color-text-muted); }
+.subject-progress-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }.subject-progress-stats span { display:grid; padding:7px; border-radius:var(--radius-sm); background:var(--color-card); color:var(--color-text-muted); font-size:var(--text-xs); text-align:center; }.subject-progress-stats b { color:var(--color-text); font-size:var(--text-base); }
+.assign-subject-button { width:100%; min-height:40px; padding:var(--space-2); }.assign-subject-button:disabled { opacity:.55; cursor:not-allowed; }
 @media (max-width:1000px) { .parent-subject-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (max-width:620px) { .subject-settings-heading { display:grid; }.parent-subject-grid { grid-template-columns:1fr; } }
+@media (max-width:1200px) { .subject-progress-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:800px) { .learning-preferences-form { grid-template-columns:1fr; align-items:stretch; } }
+@media (max-width:620px) { .subject-settings-heading { display:grid; }.parent-subject-grid,.subject-progress-grid { grid-template-columns:1fr; } }
 
 .setup-hint {
   color: var(--color-text-muted);

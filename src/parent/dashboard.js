@@ -2,6 +2,7 @@ import { emojiForType, renderBadgeMedallionsHtml } from '../shared/badges.js';
 import { DIFFICULTY_LABELS, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficulty.js';
 import { weekStartKey } from '../shared/progression.js';
 import { SUBJECTS, learningTypeLabel, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
+import { SCHOOL_LEVELS, subjectSummary } from '../shared/learningExperience.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -782,7 +783,7 @@ function breakdownBarsHtml(breakdown, difficultyLevels) {
   `;
 }
 
-export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onOpenShop, onSetFocus, onSetEnabledSubjects, onSetWeeklyGoal, onSetDailyLimit, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
+export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onOpenShop, onSetFocus, onSetEnabledSubjects, onSetLearningPreferences, onSetWeeklyGoal, onSetDailyLimit, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
   const breakdown = aggregateBreakdown(sessions);
   const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const dailyBreakdown = dailyBreakdownByType(sessions);
@@ -868,12 +869,32 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
       </section>
       <section class="subject-settings">
         <div class="subject-settings-heading"><div><h2>📚 Matières disponibles</h2><p>Choisis les missions supplémentaires visibles sur la tablette. Les mathématiques et le français restent toujours disponibles.</p></div><strong>${enabledSubjects.length}/${SUBJECTS.length} actives</strong></div>
+        <form id="learning-preferences-form" class="learning-preferences-form">
+          <label>Niveau scolaire
+            <select id="school-level">${SCHOOL_LEVELS.map((level) => `<option value="${level.id}" ${(profile.schoolLevel ?? 'CE2') === level.id ? 'selected' : ''}>${level.label}</option>`).join('')}</select>
+          </label>
+          <label>Mission proposée par le parent
+            <select id="assigned-subject"><option value="">Aucune mission imposée</option>${SUBJECTS.filter((subject) => enabledSubjects.includes(subject.id)).map((subject) => `<option value="${subject.id}" ${profile.assignedSubject === subject.id ? 'selected' : ''}>${subject.emoji} ${escapeHtml(subject.label)}</option>`).join('')}</select>
+          </label>
+          <button type="submit">Enregistrer le parcours</button>
+        </form>
         <form id="subject-settings-form">
           <div class="parent-subject-grid">
             ${SUBJECTS.map((subject) => `<label class="parent-subject-card"><input type="checkbox" name="enabled-subject" value="${subject.id}" ${enabledSubjects.includes(subject.id) ? 'checked' : ''} /><span>${subject.emoji}</span><div><strong>${escapeHtml(subject.label)}</strong><small>${escapeHtml(subject.description)}</small></div></label>`).join('')}
           </div>
           <button type="submit">Enregistrer les matières</button>
         </form>
+        <div class="subject-progress-grid">
+          ${SUBJECTS.map((subject) => {
+            const summary = subjectSummary(sessions, subject.id);
+            const level = difficultyLevels[subject.id] ?? 1;
+            return `<article class="subject-progress-card ${profile.assignedSubject === subject.id ? 'is-assigned' : ''}">
+              <div class="subject-progress-heading"><span>${subject.emoji}</span><div><strong>${escapeHtml(subject.label)}</strong><small>${DIFFICULTY_LABELS[level]}</small></div></div>
+              <div class="subject-progress-stats"><span><b>${summary.missions}</b> mission${summary.missions > 1 ? 's' : ''}</span><span><b>${summary.percent}%</b> de réussite</span><span><b>${summary.durationMinutes}</b> min</span></div>
+              <button type="button" class="assign-subject-button" data-subject="${subject.id}" ${enabledSubjects.includes(subject.id) ? '' : 'disabled'}>${!enabledSubjects.includes(subject.id) ? 'Active cette matière d’abord' : profile.assignedSubject === subject.id ? '⭐ Mission déjà proposée' : 'Proposer cette mission'}</button>
+            </article>`;
+          }).join('')}
+        </div>
       </section>
       <section class="notification-settings"><button id="enable-notifications">🔔 Activer les alertes de récompenses</button><p class="setup-hint">L’espace parent vérifiera les nouvelles demandes toutes les 10 secondes.</p></section>
       <section class="monthly-activity"><h2>Calendrier du mois</h2>${monthlyCalendarHtml(sessions)}</section>
@@ -935,6 +956,16 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
     const subjectIds = [...root.querySelectorAll('input[name="enabled-subject"]:checked')].map((input) => input.value);
     onSetEnabledSubjects(subjectIds);
   });
+  root.querySelector('#learning-preferences-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    onSetLearningPreferences({
+      schoolLevel: root.querySelector('#school-level').value,
+      assignedSubject: root.querySelector('#assigned-subject').value || null,
+    });
+  });
+  root.querySelectorAll('.assign-subject-button').forEach((button) => button.addEventListener('click', () => {
+    onSetLearningPreferences({ schoolLevel: root.querySelector('#school-level').value, assignedSubject: button.dataset.subject });
+  }));
 
   root.querySelector('.weekly-watch-focus-button')?.addEventListener('click', (event) => {
     const type = event.currentTarget.dataset.focusType;

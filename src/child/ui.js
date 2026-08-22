@@ -152,11 +152,18 @@ function clockDisplayHtml(hour12, minute) {
 }
 
 function visualDisplayHtml(q) {
+  if (q.visual) return `<div class="subject-question-visual" aria-hidden="true">${q.visual}</div>`;
   if (q.shape) return `<div class="shape-display">${shapeSvg(q.shape)}</div>`;
   if (q.items) return moneyDisplayHtml(q.items);
   if (q.type === 'longueur') return lengthDisplayHtml(q.a, q.b);
   if (q.type === 'temps') return clockDisplayHtml(q.hour12, q.minute);
   return '';
+}
+
+const FORMAT_LABELS = { qcm: 'Choix multiple', 'vrai-faux': 'Vrai ou faux', image: 'Question en image', association: 'Association', saisie: 'Réponse à écrire', chronologie: 'Chronologie', classement: 'Classement' };
+
+function questionToolsHtml(question) {
+  return `<div class="question-tools">${question.format ? `<span>${FORMAT_LABELS[question.format] ?? question.format}</span>` : ''}${question.audioText ? '<button type="button" class="speak-question" aria-label="Écouter le mot anglais">🔊 Écouter</button>' : ''}</div>`;
 }
 
 function answerLabel(question, choice) {
@@ -318,14 +325,19 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
-export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, onSelect, onStartFrench, onBack, onNavigate }) {
+export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, schoolLevel = 'CE2', mistakeCount = 0, weeklyTheme, assignedSubject = null, onSelect, onStartFrench, onStartSurprise, onReviewMistakes, onStartWeeklyTheme, onBack, onNavigate }) {
   root.innerHTML = `
     <div class="screen subject-picker-screen with-tabs">
       <header class="subject-picker-heading">
         <p>À TOI DE CHOISIR</p>
         <h1>📚 Toutes les matières</h1>
-        <span>Une mission de 10 questions adaptée à ton niveau.</span>
+        <span>Une mission de 10 questions adaptée au niveau ${escapeHtml(schoolLevel)}.</span>
       </header>
+      <div class="learning-quick-actions">
+        <button id="surprise-mission" class="learning-quick-card"><span>🎲</span><div><strong>Mission surprise</strong><small>Un mélange intelligent de plusieurs matières</small></div></button>
+        <button id="mistake-review" class="learning-quick-card" ${mistakeCount ? '' : 'disabled'}><span>📒</span><div><strong>Cahier des erreurs</strong><small>${mistakeCount ? `${mistakeCount} exercice${mistakeCount > 1 ? 's' : ''} à revoir` : 'Aucune erreur à réviser'}</small></div></button>
+        ${weeklyTheme ? `<button id="weekly-theme-mission" class="learning-quick-card"><span>${weeklyTheme.emoji}</span><div><strong>${escapeHtml(weeklyTheme.label)}</strong><small>${escapeHtml(weeklyTheme.description)}</small></div></button>` : ''}
+      </div>
       <div class="subject-grid">
         <button class="subject-card subject-card-core" data-core="francais">
           <span class="subject-card-emoji">📖</span>
@@ -333,10 +345,10 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, onS
           <em>${DIFFICULTY_LABELS[difficultyLevels['accord-pluriel'] ?? 1]}</em>
         </button>
         ${subjects.map((subject, index) => `
-          <button class="subject-card subject-accent-${subject.accent}" data-subject="${subject.id}" style="animation-delay:${index * 45}ms">
+          <button class="subject-card subject-accent-${subject.accent} ${assignedSubject === subject.id ? 'subject-card-assigned' : ''}" data-subject="${subject.id}" style="animation-delay:${index * 45}ms">
             <span class="subject-card-emoji">${subject.emoji}</span>
             <span><strong>${escapeHtml(subject.label)}</strong><small>${escapeHtml(subject.description)}</small></span>
-            <em>${DIFFICULTY_LABELS[difficultyLevels[subject.id] ?? 1]}</em>
+            <em>${assignedSubject === subject.id ? '⭐ Mission parent' : DIFFICULTY_LABELS[difficultyLevels[subject.id] ?? 1]}</em>
           </button>`).join('')}
       </div>
       ${subjects.length ? '' : '<p class="subject-empty-state">🔒 Les matières supplémentaires sont désactivées dans l’espace parent.</p>'}
@@ -346,6 +358,9 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, onS
   `;
   root.querySelector('[data-core="francais"]').addEventListener('click', onStartFrench);
   root.querySelectorAll('[data-subject]').forEach((button) => button.addEventListener('click', () => onSelect(button.dataset.subject)));
+  root.querySelector('#surprise-mission').addEventListener('click', onStartSurprise);
+  root.querySelector('#mistake-review').addEventListener('click', onReviewMistakes);
+  root.querySelector('#weekly-theme-mission')?.addEventListener('click', onStartWeeklyTheme);
   root.querySelector('#subject-picker-back').addEventListener('click', onBack);
   attachBottomTabs(root, onNavigate);
 }
@@ -367,7 +382,7 @@ function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
     </div>`;
 }
 
-export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, badgeCounts = {}, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onToggleSound, onCustomize, onChooseNotion, onChooseSubject, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
+export function renderHome(root, { childName, avatarLevel, xpProgress, streakDays, streakStatus, totalCorrectCount, coins, coinGoal, priorityGoal, dailyAdventure, weeklyTheme, story, rareTreasures = [], dailyChallengeProgress, dailyChallengeCompleted, dailyChallengeTarget, weeklyGoalProgress, weeklyGoalTarget, weeklyRewardText, weeklyRewardDays, dailyMissionLimit, dailyMissionCount, badges, badgeCounts = {}, auraClass, characterId, hatId, capeId, hairstyleId, outfitId, companionId, companionAccessoryId, decorGradient, decorId, soundEnabled, focusType, onStartMission, onStartWeeklyTheme, onStartStory, onToggleSound, onCustomize, onChooseNotion, onChooseSubject, onShowRewards, onShowBadgeAlbum, onCoinGoalAction, onPriorityAction, onNavigate }) {
   const xpPercent = xpProgress ? Math.round((xpProgress.current / xpProgress.target) * 100) : 0;
   const mainGoal = priorityGoal ?? { kind: 'mission', emoji: '🗺️', label: 'Continuer mon aventure', detail: 'Une nouvelle mission m’attend', action: 'Jouer' };
   const totalBadgeWins = Object.values(badgeCounts).reduce((total, count) => total + count, 0) || (badges ?? []).length;
@@ -401,6 +416,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
       </div>
       <main class="home-content">
         ${streakBannerHtml(streakStatus, streakDays)}
+        ${weeklyTheme ? `<button id="home-weekly-theme" class="weekly-learning-theme"><span>${weeklyTheme.emoji}</span><div><small>DÉFI THÉMATIQUE DE LA SEMAINE</small><strong>${escapeHtml(weeklyTheme.label)}</strong><p>${escapeHtml(weeklyTheme.description)}</p></div><em>Jouer ›</em></button>` : ''}
         <div class="home-goals">
           ${dailyChallengeCardHtml(dailyChallengeProgress ?? 0, dailyChallengeTarget ?? 5, !!dailyChallengeCompleted, 'daily-challenge-start')}
           ${weeklyGoalCardHtml(weeklyGoalProgress ?? 0, weeklyGoalTarget ?? 0, weeklyRewardText, weeklyRewardDays)}
@@ -410,6 +426,7 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
             <h2>🏆 Mes progrès</h2>
             <button type="button" id="priority-goal-action" class="priority-goal-card" data-kind="${mainGoal.kind}"><span>${mainGoal.emoji}</span><div><small>MON PROCHAIN OBJECTIF</small><strong>${escapeHtml(mainGoal.label)}</strong><p>${escapeHtml(mainGoal.detail)}</p></div><em>${mainGoal.action} ›</em></button>
             ${dailyAdventureHtml(dailyAdventure)}
+            ${story ? `<button type="button" id="start-story" class="story-adventure-card"><span>${story.chapter.emoji}</span><div><small>MON AVENTURE DU SAVOIR · ${story.progress % 5}/5</small><strong>${escapeHtml(story.chapter.title)}</strong><p>${escapeHtml(story.chapter.description)}</p><div class="story-progress"><i style="width:${(story.progress % 5) * 20}%"></i></div></div><em>Continuer ›</em></button>` : ''}
             ${focusType ? `<p class="focus-banner">${emojiForType(focusType)} Aujourd'hui, on s'entraîne sur ${FOCUS_LABELS[focusType]} !</p>` : ''}
             ${rareTreasures.length ? `<div class="rare-treasure-shelf"><strong>✨ Mes trésors rares</strong><div>${rareTreasures.map((treasure) => `<span title="${escapeHtml(treasure.name)}">${treasure.emoji}<small>${escapeHtml(treasure.name)}</small></span>`).join('')}</div></div>` : ''}
             <div class="home-badges">${renderBadgeMedallionsHtml(badges, badgeCounts)}</div>
@@ -438,6 +455,8 @@ export function renderHome(root, { childName, avatarLevel, xpProgress, streakDay
   root.querySelector('#coin-goal-action')?.addEventListener('click', () => onCoinGoalAction?.());
   root.querySelector('#priority-goal-action')?.addEventListener('click', (event) => onPriorityAction?.(event.currentTarget.dataset.kind));
   root.querySelector('#daily-challenge-start')?.addEventListener('click', onStartMission);
+  root.querySelector('#home-weekly-theme')?.addEventListener('click', onStartWeeklyTheme);
+  root.querySelector('#start-story')?.addEventListener('click', onStartStory);
   attachBottomTabs(root, onNavigate);
 }
 
@@ -617,8 +636,9 @@ function helpOverlayHtml(type, question) {
     </div>`;
 }
 
-export function renderQuestion(root, { question, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
+export function renderQuestion(root, { question, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp, onSpeak }) {
   const hasOptions = Array.isArray(question.options);
+  const expectsText = question.inputMode === 'text' || typeof question.answer === 'string';
   const reviewing = !!feedback;
   root.innerHTML = `
     <div class="screen mission-screen">
@@ -626,6 +646,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, onConti
       ${missionProgressHtml(index, total)}
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <section class="mission-card">
+        ${questionToolsHtml(question)}
         <h2>${question.prompt}</h2>
         ${visualDisplayHtml(question)}
         ${hasOptions
@@ -640,7 +661,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, onConti
             </div>`
           : `<form id="answer-form" class="answer-form">
               <label class="answer-label" for="answer-input">Ta réponse</label>
-              <input id="answer-input" type="${question.type === 'monnaie' ? 'text' : 'number'}" inputmode="${question.type === 'monnaie' ? 'decimal' : 'numeric'}" placeholder="${question.type === 'monnaie' ? '0,00 €' : 'Écris ta réponse'}" ${question.type === 'monnaie' ? 'aria-describedby="money-answer-hint"' : ''} ${reviewing ? `value="${escapeHtml(question.type === 'monnaie' ? formatEuroCents(selectedAnswer) : selectedAnswer)}" disabled` : ''} required />
+              <input id="answer-input" type="${question.type === 'monnaie' || expectsText ? 'text' : 'number'}" inputmode="${question.type === 'monnaie' ? 'decimal' : expectsText ? 'text' : 'numeric'}" placeholder="${question.type === 'monnaie' ? '0,00 €' : 'Écris ta réponse'}" ${question.type === 'monnaie' ? 'aria-describedby="money-answer-hint"' : ''} ${reviewing ? `value="${escapeHtml(question.type === 'monnaie' ? formatEuroCents(selectedAnswer) : selectedAnswer)}" disabled` : ''} required />
               ${question.type === 'monnaie' ? '<small id="money-answer-hint" class="answer-hint">Tu peux écrire 7 ou 7,00 €</small>' : ''}
               ${reviewing ? '' : '<button type="submit" class="big-button">Valider ma réponse</button>'}
             </form>`}
@@ -659,18 +680,19 @@ export function renderQuestion(root, { question, index, total, onAnswer, onConti
     root.querySelector('#answer-form').addEventListener('submit', (event) => {
       event.preventDefault();
       const raw = root.querySelector('#answer-input').value;
-      const value = question.type === 'monnaie' ? parseEuroInput(raw) : Number(raw);
+      const value = question.type === 'monnaie' ? parseEuroInput(raw) : expectsText ? raw : Number(raw);
       if (value === null) return;
       onAnswer(value);
     });
   }
   root.querySelector('#help-button').addEventListener('click', onOpenHelp);
+  root.querySelector('.speak-question')?.addEventListener('click', () => onSpeak?.(question.audioText));
   if (showHelp) {
     root.querySelector('#help-close').addEventListener('click', onCloseHelp);
   }
 }
 
-export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp }) {
+export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp, onSpeak }) {
   const hasOptions = Array.isArray(question.options);
   const reviewing = !!feedback;
   root.innerHTML = `
@@ -679,6 +701,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
       ${missionProgressHtml(index, total)}
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <section class="mission-card">
+        ${questionToolsHtml(question)}
         <h2>${question.prompt}</h2>
         ${visualDisplayHtml(question)}
         <div class="options mission-options">
@@ -707,6 +730,7 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
     );
   }
   root.querySelector('#help-button').addEventListener('click', onOpenHelp);
+  root.querySelector('.speak-question')?.addEventListener('click', () => onSpeak?.(question.audioText));
   if (showHelp) {
     root.querySelector('#help-close').addEventListener('click', onCloseHelp);
   }
@@ -835,6 +859,7 @@ export function renderResults(root, { correctCount, questionsTotal, gainedXp, ga
             <span><strong>+${coinBreakdown.answerCoins}</strong> bonnes réponses</span>
             ${coinBreakdown.perfectBonus ? `<span><strong>+${coinBreakdown.perfectBonus}</strong> mission parfaite</span>` : ''}
             ${coinBreakdown.dailyBonus ? `<span><strong>+${coinBreakdown.dailyBonus}</strong> défi du jour</span>` : ''}
+            ${coinBreakdown.themeBonus ? `<span><strong>+${coinBreakdown.themeBonus}</strong> défi de la semaine</span>` : ''}
             ${coinBreakdown.chestBonus ? `<span><strong>+${coinBreakdown.chestBonus}</strong> coffre du jour</span>` : ''}
           </div>` : ''}
           ${coinGoalHtml(coinGoal)}
