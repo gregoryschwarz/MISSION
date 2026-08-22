@@ -18,6 +18,7 @@ import { spendCoins, refundCoins } from '../shared/progression.js';
 import { DEFAULT_ENABLED_SUBJECT_IDS, normalizeEnabledSubjects } from '../shared/subjects.js';
 import { normalizeSchoolLevel } from '../shared/learningExperience.js';
 import { normalizeAccessibilityPreferences, normalizeFamilyLearningPlan } from '../shared/smartLearning.js';
+import { normalizeHomeworkAssignment } from '../shared/curriculum.js';
 
 // --- Compte parent (une famille = un parent Google, peut avoir plusieurs enfants) ---
 
@@ -129,6 +130,9 @@ export async function createChild(familyId, { childName }) {
     wishlistItemIds: [],
     familyLearningPlan: normalizeFamilyLearningPlan(),
     accessibilityPreferences: normalizeAccessibilityPreferences(),
+    competencyProgress: {},
+    certificates: [],
+    homeworkAssignment: normalizeHomeworkAssignment(),
     weeklyGoalTarget: 0,
     weeklyRewardText: 'Vendredi et samedi soir : tu peux rester debout plus tard !',
     weeklyRewardDays: ['vendredi', 'samedi'],
@@ -234,6 +238,12 @@ export async function setLearningPreferences(childId, { schoolLevel, assignedSub
   if (familyLearningPlan) changes.familyLearningPlan = normalizeFamilyLearningPlan(familyLearningPlan);
   if (accessibilityPreferences) changes.accessibilityPreferences = normalizeAccessibilityPreferences(accessibilityPreferences);
   await setDoc(doc(db, 'children', childId), changes, { merge: true });
+}
+
+export async function setHomeworkAssignment(childId, assignment) {
+  const homeworkAssignment = normalizeHomeworkAssignment(assignment);
+  await setDoc(doc(db, 'children', childId), { homeworkAssignment }, { merge: true });
+  return homeworkAssignment;
 }
 
 export async function setDailyMissionLimit(childId, dailyMissionLimit) {

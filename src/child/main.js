@@ -11,6 +11,7 @@ import { badgeCollectionData, badgeCountsAfterAwards } from '../shared/badges.js
 import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '../shared/dailyAdventure.js';
 import { seasonForDate } from '../shared/seasons.js';
 import { adaptiveMissionPlan, companionMood, normalizeAccessibilityPreferences, offlineSyncState, seasonalEventState, toggleWishlistItem } from '../shared/smartLearning.js';
+import { certificateForChapter, chapterValidation, competenciesForLevel, competencyProgressAfterMission, homeworkQuestionPlan, nextLearningQuest, parentCompetencyOverview, vacationReviewPlan } from '../shared/curriculum.js';
 import { SUBJECTS, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
 import { newlyEarnedSubjectBadges, notionLearningStatuses, personalizedLearningPlan, reviewQuestionsFromNotebook, storyChapter, storyProgressAfterMission, subjectMissionCountsAfter, updateLearningNotebook, weeklyLearningTheme } from '../shared/learningExperience.js';
 import { diagnosticPlanForSchoolLevel, dueLearningRecap, learnedLessonsAfterLesson, learningLessonForType, progressiveQuestionLevels, scheduleLearningRecap, weakestLearningType } from '../shared/learningPath.js';
@@ -77,6 +78,8 @@ let adaptiveHintTimer = null;
 let adaptiveHintVisible = false;
 let currentLearningLesson = null;
 let lastSpokenQuestionIndex = -1;
+let currentCompetencyId = null;
+let currentChapterId = null;
 
 async function ensureAuth() {
   await ensureDeviceAuth(auth);
@@ -145,6 +148,9 @@ async function loadProfile(targetChildId) {
         wishlistItemIds: [],
         familyLearningPlan: { dailyMinutes: 15, schoolDays: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'], preferredSubjects: [] },
         accessibilityPreferences: { textSize: 'normal', dyslexiaMode: false, reducedMotion: false, readInstructions: false },
+        competencyProgress: {},
+        certificates: [],
+        homeworkAssignment: { competencyIds: [], questionCount: 10, dueDate: null, active: false, completedDate: null },
       };
 }
 
@@ -154,6 +160,9 @@ async function saveProfile(targetChildId, profile) {
 }
 
 function priorityGoalForProfile(profile, today, coinGoal) {
+  if (profile.homeworkAssignment?.active && !profile.homeworkAssignment.completedDate) {
+    return { kind: 'homework', emoji: '📝', label: 'Devoir préparé par le parent', detail: `${profile.homeworkAssignment.questionCount ?? 10} questions${profile.homeworkAssignment.dueDate ? ` · avant le ${profile.homeworkAssignment.dueDate}` : ''}`, action: 'Commencer' };
+  }
   if (profile.diagnosticCompletedForLevel !== (profile.schoolLevel ?? 'CE2')) {
     return { kind: 'diagnostic', emoji: '🧭', label: `Diagnostic ${profile.schoolLevel ?? 'CE2'}`, detail: '10 questions pour adapter les prochaines missions', action: 'Commencer' };
   }
@@ -237,6 +246,7 @@ function renderHomeScreen(profile) {
     onCoinGoalAction: handleHomeCoinGoal,
     onPriorityAction: (kind) => {
       if (kind === 'diagnostic') return startDiagnosticMission();
+      if (kind === 'homework') return startHomeworkMission();
       if (kind === 'purchase') return handleHomeCoinGoal();
       if (kind === 'badge') return showBadgeAlbum();
       if (kind === 'assigned-subject' && subjectForId(profile.assignedSubject)) return startSubjectMission(profile.assignedSubject);
@@ -449,15 +459,22 @@ function showSubjectPicker() {
   const enabledSubjectIds = new Set(normalizeEnabledSubjects(lastProfile?.enabledSubjects));
   const dueRecap = dueLearningRecap(lastProfile?.learningRecaps ?? []);
   const dueNotebookCount = personalizedLearningPlan(lastProfile?.mistakeNotebook ?? []).reviewQuestions.length;
+  const schoolLevel = lastProfile?.schoolLevel ?? 'CE2';
+  const competencyOverview = parentCompetencyOverview(schoolLevel, lastProfile?.competencyProgress ?? {});
   renderSubjectPicker(root, {
     subjects: SUBJECTS.filter((subject) => enabledSubjectIds.has(subject.id)),
     difficultyLevels: lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS,
-    schoolLevel: lastProfile?.schoolLevel ?? 'CE2',
+    schoolLevel,
     mistakeCount: lastProfile?.mistakeNotebook?.length ?? 0,
     dueReviewCount: dueNotebookCount + (dueRecap ? 1 : 0),
     weeklyTheme: weeklyLearningTheme(),
     assignedSubject: lastProfile?.assignedSubject ?? null,
     learningTarget: weakestLearningType(lastProfile ?? {}),
+    curriculumQuest: nextLearningQuest(schoolLevel, lastProfile?.competencyProgress ?? {}),
+    competencyOverview,
+    vacationPlan: vacationReviewPlan(schoolLevel, lastProfile?.competencyProgress ?? {}),
+    homeworkAssignment: lastProfile?.homeworkAssignment,
+    certificates: lastProfile?.certificates ?? [],
     onSelect: startSubjectMission,
     onStartFrench: startFrenchMission,
     onStartSurprise: startSurpriseMission,
@@ -466,6 +483,10 @@ function showSubjectPicker() {
     onStartDiagnostic: startDiagnosticMission,
     onReviewMistakes: startMistakeReview,
     onStartWeeklyTheme: startWeeklyThemeMission,
+    onStartCurriculum: startCurriculumQuest,
+    onValidateChapter: startChapterValidationMission,
+    onStartHomework: startHomeworkMission,
+    onStartVacation: startVacationReviewMission,
     onBack: () => renderHomeScreen(lastProfile),
     onNavigate: navigateTo,
   });
@@ -572,6 +593,10 @@ function startMissionWithQuestions(questions, forcedMode = null, subject = null,
   session = createSession(questions, subject);
   session.adaptiveRetriesEnabled = missionKind !== 'diagnostic';
   currentMissionKind = missionKind;
+  if (!['curriculum', 'chapter-validation', 'homework', 'vacation'].includes(missionKind)) {
+    currentCompetencyId = null;
+    currentChapterId = null;
+  }
   if (missionKind !== 'learning') currentLearningLesson = null;
   lastFeedback = null;
   answerReview = null;
@@ -605,6 +630,69 @@ function startFrenchMission() {
   if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   startMissionWithQuestions(generateFrenchMission(MISSION_LENGTH, difficultyLevels), 'qcm', 'francais');
+}
+
+function questionsForCompetency(competency, count) {
+  if (!competency || count <= 0) return [];
+  const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  let questions = [];
+  if (QUESTION_TYPES.includes(competency.questionType)) {
+    questions = generateSingleTypeMission(count, competency.questionType, difficultyLevels[competency.questionType] ?? 1);
+  } else if (competency.questionType === 'francais' || competency.questionType === 'accord-pluriel') {
+    questions = generateFrenchMission(count, difficultyLevels);
+  } else if (subjectForId(competency.questionType)) {
+    questions = generateSubjectMission(competency.questionType, count, difficultyLevels, { schoolLevel: lastProfile?.schoolLevel });
+  }
+  return questions.slice(0, count).map((question) => ({ ...question, competencyId: competency.id }));
+}
+
+function startCurriculumQuest() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const quest = nextLearningQuest(lastProfile?.schoolLevel ?? 'CE2', lastProfile?.competencyProgress ?? {});
+  const competency = competenciesForLevel(lastProfile?.schoolLevel ?? 'CE2').find((item) => item.id === quest.competencyId);
+  const questions = questionsForCompetency(competency, MISSION_LENGTH);
+  if (!questions.length) return showSubjectPicker();
+  currentCompetencyId = competency.id;
+  currentChapterId = competency.chapterId;
+  startMissionWithQuestions(questions, 'quiz', competency.subject, 'curriculum');
+}
+
+function startChapterValidationMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const quest = nextLearningQuest(lastProfile?.schoolLevel ?? 'CE2', lastProfile?.competencyProgress ?? {});
+  const chapterCompetencies = competenciesForLevel(lastProfile?.schoolLevel ?? 'CE2').filter((item) => item.chapterId === quest.chapterId);
+  const questions = chapterCompetencies.flatMap((competency, index) => questionsForCompetency(competency, Math.ceil(MISSION_LENGTH / chapterCompetencies.length)).map((question) => ({ ...question, chapterOrder: index }))).slice(0, MISSION_LENGTH);
+  if (questions.length < 5) return startCurriculumQuest();
+  currentCompetencyId = quest.competencyId;
+  currentChapterId = quest.chapterId;
+  startMissionWithQuestions(questions, 'quiz', 'validation', 'chapter-validation');
+}
+
+function startHomeworkMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const assignment = lastProfile?.homeworkAssignment;
+  const competencies = competenciesForLevel(lastProfile?.schoolLevel ?? 'CE2');
+  const questions = homeworkQuestionPlan(assignment).flatMap(({ competencyId, count }) => {
+    const competency = competencies.find((item) => item.id === competencyId);
+    return questionsForCompetency(competency, count);
+  });
+  if (!questions.length) return showSubjectPicker();
+  currentCompetencyId = null;
+  currentChapterId = null;
+  startMissionWithQuestions(questions, 'quiz', 'devoir', 'homework');
+}
+
+function startVacationReviewMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const level = lastProfile?.schoolLevel ?? 'CE2';
+  const plan = vacationReviewPlan(level, lastProfile?.competencyProgress ?? {});
+  const assignment = { competencyIds: plan.competencyIds, questionCount: plan.questionCount };
+  const competencies = competenciesForLevel(level);
+  const questions = homeworkQuestionPlan(assignment).flatMap(({ competencyId, count }) => questionsForCompetency(competencies.find((item) => item.id === competencyId), count));
+  if (!questions.length) return showSubjectPicker();
+  currentCompetencyId = null;
+  currentChapterId = null;
+  startMissionWithQuestions(questions, 'quiz', 'vacances', 'vacation');
 }
 
 function startSubjectMission(subjectId) {
@@ -876,6 +964,8 @@ async function finishMission() {
   if (adaptiveHintTimer) clearTimeout(adaptiveHintTimer);
   const summary = finishSession(session);
   summary.missionKind = currentMissionKind;
+  summary.competencyId = currentCompetencyId;
+  summary.chapterId = currentChapterId;
   const profileBefore = await loadProfile(childId);
   const currentDifficultyLevels = profileBefore.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const nextDifficultyLevels = adjustDifficultyLevels(currentDifficultyLevels, summary.breakdown);
@@ -924,6 +1014,35 @@ async function finishMission() {
   ), chestBonus: chestReward.success ? chestReward.bonusCoins : 0, themeBonus, seasonalBonus };
   const finalAvatarLevel = levelForXp(finalXp);
   const finalLeveledUp = finalAvatarLevel > profileBefore.avatarLevel;
+  let competencyProgress = { ...(profileBefore.competencyProgress ?? {}) };
+  const answersByCompetency = summary.answeredQuestions.reduce((groups, answer) => {
+    const competencyId = answer.competencyId ?? currentCompetencyId;
+    if (!competencyId) return groups;
+    (groups[competencyId] ??= []).push(answer);
+    return groups;
+  }, {});
+  Object.entries(answersByCompetency).forEach(([competencyId, answers]) => {
+    competencyProgress = competencyProgressAfterMission(competencyProgress, {
+      competencyId,
+      date: summary.date,
+      correctCount: answers.filter((answer) => answer.isCorrect).length,
+      questionsTotal: answers.length,
+    });
+  });
+  const validation = currentMissionKind === 'chapter-validation' && currentChapterId
+    ? chapterValidation(currentChapterId, summary)
+    : null;
+  if (validation?.passed) {
+    Object.keys(answersByCompetency).forEach((competencyId) => {
+      competencyProgress[competencyId] = { ...competencyProgress[competencyId], validated: true };
+    });
+  }
+  const unlockedCertificate = validation?.passed
+    ? certificateForChapter(profileBefore.schoolLevel ?? 'CE2', currentChapterId, profileBefore.childName, summary.date)
+    : null;
+  const certificates = unlockedCertificate
+    ? [unlockedCertificate, ...(profileBefore.certificates ?? []).filter((item) => item.id !== unlockedCertificate.id)]
+    : profileBefore.certificates ?? [];
   const nextProfile = {
     ...profileBefore,
     xp: finalXp,
@@ -956,6 +1075,11 @@ async function finishMission() {
       stats[type] = { correct: previous.correct + current.correct, total: previous.total + current.total, successDates: [...successDates].slice(-30) };
       return stats;
     }, { ...(profileBefore.learningStats ?? {}) }),
+    competencyProgress,
+    certificates,
+    homeworkAssignment: currentMissionKind === 'homework'
+      ? { ...(profileBefore.homeworkAssignment ?? {}), active: false, completedDate: summary.date }
+      : profileBefore.homeworkAssignment ?? null,
     learningRecaps: currentMissionKind === 'learning' && currentLearningLesson
       ? scheduleLearningRecap(profileBefore.learningRecaps ?? [], currentLearningLesson, summary.date)
       : profileBefore.learningRecaps ?? [],
@@ -989,6 +1113,8 @@ async function finishMission() {
   }
   pairsRound = null;
   currentLearningLesson = null;
+  currentCompetencyId = null;
+  currentChapterId = null;
   renderResults(root, {
     correctCount: summary.correctCount,
     questionsTotal: summary.questionsTotal,

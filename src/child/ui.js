@@ -329,7 +329,7 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
-export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, schoolLevel = 'CE2', mistakeCount = 0, dueReviewCount = 0, weeklyTheme, assignedSubject = null, learningTarget = 'addition', onSelect, onStartFrench, onStartSurprise, onStartPersonalized, onStartLearning, onStartDiagnostic, onReviewMistakes, onStartWeeklyTheme, onBack, onNavigate }) {
+export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, schoolLevel = 'CE2', mistakeCount = 0, dueReviewCount = 0, weeklyTheme, assignedSubject = null, learningTarget = 'addition', curriculumQuest, competencyOverview, vacationPlan, homeworkAssignment, certificates = [], onSelect, onStartFrench, onStartSurprise, onStartPersonalized, onStartLearning, onStartDiagnostic, onReviewMistakes, onStartWeeklyTheme, onStartCurriculum, onValidateChapter, onStartHomework, onStartVacation, onBack, onNavigate }) {
   root.innerHTML = `
     <div class="screen subject-picker-screen with-tabs">
       <header class="subject-picker-heading">
@@ -337,6 +337,10 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, sch
         <h1>📚 Toutes les matières</h1>
         <span>Une mission de 10 questions adaptée au niveau ${escapeHtml(schoolLevel)}.</span>
       </header>
+      ${curriculumQuest ? `<section class="curriculum-quest-card"><span>${curriculumQuest.emoji}</span><div><small>MON PARCOURS ${escapeHtml(schoolLevel)}</small><h2>${escapeHtml(curriculumQuest.title)}</h2><p>${escapeHtml(curriculumQuest.story)}</p><div class="curriculum-stats"><b>${competencyOverview?.mastered ?? 0} maîtrisée${competencyOverview?.mastered > 1 ? 's' : ''}</b><b>${competencyOverview?.practising ?? 0} en entraînement</b><b>${competencyOverview?.discovery ?? 0} à découvrir</b></div></div><aside><button id="curriculum-quest">Continuer la quête</button><button id="chapter-validation">Valider le chapitre</button></aside></section>` : ''}
+      ${homeworkAssignment?.active && !homeworkAssignment.completedDate ? `<button id="homework-mission" class="homework-card"><span>📝</span><div><small>DEVOIR DU PARENT</small><strong>${homeworkAssignment.questionCount} questions préparées</strong><p>${homeworkAssignment.dueDate ? `À terminer avant le ${escapeHtml(homeworkAssignment.dueDate)}` : 'À faire quand tu es prête'}</p></div><em>Commencer ›</em></button>` : ''}
+      ${vacationPlan?.active ? `<button id="vacation-review" class="vacation-review-card"><span>🏖️</span><div><small>${escapeHtml(vacationPlan.season).toUpperCase()}</small><strong>${escapeHtml(vacationPlan.title)}</strong><p>${vacationPlan.competencyIds.length} compétences choisies selon tes acquis</p></div><em>Réviser ›</em></button>` : ''}
+      ${certificates.length ? `<section class="certificate-shelf"><strong>🏆 Mes certificats</strong><div>${certificates.slice(0, 6).map((certificate) => `<span title="${escapeHtml(certificate.title)}">${certificate.chapterEmoji ?? '⭐'}<small>${escapeHtml(certificate.chapterTitle)}</small></span>`).join('')}</div></section>` : ''}
       <div class="learning-quick-actions">
         <button id="learning-mission" class="learning-quick-card learning-quick-card-featured"><span>🎓</span><div><strong>J’apprends</strong><small>Mini-leçon sur ${escapeHtml(learningTypeLabel(learningTarget))}, puis 3 exercices progressifs</small></div></button>
         <button id="diagnostic-mission" class="learning-quick-card"><span>🧭</span><div><strong>Diagnostic ${escapeHtml(schoolLevel)}</strong><small>10 questions pour ajuster ton parcours</small></div></button>
@@ -371,6 +375,10 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, sch
   root.querySelector('#diagnostic-mission').addEventListener('click', onStartDiagnostic);
   root.querySelector('#mistake-review').addEventListener('click', onReviewMistakes);
   root.querySelector('#weekly-theme-mission')?.addEventListener('click', onStartWeeklyTheme);
+  root.querySelector('#curriculum-quest')?.addEventListener('click', onStartCurriculum);
+  root.querySelector('#chapter-validation')?.addEventListener('click', onValidateChapter);
+  root.querySelector('#homework-mission')?.addEventListener('click', onStartHomework);
+  root.querySelector('#vacation-review')?.addEventListener('click', onStartVacation);
   root.querySelector('#subject-picker-back').addEventListener('click', onBack);
   attachBottomTabs(root, onNavigate);
 }

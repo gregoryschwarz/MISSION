@@ -5,6 +5,7 @@ import { SUBJECTS, learningTypeLabel, normalizeEnabledSubjects, subjectForId } f
 import { notionLearningStatuses, retentionSummary, SCHOOL_LEVELS, subjectSummary } from '../shared/learningExperience.js';
 import { learningPathSummary } from '../shared/learningPath.js';
 import { normalizeAccessibilityPreferences, normalizeFamilyLearningPlan, weeklyParentReport } from '../shared/smartLearning.js';
+import { parentCompetencyOverview } from '../shared/curriculum.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -787,7 +788,7 @@ function breakdownBarsHtml(breakdown, difficultyLevels, learningStatuses = []) {
   `;
 }
 
-export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onOpenShop, onSetFocus, onSetEnabledSubjects, onSetLearningPreferences, onSetWeeklyGoal, onSetDailyLimit, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
+export function renderDashboard(root, { child, profile, sessions, rewards = [], rewardRequests = [], avatarPacks = [], onBack, onSignOut, onOpenShop, onSetFocus, onSetEnabledSubjects, onSetLearningPreferences, onSetHomework, onSetWeeklyGoal, onSetDailyLimit, onCreditCoins, onCreateReward, onUpdateReward, onResolveRequest, onUpdateAvatarPack, onSyncAvatarPacks, onCopyCode, onShareCode, onEnableNotifications }) {
   const breakdown = aggregateBreakdown(sessions);
   const difficultyLevels = profile.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
   const dailyBreakdown = dailyBreakdownByType(sessions);
@@ -802,6 +803,8 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   const weeklyReport = weeklyParentReport(sessions, profile);
   const familyPlan = normalizeFamilyLearningPlan(profile.familyLearningPlan);
   const accessibility = normalizeAccessibilityPreferences(profile.accessibilityPreferences);
+  const competencyOverview = parentCompetencyOverview(profile.schoolLevel ?? 'CE2', profile.competencyProgress ?? {});
+  const homework = profile.homeworkAssignment ?? {};
   root.innerHTML = `
     <div class="dashboard">
       <header>
@@ -824,6 +827,23 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
         <div><p>BILAN HEBDOMADAIRE</p><h2>📨 L’essentiel de la semaine</h2></div>
         <div class="weekly-report-stats"><span><strong>${weeklyReport.missions}</strong> missions</span><span><strong>${weeklyReport.percent}%</strong> de réussite</span><span><strong>${weeklyReport.minutes}</strong> minutes</span><span><strong>${weeklyReport.learnedRules}</strong> règles apprises</span></div>
         <p>${weeklyReport.priorityType ? `Priorité conseillée : <strong>${escapeHtml(displayTypeLabel(weeklyReport.priorityType))}</strong>.` : 'Pas encore assez de missions cette semaine pour définir une priorité.'}</p>
+      </section>
+      <section class="parent-curriculum">
+        <div class="parent-curriculum-heading"><div><p>PROGRAMME ${escapeHtml(profile.schoolLevel ?? 'CE2')}</p><h2>🗺️ Parcours par compétences</h2></div><div><span><strong>${competencyOverview.mastered}</strong> maîtrisées</span><span><strong>${competencyOverview.practising}</strong> en cours</span><span><strong>${competencyOverview.discovery}</strong> à découvrir</span></div></div>
+        <div class="parent-competency-grid">${competencyOverview.competencies.map((competency) => {
+          const statusLabel = competency.status === 'mastered' ? '✅ Maîtrisée' : competency.status === 'practice' ? '🌱 En entraînement' : '🧭 À découvrir';
+          const percent = competency.progress.total ? Math.round((competency.progress.correct / competency.progress.total) * 100) : 0;
+          return `<article class="parent-competency-card status-${competency.status}"><span>${competency.emoji}</span><div><small>${escapeHtml(competency.subject)} · ${escapeHtml(competency.chapterTitle)}</small><strong>${escapeHtml(competency.label)}</strong><p>${statusLabel}${competency.progress.total ? ` · ${percent}%` : ''}</p></div></article>`;
+        }).join('')}</div>
+        <form id="homework-assignment-form" class="homework-assignment-form">
+          <div><h3>📝 Préparer un devoir</h3><p>Choisis jusqu’à 6 compétences et le nombre total de questions.</p></div>
+          <div class="homework-competency-list">${competencyOverview.competencies.map((competency) => `<label><input type="checkbox" name="homework-competency" value="${competency.id}" ${(homework.competencyIds ?? []).includes(competency.id) && homework.active ? 'checked' : ''} /> <span>${competency.emoji}</span> ${escapeHtml(competency.label)}</label>`).join('')}</div>
+          <label>Nombre de questions<input id="homework-question-count" type="number" min="3" max="20" value="${homework.questionCount ?? 10}" /></label>
+          <label>Date souhaitée<input id="homework-due-date" type="date" value="${escapeHtml(homework.dueDate ?? '')}" /></label>
+          <button type="submit">${homework.active ? 'Modifier le devoir' : 'Envoyer le devoir'}</button>
+          ${homework.completedDate ? `<p class="homework-completed">✅ Dernier devoir terminé le ${escapeHtml(homework.completedDate)}</p>` : ''}
+        </form>
+        ${(profile.certificates ?? []).length ? `<div class="parent-certificates"><h3>🏆 Certificats obtenus</h3>${(profile.certificates ?? []).map((certificate) => `<span>${certificate.chapterEmoji ?? '⭐'} ${escapeHtml(certificate.chapterTitle)} · ${escapeHtml(certificate.date)}</span>`).join('')}</div>` : ''}
       </section>
       ${weeklyWatchHtml(weeklyWatch)}
       <div class="dashboard-columns">
@@ -1025,6 +1045,13 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
         readInstructions: root.querySelector('#read-instructions').checked,
       },
     });
+  });
+  root.querySelector('#homework-assignment-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const competencyIds = [...root.querySelectorAll('input[name="homework-competency"]:checked')].map((input) => input.value).slice(0, 6);
+    const questionCount = Number(root.querySelector('#homework-question-count').value);
+    if (!competencyIds.length || !Number.isInteger(questionCount)) return;
+    onSetHomework({ competencyIds, questionCount, dueDate: root.querySelector('#homework-due-date').value || null });
   });
   root.querySelectorAll('.assign-subject-button').forEach((button) => button.addEventListener('click', () => {
     onSetLearningPreferences({ schoolLevel: root.querySelector('#school-level').value, assignedSubject: button.dataset.subject });

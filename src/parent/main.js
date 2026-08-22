@@ -14,6 +14,7 @@ import {
   setFocusType,
   setEnabledSubjects,
   setLearningPreferences,
+  setHomeworkAssignment,
   setWeeklyGoalTarget,
   setDailyMissionLimit,
   creditChildCoins,
@@ -175,6 +176,10 @@ async function loadDashboard(familyId, childId) {
     },
     onSetLearningPreferences: async (preferences) => {
       await setLearningPreferences(childId, preferences);
+      await loadDashboard(familyId, childId);
+    },
+    onSetHomework: async (assignment) => {
+      await setHomeworkAssignment(childId, assignment);
       await loadDashboard(familyId, childId);
     },
     onSetDailyLimit: async (limit) => {
