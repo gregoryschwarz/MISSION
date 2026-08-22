@@ -63,6 +63,7 @@ export function updateLearningNotebook(existing = [], answeredQuestions = [], da
       });
       return;
     }
+    if (previous.lastResult === 'correct' && previous.lastReviewDate === date) return;
     const retentionStage = Math.min(4, (previous.retentionStage ?? 0) + 1);
     byKey.set(key, {
       ...previous,
@@ -109,21 +110,24 @@ export function notionLearningStatuses(sessions = [], minAttempts = 3) {
   const totals = {};
   sessions.forEach((session) => Object.entries(session.breakdown ?? {}).forEach(([type, stats]) => {
     if (!stats.total) return;
-    if (!totals[type]) totals[type] = { correct: 0, total: 0 };
+    if (!totals[type]) totals[type] = { correct: 0, total: 0, successfulDays: new Set() };
     totals[type].correct += stats.correct ?? 0;
     totals[type].total += stats.total;
+    (stats.successDates ?? []).forEach((date) => totals[type].successfulDays.add(date));
+    if ((stats.correct ?? 0) > 0 && session.date) totals[type].successfulDays.add(session.date);
   }));
   return Object.entries(totals)
     .filter(([, stats]) => stats.total >= minAttempts)
     .map(([type, stats]) => {
       const percent = Math.round((stats.correct / stats.total) * 100);
-      const status = stats.total >= 5 && percent >= 80 ? 'acquis' : percent < 60 ? 'a-revoir' : 'en-progres';
-      return { type, ...stats, percent, status };
+      const successfulDayCount = stats.successfulDays.size;
+      const status = stats.total >= 5 && percent >= 80 && successfulDayCount >= 2 ? 'acquis' : percent < 60 ? 'a-revoir' : 'en-progres';
+      return { type, correct: stats.correct, total: stats.total, percent, successfulDayCount, status };
     });
 }
 
 export function retentionSummary(sessions = [], notebook = [], today = new Date().toISOString().slice(0, 10)) {
-  const reviewSessions = sessions.filter((session) => ['mistake-review', 'personalized'].includes(session.missionKind));
+  const reviewSessions = sessions.filter((session) => ['mistake-review', 'personalized', 'learning'].includes(session.missionKind));
   const reviewedQuestions = reviewSessions.reduce((sum, session) => sum + (session.questionsTotal ?? 0), 0);
   const correctReviews = reviewSessions.reduce((sum, session) => sum + (session.correctCount ?? 0), 0);
   const statuses = notebook.map(learningStatusForEntry);

@@ -3,6 +3,7 @@ import { DIFFICULTY_LABELS, DEFAULT_DIFFICULTY_LEVELS } from '../shared/difficul
 import { weekStartKey } from '../shared/progression.js';
 import { SUBJECTS, learningTypeLabel, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
 import { notionLearningStatuses, retentionSummary, SCHOOL_LEVELS, subjectSummary } from '../shared/learningExperience.js';
+import { learningPathSummary } from '../shared/learningPath.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -795,6 +796,7 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
   const weeklyWatch = computeWeeklyWatch(sessions, profile);
   const learningStatuses = notionLearningStatuses(sessions);
   const retention = retentionSummary(sessions, profile.mistakeNotebook ?? []);
+  const learningPath = learningPathSummary(profile, sessions);
   const enabledSubjects = normalizeEnabledSubjects(profile.enabledSubjects);
   root.innerHTML = `
     <div class="dashboard">
@@ -838,11 +840,14 @@ export function renderDashboard(root, { child, profile, sessions, rewards = [], 
       <section class="retention-summary">
         <div class="retention-heading"><div><h2>🧠 Révisions et mémorisation</h2><p>Ce qui a été retravaillé et réellement consolidé dans le temps.</p></div><strong>${retention.reviewPercent}% de réussite en révision</strong></div>
         <div class="retention-grid">
+          <article><b>${learningPath.lessonMissions}</b><span>mini-leçons terminées</span></article>
+          <article><b>${learningPath.diagnosticCompletedForLevel ? `${escapeHtml(learningPath.diagnosticCompletedForLevel)} · ${learningPath.diagnosticPercent}%` : 'À faire'}</b><span>dernier diagnostic</span></article>
           <article><b>${retention.reviewMissions}</b><span>missions de révision</span></article>
           <article><b>${retention.reviewedQuestions}</b><span>questions retravaillées</span></article>
-          <article class="retention-acquired"><b>${retention.retainedCount}</b><span>notions retenues</span></article>
-          <article class="retention-progress"><b>${retention.progressingCount}</b><span>en consolidation</span></article>
-          <article class="retention-due"><b>${retention.dueCount}</b><span>à revoir maintenant</span></article>
+          <article class="retention-acquired"><b>${learningPath.retainedCount}</b><span>notions apprises</span></article>
+          <article class="retention-progress"><b>${learningPath.progressingCount}</b><span>en consolidation</span></article>
+          <article class="retention-due"><b>${learningPath.fragileCount}</b><span>notions encore fragiles</span></article>
+          <article class="retention-due"><b>${learningPath.dueCount}</b><span>à revoir maintenant</span></article>
         </div>
       </section>
       <section class="focus-selector">

@@ -39,6 +39,7 @@ export function recordAnswer(session, question, isCorrect, submittedAnswer = nul
 }
 
 function scheduleAdaptiveRetry(session, question) {
+  if (session.adaptiveRetriesEnabled === false) return;
   if (question._adaptiveRetry) return;
   const remainingQuestions = session.questions.length - session.index - 1;
   if (remainingQuestions < 2) return;

@@ -12,8 +12,9 @@ import { claimDailyAdventureChest, dailyAdventureState, RARE_TREASURES } from '.
 import { seasonForDate } from '../shared/seasons.js';
 import { SUBJECTS, normalizeEnabledSubjects, subjectForId } from '../shared/subjects.js';
 import { newlyEarnedSubjectBadges, notionLearningStatuses, personalizedLearningPlan, reviewQuestionsFromNotebook, storyChapter, storyProgressAfterMission, subjectMissionCountsAfter, updateLearningNotebook, weeklyLearningTheme } from '../shared/learningExperience.js';
+import { diagnosticPlanForSchoolLevel, learningLessonForType, progressiveQuestionLevels, weakestLearningType } from '../shared/learningPath.js';
 import { enqueueSession, flushQueue } from '../shared/syncQueue.js';
-import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
+import { renderPairing, renderPairingPending, renderHome, renderNotionPicker, renderSubjectPicker, renderMiniLesson, renderCustomize, renderQuestion, renderQuestionQcm, renderPairsRound, renderResults, renderRewards, renderBadgeAlbum, renderUnlockCelebration, renderConnectionError } from './ui.js';
 import { fetchRewards, fetchRewardRequests, requestReward, fetchAvatarPackSettings } from '../parent/family.js';
 import { isSoundEnabled, setSoundEnabled, playCorrectSound, playIncorrectSound, playMissionCompleteSound, playLevelUpSound, speakEnglish } from './sound.js';
 import { auraClassForLevel } from './avatar.js';
@@ -50,6 +51,7 @@ const root = document.getElementById('app');
 document.body.dataset.season = seasonForDate();
 const MISSION_LENGTH = 10;
 const PAUSE_REMINDER_MS = 15 * 60 * 1000;
+const ADAPTIVE_HINT_DELAY_MS = 10 * 1000;
 
 // childId = code d'appairage de cet enfant (chaque enfant a le sien — support
 // multi-enfants). familyId (le compte parent) est retrouvé via le profil une
@@ -70,6 +72,8 @@ let helpVisible = false;
 let cachedChoices = null;
 let cachedChoicesIndex = -1;
 let currentMissionKind = 'standard';
+let adaptiveHintTimer = null;
+let adaptiveHintVisible = false;
 
 async function ensureAuth() {
   await ensureDeviceAuth(auth);
@@ -141,6 +145,9 @@ async function saveProfile(targetChildId, profile) {
 }
 
 function priorityGoalForProfile(profile, today, coinGoal) {
+  if (profile.diagnosticCompletedForLevel !== (profile.schoolLevel ?? 'CE2')) {
+    return { kind: 'diagnostic', emoji: '🧭', label: `Diagnostic ${profile.schoolLevel ?? 'CE2'}`, detail: '10 questions pour adapter les prochaines missions', action: 'Commencer' };
+  }
   const assigned = subjectForId(profile.assignedSubject);
   if (assigned) {
     return { kind: 'assigned-subject', emoji: assigned.emoji, label: `Mission ${assigned.label}`, detail: 'Ton parent te propose cette matière', action: 'Commencer' };
@@ -214,6 +221,7 @@ function renderHomeScreen(profile) {
     onShowBadgeAlbum: showBadgeAlbum,
     onCoinGoalAction: handleHomeCoinGoal,
     onPriorityAction: (kind) => {
+      if (kind === 'diagnostic') return startDiagnosticMission();
       if (kind === 'purchase') return handleHomeCoinGoal();
       if (kind === 'badge') return showBadgeAlbum();
       if (kind === 'assigned-subject' && subjectForId(profile.assignedSubject)) return startSubjectMission(profile.assignedSubject);
@@ -426,10 +434,13 @@ function showSubjectPicker() {
     dueReviewCount: personalizedLearningPlan(lastProfile?.mistakeNotebook ?? []).reviewQuestions.length,
     weeklyTheme: weeklyLearningTheme(),
     assignedSubject: lastProfile?.assignedSubject ?? null,
+    learningTarget: weakestLearningType(lastProfile ?? {}),
     onSelect: startSubjectMission,
     onStartFrench: startFrenchMission,
     onStartSurprise: startSurpriseMission,
     onStartPersonalized: startPersonalizedMission,
+    onStartLearning: startLearningPath,
+    onStartDiagnostic: startDiagnosticMission,
     onReviewMistakes: startMistakeReview,
     onStartWeeklyTheme: startWeeklyThemeMission,
     onBack: () => renderHomeScreen(lastProfile),
@@ -526,14 +537,17 @@ async function showHome() {
 }
 
 function startMissionWithQuestions(questions, forcedMode = null, subject = null, missionKind = 'standard') {
+  if (adaptiveHintTimer) clearTimeout(adaptiveHintTimer);
   missionMode = forcedMode ?? pickMissionMode(getLastMissionMode());
   if (!forcedMode) storeLastMissionMode(missionMode);
   session = createSession(questions, subject);
+  session.adaptiveRetriesEnabled = missionKind !== 'diagnostic';
   currentMissionKind = missionKind;
   lastFeedback = null;
   answerReview = null;
   helpVisible = false;
   cachedChoicesIndex = -1;
+  adaptiveHintVisible = false;
   if (missionMode === 'pairs') {
     pairsRound = createPairsRound(session.questions);
     showPairsRound();
@@ -590,14 +604,15 @@ function startMistakeReview() {
   startMissionWithQuestions(questions, 'quiz', 'revision', 'mistake-review');
 }
 
-function freshQuestionsForType(type, count) {
+function freshQuestionsForType(type, count, forcedLevel = null) {
   const difficultyLevels = lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS;
+  const level = forcedLevel ?? difficultyLevels[type] ?? 1;
   if (QUESTION_TYPES.includes(type)) {
-    return generateSingleTypeMission(count, type, difficultyLevels[type] ?? 1);
+    return generateSingleTypeMission(count, type, level);
   }
-  if (type === 'accord-pluriel') return generateFrenchMission(count, difficultyLevels);
+  if (type === 'accord-pluriel') return generateFrenchMission(count, { ...difficultyLevels, 'accord-pluriel': level });
   if (subjectForId(type) && normalizeEnabledSubjects(lastProfile?.enabledSubjects).includes(type)) {
-    return generateSubjectMission(type, count, difficultyLevels, { schoolLevel: lastProfile?.schoolLevel });
+    return generateSubjectMission(type, count, { ...difficultyLevels, [type]: level }, { schoolLevel: lastProfile?.schoolLevel });
   }
   return [];
 }
@@ -616,6 +631,50 @@ function startPersonalizedMission() {
     return true;
   }).slice(0, MISSION_LENGTH);
   startMissionWithQuestions(questions, 'quiz', 'revision', 'personalized');
+}
+
+function progressiveQuestionsForType(type) {
+  const difficulty = lastProfile?.difficultyLevels?.[type] ?? 1;
+  const levels = progressiveQuestionLevels(difficulty, lastProfile?.schoolLevel ?? 'CE2');
+  const stages = ['facile', 'guide', 'autonome'];
+  const seen = new Set();
+  return levels.map((level, index) => {
+    let selected = null;
+    for (let attempt = 0; attempt < 8 && !selected; attempt += 1) {
+      const candidate = freshQuestionsForType(type, 1, level)[0];
+      const key = candidate ? `${candidate.type}::${candidate.prompt}` : null;
+      if (candidate && !seen.has(key)) {
+        seen.add(key);
+        selected = candidate;
+      }
+    }
+    return selected ? { ...selected, learningStage: stages[index] } : null;
+  }).filter(Boolean);
+}
+
+function startLearningPath() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  let type = weakestLearningType(lastProfile ?? {});
+  let questions = progressiveQuestionsForType(type);
+  if (questions.length < 3) {
+    type = 'addition';
+    questions = progressiveQuestionsForType(type);
+  }
+  renderMiniLesson(root, {
+    lesson: learningLessonForType(type, questions[0]),
+    onStart: () => startMissionWithQuestions(questions, 'quiz', type, 'learning'),
+    onBack: showSubjectPicker,
+  });
+}
+
+function startDiagnosticMission() {
+  if (dailyMissionLimitReached()) return renderHomeScreen(lastProfile);
+  const plan = diagnosticPlanForSchoolLevel(lastProfile?.schoolLevel ?? 'CE2');
+  const questions = plan.map(({ type, level }) => freshQuestionsForType(type, 1, level)[0]).filter(Boolean);
+  if (questions.length < MISSION_LENGTH) {
+    questions.push(...generateMission(MISSION_LENGTH - questions.length, lastProfile?.difficultyLevels ?? DEFAULT_DIFFICULTY_LEVELS));
+  }
+  startMissionWithQuestions(questions.slice(0, MISSION_LENGTH), 'quiz', 'diagnostic', 'diagnostic');
 }
 
 function dailyMissionLimitReached() {
@@ -646,6 +705,7 @@ function showQuestion() {
       index: questionIndex,
       total: session.questions.length,
       feedback: answerReview?.isCorrect ? 'correct' : answerReview ? 'incorrect' : null,
+      showAdaptiveHint: currentMissionKind === 'learning' && (adaptiveHintVisible || question.learningStage === 'guide'),
       selectedAnswer: answerReview?.answer,
       showPauseReminder,
       onAnswer: handleAnswer,
@@ -661,6 +721,7 @@ function showQuestion() {
       index: questionIndex,
       total: session.questions.length,
       feedback: answerReview?.isCorrect ? 'correct' : answerReview ? 'incorrect' : null,
+      showAdaptiveHint: currentMissionKind === 'learning' && (adaptiveHintVisible || question.learningStage === 'guide'),
       selectedAnswer: answerReview?.answer,
       showPauseReminder,
       onAnswer: handleAnswer,
@@ -670,6 +731,16 @@ function showQuestion() {
       onCloseHelp: closeHelp,
       onSpeak: question.audioText ? () => speakEnglish(question.audioText) : null,
     });
+  }
+  if (adaptiveHintTimer) clearTimeout(adaptiveHintTimer);
+  if (currentMissionKind === 'learning' && !answerReview && question.learningStage !== 'guide' && !adaptiveHintVisible) {
+    const expectedIndex = session.index;
+    adaptiveHintTimer = setTimeout(() => {
+      if (session?.index === expectedIndex && !answerReview) {
+        adaptiveHintVisible = true;
+        showQuestion();
+      }
+    }, ADAPTIVE_HINT_DELAY_MS);
   }
 }
 
@@ -688,6 +759,7 @@ function showPairsRound() {
 
 async function handleAnswer(answer) {
   if (answerReview) return;
+  if (adaptiveHintTimer) clearTimeout(adaptiveHintTimer);
   const question = currentQuestion(session);
   const questionIndex = session.index;
   const displayedChoices = missionMode === 'qcm'
@@ -713,6 +785,7 @@ async function continueAfterAnswer() {
   if (!answerReview) return;
   answerReview = null;
   lastFeedback = null;
+  adaptiveHintVisible = false;
   if (isSessionComplete(session)) {
     await finishMission();
     return;
@@ -739,6 +812,7 @@ async function handlePairsMatch(calcTileId, resultTileId) {
 }
 
 async function finishMission() {
+  if (adaptiveHintTimer) clearTimeout(adaptiveHintTimer);
   const summary = finishSession(session);
   summary.missionKind = currentMissionKind;
   const profileBefore = await loadProfile(childId);
@@ -811,10 +885,15 @@ async function finishMission() {
     rareTreasureIds,
     mistakeNotebook: updateLearningNotebook(profileBefore.mistakeNotebook ?? [], summary.answeredQuestions, summary.date),
     learningStats: Object.entries(summary.breakdown).reduce((stats, [type, current]) => {
-      const previous = stats[type] ?? { correct: 0, total: 0 };
-      stats[type] = { correct: previous.correct + current.correct, total: previous.total + current.total };
+      const previous = stats[type] ?? { correct: 0, total: 0, successDates: [] };
+      const successDates = new Set(previous.successDates ?? []);
+      if (current.correct > 0) successDates.add(summary.date);
+      stats[type] = { correct: previous.correct + current.correct, total: previous.total + current.total, successDates: [...successDates].slice(-30) };
       return stats;
     }, { ...(profileBefore.learningStats ?? {}) }),
+    diagnosticCompletedForLevel: currentMissionKind === 'diagnostic' ? profileBefore.schoolLevel ?? 'CE2' : profileBefore.diagnosticCompletedForLevel ?? null,
+    diagnosticPercent: currentMissionKind === 'diagnostic' ? Math.round((summary.correctCount / summary.questionsTotal) * 100) : profileBefore.diagnosticPercent ?? null,
+    diagnosticDate: currentMissionKind === 'diagnostic' ? summary.date : profileBefore.diagnosticDate ?? null,
     subjectMissionCounts,
     storyProgress: storyProgressAfterMission(profileBefore),
     assignedSubject: profileBefore.assignedSubject === summary.subject ? null : profileBefore.assignedSubject ?? null,

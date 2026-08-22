@@ -326,7 +326,7 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
-export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, schoolLevel = 'CE2', mistakeCount = 0, dueReviewCount = 0, weeklyTheme, assignedSubject = null, onSelect, onStartFrench, onStartSurprise, onStartPersonalized, onReviewMistakes, onStartWeeklyTheme, onBack, onNavigate }) {
+export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, schoolLevel = 'CE2', mistakeCount = 0, dueReviewCount = 0, weeklyTheme, assignedSubject = null, learningTarget = 'addition', onSelect, onStartFrench, onStartSurprise, onStartPersonalized, onStartLearning, onStartDiagnostic, onReviewMistakes, onStartWeeklyTheme, onBack, onNavigate }) {
   root.innerHTML = `
     <div class="screen subject-picker-screen with-tabs">
       <header class="subject-picker-heading">
@@ -335,6 +335,8 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, sch
         <span>Une mission de 10 questions adaptée au niveau ${escapeHtml(schoolLevel)}.</span>
       </header>
       <div class="learning-quick-actions">
+        <button id="learning-mission" class="learning-quick-card learning-quick-card-featured"><span>🎓</span><div><strong>J’apprends</strong><small>Mini-leçon sur ${escapeHtml(learningTypeLabel(learningTarget))}, puis 3 exercices progressifs</small></div></button>
+        <button id="diagnostic-mission" class="learning-quick-card"><span>🧭</span><div><strong>Diagnostic ${escapeHtml(schoolLevel)}</strong><small>10 questions pour ajuster ton parcours</small></div></button>
         <button id="personalized-mission" class="learning-quick-card learning-quick-card-featured"><span>🧠</span><div><strong>Mission personnalisée</strong><small>${mistakeCount ? 'Créée à partir de tes notions fragiles' : 'Elle apprendra progressivement avec toi'}</small></div></button>
         <button id="surprise-mission" class="learning-quick-card"><span>🎲</span><div><strong>Mission surprise</strong><small>Un mélange intelligent de plusieurs matières</small></div></button>
         <button id="mistake-review" class="learning-quick-card" ${dueReviewCount ? '' : 'disabled'}><span>📒</span><div><strong>Révisions du jour</strong><small>${dueReviewCount ? `${dueReviewCount} exercice${dueReviewCount > 1 ? 's' : ''} arrivé${dueReviewCount > 1 ? 's' : ''} à échéance` : mistakeCount ? 'Prochaine révision programmée plus tard' : 'Aucune erreur à réviser'}</small></div></button>
@@ -362,10 +364,28 @@ export function renderSubjectPicker(root, { subjects, difficultyLevels = {}, sch
   root.querySelectorAll('[data-subject]').forEach((button) => button.addEventListener('click', () => onSelect(button.dataset.subject)));
   root.querySelector('#surprise-mission').addEventListener('click', onStartSurprise);
   root.querySelector('#personalized-mission').addEventListener('click', onStartPersonalized);
+  root.querySelector('#learning-mission').addEventListener('click', onStartLearning);
+  root.querySelector('#diagnostic-mission').addEventListener('click', onStartDiagnostic);
   root.querySelector('#mistake-review').addEventListener('click', onReviewMistakes);
   root.querySelector('#weekly-theme-mission')?.addEventListener('click', onStartWeeklyTheme);
   root.querySelector('#subject-picker-back').addEventListener('click', onBack);
   attachBottomTabs(root, onNavigate);
+}
+
+export function renderMiniLesson(root, { lesson, onStart, onBack }) {
+  root.innerHTML = `
+    <div class="screen mini-lesson-screen">
+      <header class="mini-lesson-heading"><span>🎓 MINI-LEÇON · ENVIRON 20 SECONDES</span><h1>${escapeHtml(lesson.title)}</h1></header>
+      <section class="mini-lesson-card">
+        <div class="mini-lesson-rule"><strong>💡 La règle</strong><p>${escapeHtml(lesson.rule)}</p></div>
+        <div class="mini-lesson-example"><strong>✏️ Exemple guidé</strong><p>${escapeHtml(lesson.examplePrompt)}</p><ol>${lesson.exampleSteps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol></div>
+        <div class="mini-lesson-path"><span>1️⃣ Facile</span><i>→</i><span>2️⃣ Guidé</span><i>→</i><span>3️⃣ Autonome</span></div>
+        <button id="mini-lesson-start" class="big-button">J’ai compris, je m’entraîne !</button>
+        <button id="mini-lesson-back" class="link-button">Choisir autre chose</button>
+      </section>
+    </div>`;
+  root.querySelector('#mini-lesson-start').addEventListener('click', onStart);
+  root.querySelector('#mini-lesson-back').addEventListener('click', onBack);
 }
 
 function weeklyGoalCardHtml(progress, target, rewardText, rewardDays = []) {
@@ -639,7 +659,18 @@ function helpOverlayHtml(type, question) {
     </div>`;
 }
 
-export function renderQuestion(root, { question, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp, onSpeak }) {
+function learningStageHtml(stage) {
+  const labels = { facile: '1/3 · Exercice facile', guide: '2/3 · Exercice guidé', autonome: '3/3 · À toi toute seule' };
+  return stage ? `<p class="learning-stage learning-stage-${stage}">🎓 ${labels[stage]}</p>` : '';
+}
+
+function adaptiveHintHtml(question, visible) {
+  if (!visible) return '';
+  const hint = dynamicHintSteps(question)?.[0] ?? helpTextForType(question.type);
+  return `<aside class="adaptive-hint" role="status"><strong>🌱 Petit indice</strong><span>${escapeHtml(hint)}</span></aside>`;
+}
+
+export function renderQuestion(root, { question, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showAdaptiveHint = false, showHelp, onOpenHelp, onCloseHelp, onSpeak }) {
   const hasOptions = Array.isArray(question.options);
   const expectsText = question.inputMode === 'text' || typeof question.answer === 'string';
   const reviewing = !!feedback;
@@ -649,9 +680,11 @@ export function renderQuestion(root, { question, index, total, onAnswer, onConti
       ${missionProgressHtml(index, total)}
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <section class="mission-card">
+        ${learningStageHtml(question.learningStage)}
         ${questionToolsHtml(question)}
         <h2>${question.prompt}</h2>
         ${visualDisplayHtml(question)}
+        ${adaptiveHintHtml(question, showAdaptiveHint && !reviewing)}
         ${hasOptions
           ? `<div class="options mission-options">
               ${question.options
@@ -695,7 +728,7 @@ export function renderQuestion(root, { question, index, total, onAnswer, onConti
   }
 }
 
-export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showHelp, onOpenHelp, onCloseHelp, onSpeak }) {
+export function renderQuestionQcm(root, { question, choices, index, total, onAnswer, onContinue, feedback, selectedAnswer, showPauseReminder, showAdaptiveHint = false, showHelp, onOpenHelp, onCloseHelp, onSpeak }) {
   const hasOptions = Array.isArray(question.options);
   const reviewing = !!feedback;
   root.innerHTML = `
@@ -704,9 +737,11 @@ export function renderQuestionQcm(root, { question, choices, index, total, onAns
       ${missionProgressHtml(index, total)}
       ${showPauseReminder ? '<p class="pause-reminder">🌸 Tu joues depuis un moment, une petite pause ?</p>' : ''}
       <section class="mission-card">
+        ${learningStageHtml(question.learningStage)}
         ${questionToolsHtml(question)}
         <h2>${question.prompt}</h2>
         ${visualDisplayHtml(question)}
+        ${adaptiveHintHtml(question, showAdaptiveHint && !reviewing)}
         <div class="options mission-options">
           ${choices
             .map((choice) => {
